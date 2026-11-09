@@ -164,7 +164,7 @@ window.RES27_CONTENT = {
     { title: 'Clear out the pantry', text: 'Move anything that isn’t on your plan out of sight (or out of the house).' },
     { title: 'Plan and shop for Week 1', text: 'Pick 3–4 go-to meals. The Koda Cookbook has member favorites.', cookbook: true },
     { title: 'Book your InBody scan', text: 'Optional, but it’s the best way to see your results. Ask a coach at Koda.' },
-    { title: 'Add the app to your home screen', text: 'One tap each day, and you stay signed in.' },
+    { title: 'Add the app to your home screen', text: 'One tap each day. Sign in once in the home-screen app and it remembers you.' },
     { title: 'Day 1: take before photos', text: 'Front, side and back. Just for you — you’ll thank yourself later.' },
   ],
 

@@ -302,7 +302,7 @@ test("purging test accounts removes their rows and nobody else's", () => {
   post({ action: 'save', token: gone.token, date: '2027-01-12', answers: { video: 1 } });
   post({ action: 'adminSetType', key: ADMIN, email: 'gone@b.co', participantType: 'Test' });
   const r = post({ action: 'adminPurgeTests', key: ADMIN });
-  assert.deepEqual(r.removed, { participants: 1, accounts: 1, checkins: 1 });
+  assert.deepEqual(r.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 1 });
   assert.deepEqual(gas.rows('Participants').map((p) => p.Email), ['keep@b.co']);
   assert.equal(gas.rows('Accounts').length, 1);
   assert.equal(gas.rows('Check-ins').length, 1);

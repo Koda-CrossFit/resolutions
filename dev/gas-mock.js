@@ -972,3 +972,15 @@ module.exports = { createGas, formatDate, dateToSerial };
 ['setColumnWidth', 'hideColumns', 'showColumns', 'setTabColor', 'autoResizeColumns'].forEach((name) => {
   if (!FakeSheet.prototype[name]) FakeSheet.prototype[name] = function () { return this; };
 });
+
+/* Column delete and tab hiding, as the backend's setup uses them. */
+if (!FakeSheet.prototype.deleteColumn) {
+  FakeSheet.prototype.deleteColumn = function (column) {
+    this.grid.forEach((row) => { if (row.length >= column) row.splice(column - 1, 1); });
+    this.maxColumns -= 1;
+    return this;
+  };
+}
+['hideSheet', 'showSheet'].forEach((name) => {
+  if (!FakeSheet.prototype[name]) FakeSheet.prototype[name] = function () { return this; };
+});

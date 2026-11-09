@@ -18,9 +18,10 @@ Columns are found by their header, so they can be moved. Don't rename headers.
 
 | Tab | What it holds | Who edits it |
 |---|---|---|
-| Participants | One row per person: intake answers in readable columns | Kevin edits **Paid**, **Coach**, **Team**, **Status**, **Type**, **Notes**. The app writes the rest. Leave the hidden "(app data)" columns alone |
+| Participants | One row per person: intake answers in readable columns, points, days logged, whether the welcome email went out | Kevin edits **Paid**, **Coach**, **Team**, **Status**, **Type**, **Notes**. Sort and filter it freely |
+| App Data (hidden tab) | Each person's checklist setup and check-in history, keyed by ID, stamped with that ID | Nobody. If it's ever sorted on one column only, the app refuses to read the mismatched rows (and logs it) rather than mixing people up: undo the sort |
 | Check-ins | One row per person per day: done, points, every answer in words | The app |
-| Days | Day 1–42: title, video link, category, "About", action item, bonus task | Kevin and the coaches |
+| Days | Day 1–42 from the 2027 video plan: title, video link, category, "About", action item, bonus task, presenter, plus filming notes and the 2026 video it can reuse (the last two columns aren't shown in the app) | Kevin and the coaches |
 | Finishers | Finisher workouts by week (shown to people tracking finishers) | Kevin |
 | Settings | Dates, price, Venmo/Zelle/card link, coaches, contact email, edit window | Kevin |
 | Accounts | Sign-in data: salted password hashes, never passwords | Nobody |
@@ -42,6 +43,13 @@ Changes to Settings and Days show in the app within about a minute.
 - **Change the dates:** `start_date` and `length_days` in Settings. The app counts from them.
 - **Card payments:** make a $99 Zen Planner retail product and paste its checkout link into
   `card_url`. Until then, card payers are told we'll email them a secure link.
+- **Venmo:** the app and welcome email build a "Pay $99 on Venmo" button from `venmo` and
+  `remote_price`, with the amount and "Koda Resolutions 2027 - Name" filled in.
+- **Shirt orders:** put the order date in `shirt_changes_until`. After it, sizes are locked in the
+  app and people are told to email you. Every size change is written to the Log tab.
+- **Emails that didn't go out** (the Gmail account sends about 100 a day, shared with the other
+  Koda sign-up pages) show on the Log tab as "Email not sent", and the person's Welcome Email cell
+  says NOT SENT. Welcome emails stop while fewer than 25 sends are left that day.
 - **Forgot password:** people reset it themselves with an emailed 6-digit code. If email fails
   they're told to email the contact address.
 
@@ -64,7 +72,8 @@ perfect "standard" day is 10. People choose different checklists, so the team le
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test tests/api.test.js # backend tests
+node --test tests/api.test.js tests/review.test.js   # backend tests (27)
+node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
 ```
 
 Dev-only URLs: `/dev/reset?demo=1&at=2027-01-20T19:30:00-07:00` (fresh world plus a demo

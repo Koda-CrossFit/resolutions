@@ -13,14 +13,16 @@
  *
  * What Kevin edits in the sheet: Settings (dates, prices, payment info, coaches), Days (titles
  * and video links), Finishers, and on Participants: Paid, Coach, Team, Status, Type, Notes.
- * "Setup (app data)" and "History (app data)" are written by the app; leave them alone.
+ * Participants can be sorted and filtered freely: each person's checklist setup and check-in
+ * history live on the hidden "App Data" tab, keyed by ID, and every write re-checks that the
+ * row it is about to change still belongs to that ID.
  *
  * Passwords are never stored: Accounts keeps a salted PBKDF2-HMAC-SHA256 hash. Sign-in returns a
  * signed token the phone keeps, so people stay signed in. Changing a password (or "sign out
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.0.0 (2026-11-09)';
+var RES27_VERSION = '1.1.0 (2026-11-09)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -31,6 +33,9 @@ var RES27_MAX_FAILED_LOGINS = 8;
 var RES27_LOCK_MINUTES = 15;
 var RES27_RESET_MINUTES = 20;
 var RES27_RESET_MAX_TRIES = 6;
+var RES27_RESET_BAD_BUDGET = 12; // wrong codes per account per 6 hours, across all codes
+var RES27_RESET_STARTS_PER_HOUR = 30; // reset emails per hour, whole app
+var RES27_MAIL_RESERVE = 25; // welcome/notify emails leave this many sends for the other Koda pages
 
 var RES27_GOALS = { performance: 'Performance', muscle: 'Muscle Gain', fatloss: 'Fat Loss', health: 'General Health' };
 var RES27_PLANS = {
@@ -54,11 +59,20 @@ var RES27_TABS = {
     name: 'Participants',
     headers: ['ID', 'Signed Up', 'First Name', 'Last Name', 'Email', 'Type', 'Payment', 'Paid', 'Shirt', 'Size', 'Goal',
       'Nutrition Plan', 'Plan Details', 'Daily Checklist', 'Coach Ranking', 'Coach', 'Team', 'Status', 'Points', 'Days Logged',
-      'Last Seen', 'Notes', 'Setup (app data)', 'History (app data)'],
+      'Last Seen', 'Welcome Email', 'Notes'],
     dates: ['Signed Up', 'Last Seen'],
     numbers: ['Points', 'Days Logged'],
-    widths: { 'ID': 80, 'First Name': 110, 'Last Name': 120, 'Email': 210, 'Daily Checklist': 320, 'Plan Details': 200, 'Coach Ranking': 180, 'Notes': 200 },
-    hidden: ['Setup (app data)', 'History (app data)'],
+    widths: { 'ID': 80, 'First Name': 110, 'Last Name': 120, 'Email': 210, 'Daily Checklist': 320, 'Plan Details': 200, 'Coach Ranking': 180, 'Welcome Email': 140, 'Notes': 200 },
+    hidden: [],
+  },
+  appdata: {
+    name: 'App Data',
+    headers: ['ID', 'Setup', 'History', 'Updated'],
+    dates: ['Updated'],
+    numbers: [],
+    widths: { 'Setup': 360, 'History': 480 },
+    hidden: [],
+    hiddenTab: true,
   },
   accounts: {
     name: 'Accounts',
@@ -118,20 +132,21 @@ var RES27_SETTINGS_DEFAULTS = [
   ['length_days', 42, 'How many days the challenge runs'],
   ['registration_open', true, 'FALSE stops new sign-ups (signing in keeps working)'],
   ['remote_price', 99, 'What a remote participant pays, in dollars'],
-  ['venmo', '@kevin-schuetz-5', 'Venmo handle shown to remote participants'],
-  ['venmo_url', 'https://venmo.com/u/kevin-schuetz-5', 'Link that opens that Venmo profile'],
+  ['venmo', '@kevin-schuetz-5', 'Venmo handle. The app builds a "Pay $99 on Venmo" button with the amount and a note filled in'],
   ['zelle', 'kodaironview@gmail.com', 'Zelle email or phone shown to remote participants'],
   ['card_url', '', 'Zen Planner checkout link for the remote spot. Blank: card payers are told we will email them a secure link'],
   ['coaches', 'Kevin, Riley, Jamie, Maggie', 'Coaches people rank at sign-up, comma-separated, in the order shown'],
   ['contact_email', 'kodaironview@gmail.com', 'Where participants send questions (also the reply-to on emails)'],
   ['site_url', 'https://koda-crossfit.github.io/resolutions/', 'The app link used in emails'],
   ['edit_days_back', 2, 'How many days back people can still change a check-in (0 = today only)'],
+  ['shirt_changes_until', '', 'Last day people can change their shirt style or size, e.g. 2026-12-15 (blank = any time)'],
   ['cookbook_url', 'https://docs.google.com/document/d/1GYO72pgnYteRCpjKJSa0rvk4ZRN1DRvGElrm0lFWy6o/edit?usp=sharing', 'The Koda Cookbook link on the Nutrition tab'],
   ['welcome_email', true, 'TRUE sends a welcome email after sign-up'],
   ['notify_email', '', 'Optional: also email this address about every new sign-up'],
   ['show_upcoming_titles', false, 'TRUE shows the titles of videos that have not unlocked yet'],
   ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-14. Blank = the real date'],
 ];
+var RES27_RETIRED_SETTINGS = ['venmo_url'];
 
 var RES27_REQ_ = {};
 
@@ -260,16 +275,22 @@ function res27DiffDays_(from, to) {
   return Math.round((res27KeyToUtc_(to) - res27KeyToUtc_(from)) / 86400000);
 }
 
-/** A yyyy-MM-dd key from a Date, a yyyy-MM-dd string, or a m/d/yyyy string. Null if it can't be read. */
+/** True for a real calendar day written yyyy-MM-dd (so 2027-01-32 and 2027-02-00 are not). */
+function res27IsDayKey_(key) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(key)) && res27UtcToKey_(res27KeyToUtc_(key)) === String(key);
+}
+
+/** A yyyy-MM-dd key from a Date, a yyyy-MM-dd string, or a m/d/yyyy string. Null if it isn't a real day. */
 function res27ParseDateKey_(value) {
   if (value === null || value === undefined || value === '') return null;
   if (res27IsDate_(value)) return Utilities.formatDate(value, RES27_TZ, 'yyyy-MM-dd');
   var text = String(value).trim();
+  var key = null;
   var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
-  if (m) return m[1] + '-' + res27Pad_(Number(m[2])) + '-' + res27Pad_(Number(m[3]));
+  if (m) key = m[1] + '-' + res27Pad_(Number(m[2])) + '-' + res27Pad_(Number(m[3]));
   m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
-  if (m) return m[3] + '-' + res27Pad_(Number(m[1])) + '-' + res27Pad_(Number(m[2]));
-  return null;
+  if (m) key = m[3] + '-' + res27Pad_(Number(m[1])) + '-' + res27Pad_(Number(m[2]));
+  return key && res27IsDayKey_(key) ? key : null;
 }
 
 function res27TodayKey_() {
@@ -289,7 +310,7 @@ function res27Time_(value) {
 function res27Truthy_(value) {
   if (value === true) return true;
   if (value === false || value === null || value === undefined) return false;
-  return /^(true|yes|y|1|on|x|✓)$/i.test(String(value).trim());
+  return /^(true|yes|y|1|on|x|✓|paid)$/i.test(String(value).trim());
 }
 
 function res27CleanText_(value, max) {
@@ -341,12 +362,9 @@ function res27Bytes_(text) {
   return Utilities.newBlob(String(text)).getBytes();
 }
 
-function res27Sha_(text) {
-  return res27Hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(text), Utilities.Charset.UTF_8));
-}
-
-/** PBKDF2-HMAC-SHA256, one 32-byte block, as hex. */
+/** PBKDF2-HMAC-SHA256, one 32-byte block, as hex. An empty password never matches anything. */
 function res27HashPassword_(password, saltHex, rounds) {
+  if (!password) return '';
   var key = res27Bytes_(password);
   var salt = res27Bytes_(saltHex);
   var u = Utilities.computeHmacSha256Signature(salt.concat([0, 0, 0, 1]), key);
@@ -407,6 +425,18 @@ function res27IsAdmin_(key) {
   return false;
 }
 
+/** Adds one to a CacheService counter and returns the new count (good enough for rate limits). */
+function res27Bump_(key, seconds) {
+  var cache = CacheService.getScriptCache();
+  var n = (parseInt(cache.get(key), 10) || 0) + 1;
+  cache.put(key, String(n), seconds);
+  return n;
+}
+
+function res27Count_(key) {
+  return parseInt(CacheService.getScriptCache().get(key), 10) || 0;
+}
+
 /* ================================================================ the sheet ==== */
 
 function res27Book_() {
@@ -452,23 +482,41 @@ function res27RowObject_(headers, values, rowNumber) {
   return row;
 }
 
-/** The first row whose `header` cell matches `value` (trimmed, any case), or null. */
+/**
+ * The first row whose `header` cell matches `value` (trimmed, any case), or null. The whole row is
+ * read after the match, so it re-checks that cell and looks again if the sheet moved in between.
+ */
 function res27FindRow_(tabKey, header, value) {
+  var want = String(value === null || value === undefined ? '' : value).trim().toLowerCase();
+  if (!want) return null;
   var sheet = res27Sheet_(tabKey);
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return null;
   var headers = res27Headers_(tabKey);
   var col = res27Col_(tabKey, header);
-  var want = String(value).trim().toLowerCase();
-  if (!want) return null;
-  var column = sheet.getRange(2, col, lastRow - 1, 1).getValues();
-  for (var i = 0; i < column.length; i++) {
-    if (String(column[i][0]).trim().toLowerCase() === want) {
-      var rowNumber = i + 2;
-      return res27RowObject_(headers, sheet.getRange(rowNumber, 1, 1, headers.length).getValues()[0], rowNumber);
+  for (var attempt = 0; attempt < 3; attempt++) {
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return null;
+    var column = sheet.getRange(2, col, lastRow - 1, 1).getValues();
+    var at = -1;
+    for (var i = 0; i < column.length; i++) {
+      if (String(column[i][0]).trim().toLowerCase() === want) {
+        at = i;
+        break;
+      }
     }
+    if (at < 0) return null;
+    var rowNumber = at + 2;
+    var row = res27RowObject_(headers, sheet.getRange(rowNumber, 1, 1, headers.length).getValues()[0], rowNumber);
+    if (String(row[header]).trim().toLowerCase() === want) return row;
   }
-  return null;
+  throw new Error('Rows on ' + RES27_TABS[tabKey].name + ' kept moving while looking for ' + value);
+}
+
+/** Before writing to a row by number: make sure it still holds what it held when it was read. */
+function res27AssertRow_(tabKey, rowNumber, header, value) {
+  var cell = res27Sheet_(tabKey).getRange(rowNumber, res27Col_(tabKey, header)).getValue();
+  if (String(cell).trim().toLowerCase() !== String(value).trim().toLowerCase()) {
+    res27Fail_('The sheet was just rearranged. Please try again.', 'busy');
+  }
 }
 
 function res27AllRows_(tabKey) {
@@ -540,6 +588,14 @@ function res27Coaches_(cfg) {
     .filter(Boolean);
 }
 
+/** Kevin's Venmo link, as on the Hyrox pages: opens Venmo with the amount and a note filled in. */
+function res27VenmoPayUrl_(cfg, note) {
+  var handle = String(cfg.venmo || '').trim().replace(/^@/, '');
+  if (!handle) return '';
+  return 'https://venmo.com/?txn=pay&audience=private&recipients=' + encodeURIComponent(handle) +
+    '&amount=' + encodeURIComponent(Number(cfg.remote_price) || 99) + '&note=' + encodeURIComponent(note || 'Koda Resolutions 2027');
+}
+
 function res27PublicConfig_(cfg) {
   var program = res27Program_(cfg, null, null);
   return {
@@ -550,7 +606,6 @@ function res27PublicConfig_(cfg) {
     registrationOpen: res27Truthy_(cfg.registration_open),
     remotePrice: Number(cfg.remote_price) || 99,
     venmo: String(cfg.venmo || ''),
-    venmoUrl: String(cfg.venmo_url || ''),
     zelle: String(cfg.zelle || ''),
     cardUrl: String(cfg.card_url || ''),
     coaches: res27Coaches_(cfg),
@@ -558,6 +613,7 @@ function res27PublicConfig_(cfg) {
     siteUrl: String(cfg.site_url || ''),
     cookbookUrl: String(cfg.cookbook_url || ''),
     editDaysBack: Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0)),
+    shirtChangesUntil: res27ParseDateKey_(cfg.shirt_changes_until) || '',
     sizes: RES27_SIZES,
     sleepChoices: RES27_SLEEP_CHOICES,
     points: RES27_POINTS,
@@ -703,13 +759,26 @@ function res27FinishersFor_(program) {
 
 /* ================================================================ people & setup ==== */
 
-function res27Person_(row) {
+/**
+ * A person from their Participants row and App Data row. The JSON on App Data carries the owner's
+ * ID; if it doesn't match, nothing is read or written and the mismatch is logged for Kevin.
+ */
+function res27Person_(row, app) {
   if (!row) return null;
+  var id = String(row['ID']).trim();
+  var setup = res27ParseJson_(app && app['Setup'], {});
+  var history = res27ParseJson_(app && app['History'], {});
+  if ((setup.id && String(setup.id) !== id) || (history._id && String(history._id) !== id)) {
+    throw new Error('App Data does not match ID ' + id + ' (App Data row ' + (app && app._row) + '). Was the App Data tab sorted? Undo the sort.');
+  }
+  delete setup.id;
+  delete history._id;
   var shirtLabel = String(row['Shirt'] || '');
   var shirt = shirtLabel === RES27_SHIRTS.tank ? 'tank' : shirtLabel === RES27_SHIRTS.tee ? 'tee' : '';
   return {
     row: row._row,
-    id: String(row['ID']),
+    appRow: app ? app._row : 0,
+    id: id,
     first: String(row['First Name'] || ''),
     last: String(row['Last Name'] || ''),
     email: String(row['Email'] || ''),
@@ -721,9 +790,48 @@ function res27Person_(row) {
     coach: String(row['Coach'] || ''),
     team: String(row['Team'] || ''),
     status: String(row['Status'] || 'Active'),
-    setup: res27ParseJson_(row['Setup (app data)'], {}),
-    history: res27ParseJson_(row['History (app data)'], {}),
+    setup: setup,
+    history: history,
   };
+}
+
+function res27LoadPerson_(id) {
+  var row = res27FindRow_('participants', 'ID', id);
+  if (!row) return null;
+  return res27Person_(row, res27FindRow_('appdata', 'ID', id));
+}
+
+function res27AllPeople_() {
+  var apps = {};
+  res27AllRows_('appdata').forEach(function (a) {
+    apps[String(a['ID']).trim()] = a;
+  });
+  var out = [];
+  res27AllRows_('participants').forEach(function (r) {
+    if (!String(r['ID']).trim()) return;
+    try {
+      out.push(res27Person_(r, apps[String(r['ID']).trim()]));
+    } catch (e) {
+      /* a mismatched row is reported when that person opens the app */
+    }
+  });
+  return out;
+}
+
+function res27SetupJson_(setup, id) {
+  var o = { id: id };
+  Object.keys(setup || {}).forEach(function (k) {
+    if (k !== 'id') o[k] = setup[k];
+  });
+  return JSON.stringify(o);
+}
+
+function res27HistoryJson_(history, id) {
+  var o = { _id: id };
+  Object.keys(history || {}).forEach(function (k) {
+    if (res27IsDayKey_(k)) o[k] = history[k];
+  });
+  return JSON.stringify(o);
 }
 
 function res27PublicPerson_(p) {
@@ -875,6 +983,7 @@ function res27ChecklistText_(s) {
   return parts.join(' · ');
 }
 
+/** The readable Participants columns that come from the setup. */
 function res27SetupColumns_(s) {
   return {
     'Goal': RES27_GOALS[s.goal] || '',
@@ -884,7 +993,6 @@ function res27SetupColumns_(s) {
     'Coach Ranking': (s.coaches || []).map(function (c, i) {
       return i + 1 + '. ' + c;
     }).join('  ') || 'No preference',
-    'Setup (app data)': JSON.stringify(s),
   };
 }
 
@@ -899,7 +1007,7 @@ function res27Checklist_(person, day) {
   var s = (person && person.setup) || {};
   var t = s.track || {};
   var items = [];
-  items.push({ id: 'video', label: 'Watched today’s video', sub: day && day.title ? day.title : '', icon: 'play', units: [['video', RES27_POINTS.video, 0]] });
+  items.push({ id: 'video', label: 'Watched the daily video', sub: day && day.title ? day.title : '', icon: 'play', units: [['video', RES27_POINTS.video, 0]] });
   if (t.nutrition) {
     items.push({
       id: 'nutrition',
@@ -939,6 +1047,15 @@ function res27UnitsOf_(items) {
   return units;
 }
 
+/** A saved day's units follow the Days tab's current bonus for that day (added, changed or removed). */
+function res27SyncBonus_(units, day) {
+  var out = (units || []).filter(function (u) {
+    return u[0] !== 'bonus';
+  });
+  if (day && day.bonus) out.push(['bonus', day.bonusPoints || RES27_POINTS.bonus, 0]);
+  return out;
+}
+
 /** Done = items with every unit answered yes; points include extras; max leaves extras out. */
 function res27Score_(units, answers) {
   var items = {};
@@ -962,10 +1079,13 @@ function res27Score_(units, answers) {
   return { done: done, of: of, points: points, max: max };
 }
 
-function res27Totals_(history) {
+/** Points and days logged, counting only real days inside the challenge. */
+function res27Totals_(history, program) {
   var points = 0;
   var days = 0;
   Object.keys(history || {}).forEach(function (date) {
+    if (!res27IsDayKey_(date)) return;
+    if (program && (date < program.start || date > program.end)) return;
     var e = history[date];
     if (!e) return;
     points += Number(e.p) || 0;
@@ -994,7 +1114,7 @@ function res27AnswersText_(items, answers) {
     .join(' · ');
 }
 
-/** Rebuilds item labels for a saved day: today's labels where the key still exists, simple names otherwise. */
+/** Rebuilds item labels for a saved day: that day's labels where the key still exists, simple names otherwise. */
 function res27ItemsForUnits_(person, day, units) {
   var current = res27Checklist_(person, day);
   var byKey = {};
@@ -1021,7 +1141,7 @@ function res27ItemsForUnits_(person, day, units) {
         return [v[0], v[1], v[2], sub && sub[3]];
       }) });
     } else {
-      var fallback = { video: 'Watched the video', nutrition: 'Followed my nutrition plan', workout: 'Daily workout', sleep: 'Sleep', hydration: 'Hydration', finisher: 'Finisher workout', skill: 'Skill work', mobility: 'Mobility', bonus: 'Bonus task' };
+      var fallback = { video: 'Watched the daily video', nutrition: 'Followed my nutrition plan', workout: 'Daily workout', sleep: 'Sleep', hydration: 'Hydration', finisher: 'Finisher workout', skill: 'Skill work', mobility: 'Mobility', bonus: 'Bonus task' };
       items.push({ id: itemId, label: fallback[itemId] || 'Habit', sub: '', icon: 'star', kind: itemId === 'nutrition' ? 'meals' : undefined, units: own.map(function (v) {
         var meal = RES27_MEALS.filter(function (m) {
           return 'nutrition:' + m[0] === v[0];
@@ -1042,14 +1162,16 @@ function res27EditableChecklists_(person, program, content, cfg) {
     if (n < 1 || n > program.length) continue;
     var day = res27DayPublic_(n, program, content, cfg);
     var saved = person.history[date];
-    out[date] = saved && saved.u ? res27ItemsForUnits_(person, day, saved.u) : res27Checklist_(person, day);
+    out[date] = saved && saved.u && saved.u.length ? res27ItemsForUnits_(person, day, res27SyncBonus_(saved.u, day)) : res27Checklist_(person, day);
   }
   return out;
 }
 
-function res27PublicHistory_(person) {
+function res27PublicHistory_(person, program) {
   var out = {};
   Object.keys(person.history || {}).forEach(function (date) {
+    if (!res27IsDayKey_(date)) return;
+    if (program && (date < program.start || date > program.end)) return;
     var e = person.history[date];
     if (!e) return;
     out[date] = { a: e.a || {}, u: e.u || [], d: e.d || 0, n: e.n || 0, p: e.p || 0, m: e.m || 0, t: e.t || 0 };
@@ -1071,11 +1193,12 @@ function res27Bootstrap_(person, clientToday) {
     program: program,
     config: res27PublicConfig_(cfg),
     days: days,
-    history: res27PublicHistory_(person),
+    history: res27PublicHistory_(person, program),
     checklists: checklists,
     preview: program.phase === 'before' ? res27Checklist_(person, { title: '', bonus: '' }) : null,
     finishers: res27FinishersFor_(program),
-    totals: res27Totals_(person.history),
+    totals: res27Totals_(person.history, program),
+    payUrl: person.type === 'Remote' ? res27VenmoPayUrl_(cfg, 'Koda Resolutions 2027 - ' + person.first + ' ' + person.last) : '',
     serverTime: res27Now_(),
   };
 }
@@ -1091,7 +1214,7 @@ function res27Auth_(token) {
   if (!issued || res27Now_() - issued > RES27_TOKEN_MAX_DAYS * 86400000) res27Fail_('Please sign in again.', 'auth');
   var acct = res27FindRow_('accounts', 'ID', parts[0]);
   if (!acct || String(Number(acct['Token Version']) || 1) !== parts[1]) res27Fail_('Please sign in again.', 'auth');
-  var person = res27Person_(res27FindRow_('participants', 'ID', parts[0]));
+  var person = res27LoadPerson_(parts[0]);
   if (!person) res27Fail_('Please sign in again.', 'auth');
   if (/removed/i.test(person.status)) res27Fail_('This account is no longer active. Questions? Email ' + res27Settings_().contact_email + '.', 'inactive');
   return { acct: acct, person: person, id: parts[0] };
@@ -1102,6 +1225,7 @@ function res27TouchSeen_(person) {
   var key = 'res27:seen:' + person.id;
   if (cache.get(key)) return;
   cache.put(key, '1', 1800);
+  res27AssertRow_('participants', person.row, 'ID', person.id);
   res27UpdateRow_('participants', person.row, { 'Last Seen': new Date(res27Now_()) });
 }
 
@@ -1145,22 +1269,42 @@ function res27Register_(d) {
   var id;
   try {
     RES27_REQ_.headers = {};
-    if (res27FindRow_('accounts', 'Email', email)) res27Fail_('That email already has an account. Sign in instead.', 'exists');
-    id = res27NewId_();
     var now = new Date(res27Now_());
     var salt = res27RandomHex_(16);
-    res27AppendRow_('accounts', {
-      'ID': id,
-      'Email': email,
-      'Password Hash': res27HashPassword_(password, salt, RES27_HASH_ROUNDS),
-      'Salt': salt,
-      'Rounds': RES27_HASH_ROUNDS,
-      'Token Version': 1,
-      'Failed Logins': 0,
-      'Reset Tries': 0,
-      'Last Login': now,
-      'Created': now,
-    });
+    var hash = res27HashPassword_(password, salt, RES27_HASH_ROUNDS);
+    var existing = res27FindRow_('accounts', 'Email', email);
+    if (existing) {
+      // A sign-up that died between its writes left an account with no participant: finish it.
+      if (res27FindRow_('participants', 'ID', existing['ID'])) res27Fail_('That email already has an account. Sign in instead.', 'exists');
+      id = String(existing['ID']);
+      res27AssertRow_('accounts', existing._row, 'Email', email);
+      res27UpdateRow_('accounts', existing._row, {
+        'Password Hash': hash,
+        'Salt': salt,
+        'Rounds': RES27_HASH_ROUNDS,
+        'Token Version': (Number(existing['Token Version']) || 1) + 1,
+        'Failed Logins': 0,
+        'Locked Until': '',
+        'Last Login': now,
+      });
+    } else {
+      id = res27NewId_();
+      res27AppendRow_('accounts', {
+        'ID': id,
+        'Email': email,
+        'Password Hash': hash,
+        'Salt': salt,
+        'Rounds': RES27_HASH_ROUNDS,
+        'Token Version': 1,
+        'Failed Logins': 0,
+        'Reset Tries': 0,
+        'Last Login': now,
+        'Created': now,
+      });
+    }
+    var oldApp = res27FindRow_('appdata', 'ID', id);
+    if (oldApp) res27Sheet_('appdata').deleteRow(oldApp._row);
+    res27AppendRow_('appdata', { 'ID': id, 'Setup': res27SetupJson_(setup, id), 'History': res27HistoryJson_({}, id), 'Updated': now });
     var row = {
       'ID': id,
       'Signed Up': now,
@@ -1176,7 +1320,6 @@ function res27Register_(d) {
       'Points': 0,
       'Days Logged': 0,
       'Last Seen': now,
-      'History (app data)': '{}',
     };
     var cols = res27SetupColumns_(setup);
     Object.keys(cols).forEach(function (k) {
@@ -1190,16 +1333,18 @@ function res27Register_(d) {
   try {
     res27Log_(email, 'Signed up', type + (type === 'Remote' ? ' · pays by ' + RES27_PAYMENTS[pay] : '') + ' · ' + RES27_GOALS[setup.goal]);
   } catch (e) {}
+  var emailed = false;
   try {
-    res27SendWelcome_(cfg, { first: first, last: last, email: email, type: type, pay: pay, setup: setup, shirt: RES27_SHIRTS[shirt], size: size });
+    emailed = res27SendWelcome_(cfg, { id: id, first: first, last: last, email: email, type: type, pay: pay, setup: setup, shirt: RES27_SHIRTS[shirt], size: size });
   } catch (e) {
     try {
       console.error('res27 welcome email: ' + e);
     } catch (ignore) {}
   }
   RES27_REQ_ = {};
-  var person = res27Person_(res27FindRow_('participants', 'ID', id));
-  return { ok: true, token: res27IssueToken_(id, 1), me: res27Bootstrap_(person, d.today) };
+  var person = res27LoadPerson_(id);
+  var account = res27FindRow_('accounts', 'ID', id);
+  return { ok: true, token: res27IssueToken_(id, Number(account && account['Token Version']) || 1), emailed: emailed, me: res27Bootstrap_(person, d.today) };
 }
 
 function res27Login_(d) {
@@ -1222,14 +1367,20 @@ function res27Login_(d) {
       update['Failed Logins'] = 0;
       update['Locked Until'] = new Date(now + RES27_LOCK_MINUTES * 60000);
     }
+    res27AssertRow_('accounts', acct._row, 'Email', email);
     res27UpdateRow_('accounts', acct._row, update);
     res27Fail_('That password doesn’t match. Try again, or reset it.', 'bad_password');
   }
+  res27AssertRow_('accounts', acct._row, 'Email', email);
   res27UpdateRow_('accounts', acct._row, { 'Failed Logins': 0, 'Locked Until': '', 'Last Login': new Date(now) });
-  var person = res27Person_(res27FindRow_('participants', 'ID', acct['ID']));
+  var person = res27LoadPerson_(acct['ID']);
   if (!person) res27Fail_('We couldn’t find your sign-up. Email ' + cfg.contact_email + ' and we’ll fix it.', 'missing');
   if (/removed/i.test(person.status)) res27Fail_('This account is no longer active. Questions? Email ' + cfg.contact_email + '.', 'inactive');
   return { ok: true, token: res27IssueToken_(person.id, Number(acct['Token Version']) || 1), me: res27Bootstrap_(person, d.today) };
+}
+
+function res27ResetCodeHash_(code, id) {
+  return res27Sign_('reset|' + code + '|' + id);
 }
 
 function res27ResetStart_(d) {
@@ -1238,28 +1389,37 @@ function res27ResetStart_(d) {
   if (!email) res27Fail_('Enter the email you signed up with.');
   var acct = res27FindRow_('accounts', 'Email', email);
   if (!acct) res27Fail_('We couldn’t find an account with that email. Check the spelling.', 'no_account');
+  if (res27Count_('res27:rf:' + acct['ID']) >= RES27_RESET_BAD_BUDGET) {
+    res27Fail_('Too many wrong codes. Email ' + cfg.contact_email + ' and we’ll reset it for you.', 'too_many');
+  }
   var now = res27Now_();
   var expires = res27Time_(acct['Reset Expires']);
   if (expires && expires - RES27_RESET_MINUTES * 60000 + 60000 > now) {
     res27Fail_('We just sent you a code. Check your inbox (and spam), or try again in a minute.', 'wait');
   }
+  var hour = Utilities.formatDate(new Date(now), RES27_TZ, 'yyyy-MM-dd-HH');
+  if (res27Bump_('res27:rs:' + hour, 3700) > RES27_RESET_STARTS_PER_HOUR) {
+    res27Fail_('Lots of password resets right now. Try again in an hour, or email ' + cfg.contact_email + '.', 'busy');
+  }
   var code = res27RandomCode_();
-  res27UpdateRow_('accounts', acct._row, {
-    'Reset Code': res27Sha_(code + '|' + acct['ID']),
-    'Reset Expires': new Date(now + RES27_RESET_MINUTES * 60000),
-    'Reset Tries': 0,
-  });
   var name = String(cfg.program_name || 'Koda Resolutions 2027');
   var html = res27EmailFrame_(cfg, 'Your sign-in code',
     '<p style="margin:0 0 16px">Use this code to set a new password for ' + res27Html_(name) + ':</p>' +
     '<p style="margin:0 0 20px;font-size:34px;letter-spacing:8px;font-weight:700;color:#0C1A2B">' + code + '</p>' +
     '<p style="margin:0;color:#5F6B7A">It works for ' + RES27_RESET_MINUTES + ' minutes. If you didn’t ask for it, you can ignore this email.</p>');
-  var sent = res27Mail_(cfg, email, 'Your ' + name + ' code: ' + code, html, 'Your code is ' + code + '. It works for ' + RES27_RESET_MINUTES + ' minutes.');
+  var sent = res27Mail_(cfg, email, 'Your ' + name + ' code: ' + code, html, 'Your code is ' + code + '. It works for ' + RES27_RESET_MINUTES + ' minutes.', 3);
   if (!sent) res27Fail_('We couldn’t send the email right now. Email ' + cfg.contact_email + ' and we’ll reset it for you.', 'mail');
+  res27AssertRow_('accounts', acct._row, 'Email', email);
+  res27UpdateRow_('accounts', acct._row, {
+    'Reset Code': res27ResetCodeHash_(code, acct['ID']),
+    'Reset Expires': new Date(now + RES27_RESET_MINUTES * 60000),
+    'Reset Tries': 0,
+  });
   return { ok: true };
 }
 
 function res27ResetFinish_(d) {
+  var cfg = res27Settings_();
   var email = res27CleanEmail_(d.email);
   var code = String(d.code || '').replace(/\D/g, '');
   var password = String(d.password || '');
@@ -1273,17 +1433,25 @@ function res27ResetFinish_(d) {
   try {
     acct = res27FindRow_('accounts', 'Email', email);
     if (!acct) res27Fail_('We couldn’t find an account with that email.', 'no_account');
+    var budgetKey = 'res27:rf:' + acct['ID'];
+    if (res27Count_(budgetKey) >= RES27_RESET_BAD_BUDGET) {
+      res27Fail_('Too many wrong codes. Email ' + cfg.contact_email + ' and we’ll reset it for you.', 'too_many');
+    }
     var now = res27Now_();
     var tries = Number(acct['Reset Tries']) || 0;
     if (!acct['Reset Code'] || res27Time_(acct['Reset Expires']) < now || tries >= RES27_RESET_MAX_TRIES) {
       res27Fail_('That code has expired. Ask for a new one.', 'expired');
     }
-    if (res27Sha_(code + '|' + acct['ID']) !== String(acct['Reset Code'])) {
+    if (res27ResetCodeHash_(code, acct['ID']) !== String(acct['Reset Code'])) {
+      res27Bump_(budgetKey, 21600);
+      res27AssertRow_('accounts', acct._row, 'Email', email);
       res27UpdateRow_('accounts', acct._row, { 'Reset Tries': tries + 1 });
+      SpreadsheetApp.flush();
       res27Fail_('That code doesn’t match. Check the email and try again.', 'bad_code');
     }
     var salt = res27RandomHex_(16);
     var version = (Number(acct['Token Version']) || 1) + 1;
+    res27AssertRow_('accounts', acct._row, 'Email', email);
     res27UpdateRow_('accounts', acct._row, {
       'Password Hash': res27HashPassword_(password, salt, RES27_HASH_ROUNDS),
       'Salt': salt,
@@ -1296,11 +1464,12 @@ function res27ResetFinish_(d) {
       'Locked Until': '',
       'Last Login': new Date(now),
     });
+    SpreadsheetApp.flush();
     acct['Token Version'] = version;
   } finally {
     lock.releaseLock();
   }
-  var person = res27Person_(res27FindRow_('participants', 'ID', acct['ID']));
+  var person = res27LoadPerson_(acct['ID']);
   if (!person) res27Fail_('We couldn’t find your sign-up.', 'missing');
   return { ok: true, token: res27IssueToken_(person.id, acct['Token Version']), me: res27Bootstrap_(person, d.today) };
 }
@@ -1314,18 +1483,26 @@ function res27Me_(d, auth) {
   return { ok: true, me: res27Bootstrap_(auth.person, d.today) };
 }
 
+/**
+ * Saves one day's answers. With patch: true (what the app sends) only the answers in the request
+ * change, so two phones editing the same day don't erase each other. Null clears an answer.
+ */
 function res27Save_(d, auth) {
   var cfg = res27Settings_();
   var date = res27ParseDateKey_(d.date);
   var program = res27Program_(cfg, auth.person, d.today);
   if (!date) res27Fail_('Missing the day to save.');
-  if (date < program.start) res27Fail_('The challenge hasn’t started yet.', 'locked_day');
-  if (date > program.today) res27Fail_('You can’t check in for a day that hasn’t happened yet.', 'locked_day');
-  if (date > program.end) res27Fail_('That day is after the challenge ended.', 'locked_day');
-  if (date < program.editFrom) res27Fail_('That day is locked. Days can be changed for ' + (program.editFrom === program.today ? 'today only' : 'up to ' + res27DiffDays_(program.editFrom, program.today) + ' days') + '.', 'locked_day');
-  var raw = d.answers && typeof d.answers === 'object' ? d.answers : {};
-  var content = res27DaysContent_();
   var n = res27DiffDays_(program.start, date) + 1;
+  if (date < program.start || n < 1) res27Fail_('The challenge hasn’t started yet.', 'locked_day');
+  if (date > program.today) res27Fail_('You can’t check in for a day that hasn’t happened yet.', 'locked_day');
+  if (date > program.end || n > program.length) res27Fail_('That day is after the challenge ended.', 'locked_day');
+  if (date < program.editFrom) {
+    var back = Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0));
+    res27Fail_(back ? 'That day is locked. You can change today and the ' + (back === 1 ? 'day' : back + ' days') + ' before it.' : 'That day is locked. You can only change today.', 'locked_day');
+  }
+  var raw = d.answers && typeof d.answers === 'object' ? d.answers : {};
+  var patch = d.patch === true;
+  var content = res27DaysContent_();
 
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -1333,27 +1510,40 @@ function res27Save_(d, auth) {
   var totals;
   try {
     RES27_REQ_.headers = {};
-    var person = res27Person_(res27FindRow_('participants', 'ID', auth.id));
-    if (!person) res27Fail_('Please sign in again.', 'auth');
+    var person = res27LoadPerson_(auth.id);
+    if (!person || !person.appRow) res27Fail_('Please sign in again.', 'auth');
     var day = res27DayPublic_(n, program, content, cfg);
     var prior = person.history[date];
-    var units = prior && prior.u && prior.u.length ? prior.u : res27UnitsOf_(res27Checklist_(person, day));
+    var units = prior && prior.u && prior.u.length ? res27SyncBonus_(prior.u, day) : res27UnitsOf_(res27Checklist_(person, day));
     var answers = {};
+    if (patch && prior && prior.a) {
+      Object.keys(prior.a).forEach(function (k) {
+        answers[k] = prior.a[k];
+      });
+    }
     units.forEach(function (u) {
+      if (patch && !Object.prototype.hasOwnProperty.call(raw, u[0])) return;
       var v = raw[u[0]];
       if (v === 1 || v === true || v === 'yes') answers[u[0]] = 1;
       else if (v === 0 || v === false || v === 'no') answers[u[0]] = 0;
+      else delete answers[u[0]];
+    });
+    var keep = {};
+    units.forEach(function (u) {
+      keep[u[0]] = true;
+    });
+    Object.keys(answers).forEach(function (k) {
+      if (!keep[k]) delete answers[k];
     });
     var score = res27Score_(units, answers);
     entry = { a: answers, u: units, d: score.done, n: score.of, p: score.points, m: score.max, t: res27Now_() };
     person.history[date] = entry;
-    totals = res27Totals_(person.history);
-    res27UpdateRow_('participants', person.row, {
-      'History (app data)': JSON.stringify(person.history),
-      'Points': totals.points,
-      'Days Logged': totals.days,
-      'Last Seen': new Date(res27Now_()),
-    });
+    totals = res27Totals_(person.history, program);
+    var stamp = new Date(res27Now_());
+    res27AssertRow_('appdata', person.appRow, 'ID', person.id);
+    res27UpdateRow_('appdata', person.appRow, { 'History': res27HistoryJson_(person.history, person.id), 'Updated': stamp });
+    res27AssertRow_('participants', person.row, 'ID', person.id);
+    res27UpdateRow_('participants', person.row, { 'Points': totals.points, 'Days Logged': totals.days, 'Last Seen': stamp });
     var items = res27ItemsForUnits_(person, day, units);
     var key = person.id + '|' + date;
     var log = {
@@ -1368,11 +1558,15 @@ function res27Save_(d, auth) {
       'Points': score.points,
       'Max Points': score.max,
       'Answers': res27AnswersText_(items, answers),
-      'Updated': new Date(res27Now_()),
+      'Updated': stamp,
     };
     var existing = res27FindRow_('checkins', 'Key', key);
-    if (existing) res27UpdateRow_('checkins', existing._row, log);
-    else res27AppendRow_('checkins', log);
+    if (existing && String(existing['ID']).trim() === person.id) {
+      res27AssertRow_('checkins', existing._row, 'Key', key);
+      res27UpdateRow_('checkins', existing._row, log);
+    } else {
+      res27AppendRow_('checkins', log);
+    }
     SpreadsheetApp.flush();
   } finally {
     lock.releaseLock();
@@ -1387,38 +1581,49 @@ function res27UpdateSetup_(d, auth) {
   var size = d.size === undefined ? null : String(d.size || '');
   if (shirt !== null && !RES27_SHIRTS[shirt]) res27Fail_('Choose a T-Shirt or a Ladies Tank.');
   if (shirt !== null && RES27_SIZES[shirt].indexOf(size) < 0) res27Fail_('Choose your size.');
+  var shirtChanged = shirt !== null && (shirt !== auth.person.shirt || size !== auth.person.size);
+  if (shirtChanged) {
+    var until = res27ParseDateKey_(cfg.shirt_changes_until);
+    if (until && res27TodayKey_() > until) res27Fail_('Shirts are already ordered, so sizes are locked. Email ' + cfg.contact_email + ' if you need a swap.', 'locked_shirt');
+  }
   var program = res27Program_(cfg, auth.person, d.today);
   var content = res27DaysContent_();
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
+  var old = { shirt: auth.person.shirt, size: auth.person.size };
   try {
     RES27_REQ_.headers = {};
-    var person = res27Person_(res27FindRow_('participants', 'ID', auth.id));
-    if (!person) res27Fail_('Please sign in again.', 'auth');
+    var person = res27LoadPerson_(auth.id);
+    if (!person || !person.appRow) res27Fail_('Please sign in again.', 'auth');
+    old = { shirt: person.shirt, size: person.size };
     person.setup = setup;
     var update = res27SetupColumns_(setup);
     if (shirt !== null) {
       update['Shirt'] = RES27_SHIRTS[shirt];
       update['Size'] = size;
     }
+    var appUpdate = { 'Setup': res27SetupJson_(setup, person.id), 'Updated': new Date(res27Now_()) };
     // Today's saved check-in follows the new checklist (keeping answers that still apply). Earlier days keep theirs.
     var today = program.today;
     if (program.phase === 'during' && person.history[today]) {
       var n = res27DiffDays_(program.start, today) + 1;
       var day = res27DayPublic_(n, program, content, cfg);
       var units = res27UnitsOf_(res27Checklist_(person, day));
-      var old = person.history[today].a || {};
+      var oldAnswers = person.history[today].a || {};
       var answers = {};
       units.forEach(function (u) {
-        if (old[u[0]] === 1 || old[u[0]] === 0) answers[u[0]] = old[u[0]];
+        if (oldAnswers[u[0]] === 1 || oldAnswers[u[0]] === 0) answers[u[0]] = oldAnswers[u[0]];
       });
       var score = res27Score_(units, answers);
       person.history[today] = { a: answers, u: units, d: score.done, n: score.of, p: score.points, m: score.max, t: res27Now_() };
-      var totals = res27Totals_(person.history);
-      update['History (app data)'] = JSON.stringify(person.history);
+      var totals = res27Totals_(person.history, program);
+      appUpdate['History'] = res27HistoryJson_(person.history, person.id);
       update['Points'] = totals.points;
       update['Days Logged'] = totals.days;
     }
+    res27AssertRow_('appdata', person.appRow, 'ID', person.id);
+    res27UpdateRow_('appdata', person.appRow, appUpdate);
+    res27AssertRow_('participants', person.row, 'ID', person.id);
     res27UpdateRow_('participants', person.row, update);
     SpreadsheetApp.flush();
   } finally {
@@ -1426,15 +1631,16 @@ function res27UpdateSetup_(d, auth) {
   }
   try {
     res27Log_(auth.person.email, 'Changed setup', res27ChecklistText_(setup));
+    if (shirtChanged) res27Log_(auth.person.email, 'Changed shirt', (RES27_SHIRTS[old.shirt] || '?') + ' ' + old.size + ' → ' + RES27_SHIRTS[shirt] + ' ' + size);
   } catch (e) {}
   RES27_REQ_ = {};
-  var fresh = res27Person_(res27FindRow_('participants', 'ID', auth.id));
-  return { ok: true, me: res27Bootstrap_(fresh, d.today) };
+  return { ok: true, me: res27Bootstrap_(res27LoadPerson_(auth.id), d.today) };
 }
 
 function res27ChangePassword_(d, auth) {
   var current = String(d.current || '');
   var next = String(d.password || '');
+  if (!current) res27Fail_('Enter your current password. Forgot it? Sign out and use Forgot password.', 'bad_password');
   if (next.length < 6) res27Fail_('Your new password needs at least 6 characters.');
   if (next.length > 128) res27Fail_('That password is too long.');
   var acct = auth.acct;
@@ -1443,6 +1649,7 @@ function res27ChangePassword_(d, auth) {
   }
   var salt = res27RandomHex_(16);
   var version = (Number(acct['Token Version']) || 1) + 1;
+  res27AssertRow_('accounts', acct._row, 'ID', auth.id);
   res27UpdateRow_('accounts', acct._row, {
     'Password Hash': res27HashPassword_(next, salt, RES27_HASH_ROUNDS),
     'Salt': salt,
@@ -1454,6 +1661,7 @@ function res27ChangePassword_(d, auth) {
 
 function res27SignOutAll_(d, auth) {
   var version = (Number(auth.acct['Token Version']) || 1) + 1;
+  res27AssertRow_('accounts', auth.acct._row, 'ID', auth.id);
   res27UpdateRow_('accounts', auth.acct._row, { 'Token Version': version });
   return { ok: true };
 }
@@ -1481,20 +1689,30 @@ function res27EmailFrame_(cfg, heading, bodyHtml) {
     (cfg.contact_email ? ' · ' + res27Html_(cfg.contact_email) : '') + '</div></div></div>';
 }
 
-function res27Mail_(cfg, to, subject, htmlBody, textBody) {
+/**
+ * Sends one email as the script owner. `reserve` keeps that many of the account's daily sends for
+ * Koda's other sign-up pages. Anything not sent is written to the Log tab, so it can be resent.
+ */
+function res27Mail_(cfg, to, subject, htmlBody, textBody, reserve) {
   if (!to) return false;
+  var why = '';
   try {
-    if (MailApp.getRemainingDailyQuota() < 3) return false;
-    var message = { to: to, subject: subject, htmlBody: htmlBody, body: textBody || '', name: 'Koda Resolutions' };
-    if (cfg.contact_email) message.replyTo = String(cfg.contact_email);
-    MailApp.sendEmail(message);
-    return true;
+    var left = MailApp.getRemainingDailyQuota();
+    if (left < (reserve || 3)) {
+      why = 'daily email limit (' + left + ' left)';
+    } else {
+      var message = { to: to, subject: subject, htmlBody: htmlBody, body: textBody || '', name: 'Koda Resolutions' };
+      if (cfg.contact_email) message.replyTo = String(cfg.contact_email);
+      MailApp.sendEmail(message);
+      return true;
+    }
   } catch (e) {
-    try {
-      console.error('res27 mail to ' + to + ': ' + e);
-    } catch (ignore) {}
-    return false;
+    why = String(e && e.message || e).slice(0, 200);
   }
+  try {
+    res27Log_(to, 'Email not sent', subject + ' · ' + why);
+  } catch (ignore) {}
+  return false;
 }
 
 function res27SendWelcome_(cfg, p) {
@@ -1504,26 +1722,37 @@ function res27SendWelcome_(cfg, p) {
   var price = Number(cfg.remote_price) || 99;
   var payHtml = '';
   if (p.type === 'Remote') {
-    var how = p.pay === 'venmo' ? 'Venmo <b>' + res27Html_(cfg.venmo) + '</b>' : p.pay === 'zelle' ? 'Zelle <b>' + res27Html_(cfg.zelle) + '</b>' : cfg.card_url ? '<a href="' + res27Html_(cfg.card_url) + '" style="color:#0C1A2B">our secure card checkout</a>' : 'a secure card link we’ll email you shortly';
-    payHtml = '<div style="background:#F0F2F5;border-radius:12px;padding:14px 16px;margin:0 0 18px"><b>Your $' + price + ' remote spot:</b> pay with ' + how +
-      (p.pay === 'card' ? '' : ' and put your name in the note') + '. We’ll mark you paid in the app.</div>';
+    var venmo = res27VenmoPayUrl_(cfg, 'Koda Resolutions 2027 - ' + p.first + ' ' + p.last);
+    var button = function (href, label) {
+      return '<a href="' + res27Html_(href) + '" style="display:inline-block;background:#0C1A2B;color:#FFFFFF;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600;margin-top:10px">' + label + '</a>';
+    };
+    var how = p.pay === 'venmo' ? 'on Venmo to <b>' + res27Html_(cfg.venmo) + '</b>' + (venmo ? '<br>' + button(venmo, 'Pay $' + price + ' on Venmo') : '')
+      : p.pay === 'zelle' ? 'with Zelle to <b>' + res27Html_(cfg.zelle) + '</b>, with your name in the memo'
+      : cfg.card_url ? 'by card:<br>' + button(cfg.card_url, 'Pay $' + price + ' by card') : 'by card. We’ll email you a secure link within a day';
+    payHtml = '<div style="background:#F0F2F5;border-radius:12px;padding:14px 16px;margin:0 0 18px"><b>Your $' + price + ' remote spot:</b> pay ' + how + '. We’ll mark you paid in the app.</div>';
   }
+  var sent = false;
   if (res27Truthy_(cfg.welcome_email)) {
     var body = '<p style="margin:0 0 14px">Hi ' + res27Html_(p.first) + ', you’re signed up! Day 1 is <b>' + startText + '</b>.</p>' + payHtml +
       '<p style="margin:0 0 14px">Every day you’ll open the app, watch a short video, and check off your own daily list. Your checklist is already built from your answers, and you can change it any time on the Profile tab.</p>' +
       (site ? '<p style="margin:0 0 18px"><a href="' + res27Html_(site) + '" style="display:inline-block;background:#0C1A2B;color:#FFFFFF;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600">Open the app</a></p>' : '') +
-      '<p style="margin:0;color:#5F6B7A">Tip: open the link on your phone and add it to your home screen. You’ll stay signed in.</p>';
-    res27Mail_(cfg, p.email, 'You’re in: ' + String(cfg.program_name || 'Koda Resolutions 2027'), res27EmailFrame_(cfg, 'Welcome to the challenge', body),
-      'Hi ' + p.first + ', you are signed up! Day 1 is ' + startText + '. Open the app: ' + site);
+      '<p style="margin:0;color:#5F6B7A">Tip: open the link on your phone and add it to your home screen, then sign in once there. It remembers you after that.</p>';
+    sent = res27Mail_(cfg, p.email, 'You’re in: ' + String(cfg.program_name || 'Koda Resolutions 2027'), res27EmailFrame_(cfg, 'Welcome to the challenge', body),
+      'Hi ' + p.first + ', you are signed up! Day 1 is ' + startText + '. Open the app: ' + site, RES27_MAIL_RESERVE);
   }
+  try {
+    var row = res27FindRow_('participants', 'ID', p.id);
+    if (row) res27UpdateRow_('participants', row._row, { 'Welcome Email': sent ? 'Sent' : res27Truthy_(cfg.welcome_email) ? 'NOT SENT (see Log)' : 'Off' });
+  } catch (e) {}
   var notify = res27CleanEmail_(cfg.notify_email);
   if (notify) {
     res27Mail_(cfg, notify, 'New Resolutions sign-up: ' + p.first + ' ' + p.last + ' (' + p.type + ')',
       res27EmailFrame_(cfg, 'New sign-up', '<p style="margin:0">' + res27Html_(p.first + ' ' + p.last) + ' · ' + res27Html_(p.email) + '<br>' + res27Html_(p.type) +
         (p.type === 'Remote' ? ' · paying by ' + res27Html_(RES27_PAYMENTS[p.pay] || p.pay) : '') + '<br>' + res27Html_(RES27_GOALS[p.setup.goal] || '') +
         ' · ' + res27Html_(p.shirt + ' ' + p.size) + '<br>' + res27Html_(res27ChecklistText_(p.setup)) + '</p>'),
-      p.first + ' ' + p.last + ' signed up (' + p.type + ').');
+      p.first + ' ' + p.last + ' signed up (' + p.type + ').', RES27_MAIL_RESERVE);
   }
+  return sent;
 }
 
 /* ================================================================ admin ==== */
@@ -1565,7 +1794,44 @@ function res27EnsureTab_(book, tabKey) {
     var col = headers.indexOf(h) + 1;
     if (col) sheet.hideColumns(col);
   });
+  if (def.hiddenTab) sheet.hideSheet();
   return sheet;
+}
+
+/** v1.0 kept Setup/History on Participants. Move any of it to App Data and drop the old columns. */
+function res27MigrateAppData_(book) {
+  var people = book.getSheetByName(RES27_TABS.participants.name);
+  var app = book.getSheetByName(RES27_TABS.appdata.name);
+  var lastColumn = people.getLastColumn();
+  if (!lastColumn) return 0;
+  var headers = people.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (h) {
+    return String(h).trim();
+  });
+  var setupCol = headers.indexOf('Setup (app data)') + 1;
+  var historyCol = headers.indexOf('History (app data)') + 1;
+  if (!setupCol && !historyCol) return 0;
+  var moved = 0;
+  if (people.getLastRow() > 1) {
+    var rows = people.getRange(2, 1, people.getLastRow() - 1, lastColumn).getValues();
+    var have = {};
+    if (app.getLastRow() > 1) app.getRange(2, 1, app.getLastRow() - 1, 1).getValues().forEach(function (r) {
+      have[String(r[0]).trim()] = true;
+    });
+    rows.forEach(function (r) {
+      var id = String(r[headers.indexOf('ID')]).trim();
+      if (!id || have[id]) return;
+      var setup = res27ParseJson_(setupCol ? r[setupCol - 1] : '', {});
+      var history = res27ParseJson_(historyCol ? r[historyCol - 1] : '', {});
+      app.appendRow([id, res27SetupJson_(setup, id), res27HistoryJson_(history, id), new Date(res27Now_())]);
+      moved += 1;
+    });
+  }
+  [historyCol, setupCol].filter(Boolean).sort(function (a, b) {
+    return b - a;
+  }).forEach(function (col) {
+    people.deleteColumn(col);
+  });
+  return moved;
 }
 
 function res27AdminSetup_(d) {
@@ -1592,22 +1858,30 @@ function res27AdminSetup_(d) {
     try {
       book.setSpreadsheetTimeZone(RES27_TZ);
     } catch (e) {}
-    ['participants', 'checkins', 'days', 'finishers', 'settings', 'accounts', 'log'].forEach(function (k) {
+    ['participants', 'checkins', 'days', 'finishers', 'settings', 'accounts', 'log', 'appdata'].forEach(function (k) {
       res27EnsureTab_(book, k);
     });
+    var migrated = res27MigrateAppData_(book);
     var blank = book.getSheetByName('Sheet1');
     if (blank && book.getSheets().length > 1 && blank.getLastRow() === 0) book.deleteSheet(blank);
 
-    // Settings: add any missing keys (never overwrite Kevin's values unless asked).
+    // Settings: add any missing keys (never overwrite Kevin's values unless asked), drop retired ones.
     var settings = book.getSheetByName(RES27_TABS.settings.name);
     var values = settings.getDataRange().getValues();
+    for (var r = values.length - 1; r >= 1; r--) {
+      if (RES27_RETIRED_SETTINGS.indexOf(String(values[r][0]).trim()) >= 0) settings.deleteRow(r + 1);
+    }
+    values = settings.getDataRange().getValues();
     var have = {};
     for (var i = 1; i < values.length; i++) have[String(values[i][0]).trim()] = i + 1;
     var overrides = d.settings && typeof d.settings === 'object' ? d.settings : {};
-    RES27_SETTINGS_DEFAULTS.forEach(function (r) {
-      var value = Object.prototype.hasOwnProperty.call(overrides, r[0]) ? overrides[r[0]] : r[1];
-      if (!have[r[0]]) settings.appendRow([r[0], res27SafeCell_(value), r[2]]);
-      else if (Object.prototype.hasOwnProperty.call(overrides, r[0])) settings.getRange(have[r[0]], 2).setValue(res27SafeCell_(value));
+    RES27_SETTINGS_DEFAULTS.forEach(function (row) {
+      var value = Object.prototype.hasOwnProperty.call(overrides, row[0]) ? overrides[row[0]] : row[1];
+      if (!have[row[0]]) settings.appendRow([row[0], res27SafeCell_(value), row[2]]);
+      else {
+        settings.getRange(have[row[0]], 3).setValue(row[2]);
+        if (Object.prototype.hasOwnProperty.call(overrides, row[0])) settings.getRange(have[row[0]], 2).setValue(res27SafeCell_(value));
+      }
     });
 
     // Finishers: a sample row so the format is obvious, only on a brand-new tab.
@@ -1622,7 +1896,7 @@ function res27AdminSetup_(d) {
     if (Array.isArray(d.days) && d.days.length) {
       seeded = res27WriteDays_(book, d.days, d.overwriteDays === true);
     }
-    return { ok: true, created: created, sheetId: book.getId(), url: book.getUrl(), seededDays: seeded };
+    return { ok: true, created: created, sheetId: book.getId(), url: book.getUrl(), seededDays: seeded, migrated: migrated };
   } finally {
     lock.releaseLock();
   }
@@ -1681,29 +1955,31 @@ function res27AdminSeedDays_(d) {
 }
 
 function res27AdminSetType_(d) {
-  var row = res27FindRow_('participants', 'Email', res27CleanEmail_(d.email));
+  var email = res27CleanEmail_(d.email);
+  var row = res27FindRow_('participants', 'Email', email);
   if (!row) res27Fail_('No participant with that email.');
   // (not d.type: the hyrox router already uses type for routing)
   var type = String(d.participantType || '');
   if (['Member', 'Remote', 'Test'].indexOf(type) < 0) res27Fail_('participantType must be Member, Remote or Test.');
+  res27AssertRow_('participants', row._row, 'Email', email);
   res27UpdateRow_('participants', row._row, { 'Type': type });
   return { ok: true };
 }
 
-/** Deletes every participant whose Type is Test, with their account and check-ins (for clearing practice runs before launch). */
+/** Deletes every participant whose Type is Test, with their account, app data and check-ins (for clearing practice runs before launch). */
 function res27AdminPurgeTests_(d) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
     var ids = {};
     res27AllRows_('participants').forEach(function (r) {
-      if (String(r['Type']).trim() === 'Test') ids[String(r['ID'])] = true;
+      if (String(r['Type']).trim() === 'Test') ids[String(r['ID']).trim()] = true;
     });
-    var removed = { participants: 0, accounts: 0, checkins: 0 };
-    ['checkins', 'accounts', 'participants'].forEach(function (tab) {
+    var removed = { participants: 0, accounts: 0, appdata: 0, checkins: 0 };
+    ['checkins', 'accounts', 'appdata', 'participants'].forEach(function (tab) {
       res27AllRows_(tab)
         .filter(function (r) {
-          return ids[String(r['ID'])];
+          return ids[String(r['ID']).trim()];
         })
         .sort(function (a, c) {
           return c._row - a._row;
@@ -1721,7 +1997,7 @@ function res27AdminPurgeTests_(d) {
 }
 
 function res27AdminSummary_(d) {
-  var people = res27AllRows_('participants').map(res27Person_).filter(function (p) {
+  var people = res27AllPeople_().filter(function (p) {
     return p && p.id && !/removed/i.test(p.status) && p.type !== 'Test';
   });
   var count = function (list, fn) {

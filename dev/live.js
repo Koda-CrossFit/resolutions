@@ -46,7 +46,8 @@ async function post(body) {
     if (/^(true|false)$/i.test(value)) value = /true/i.test(value);
     out = await post({ action: 'adminSetup', key, settings: { [a]: value } });
   } else if (cmd === 'seed-days') {
-    const days = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', 'days-2027.json'), 'utf8'));
+    const full = path.join(__dirname, '..', 'content', 'private', 'days-2027-full.json');
+    const days = JSON.parse(fs.readFileSync(fs.existsSync(full) ? full : path.join(__dirname, '..', 'content', 'days-2027.json'), 'utf8'));
     out = await post({ action: 'adminSeedDays', key, days, overwrite: process.argv.includes('--overwrite') });
   } else if (cmd === 'summary') {
     out = await post({ action: 'adminSummary', key });

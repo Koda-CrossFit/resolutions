@@ -27,7 +27,7 @@
   --border-strong: #d0d6dd;
   --text: #0f1925;
   --muted: #5e6a7a;
-  --subtle: #8a95a3;
+  --subtle: #667180;
   --brand: #0c1a2b;
   --brand-2: #1d3654;
   --on-brand: #ffffff;
@@ -90,6 +90,7 @@
     --bad: #ff8a80;
     --bad-bg: #3a1513;
     --silver-sheen: linear-gradient(135deg, #1a2a3e 0%, #24384f 50%, #182739 100%);
+    --silver-200: #2b3f57;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
@@ -418,11 +419,11 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .bars .bar-track span { background: linear-gradient(90deg, #8a95a3, #e6ebf0); } }
 
 /* ---------------------------------------------------------------- nutrition */
-.tabs-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 14px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; scrollbar-width: none; }
+.tabs-scroll { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 14px; }
 .tabs-scroll::-webkit-scrollbar { display: none; }
 .tab-chip { flex: none; height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-weight: 600; font-size: 14px; color: var(--muted); text-decoration: none; display: inline-flex; align-items: center; }
 .tab-chip.is-on { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
-@media (min-width: 900px) { .tabs-scroll { margin: 0; padding-left: 0; padding-right: 0; } }
+
 .food-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .food-grid { grid-template-columns: 1fr 1fr; } }
 .food-cat { padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
@@ -628,8 +629,15 @@ a.vrow:hover { background: var(--surface-2); }
 .install .i-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--navy-900); display: grid; place-items: center; flex: none; }
 .install .i-icon svg { width: 24px; height: 14px; fill: #fff; }
 .install .grow { flex: 1; min-width: 0; font-size: 14px; }
-.install b { display: block; font-size: 15px; }
+.install .grow > b:first-child { display: block; font-size: 15px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Small phones: keep "DAY 10 / 42" on one line next to the ring. */
+@media (max-width: 389px) { .hero .day { white-space: nowrap; font-size: 52px; } }
+@media (max-width: 356px) { .hero .day { font-size: 40px; } .ring, .ring svg { width: 88px; height: 88px; } }
+/* iPhone home-screen app: the status bar sits over the page, so paint its strip navy. */
+body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #0c1a2b; z-index: 100; pointer-events: none; }
+a.callout { color: var(--warn); }
