@@ -99,7 +99,7 @@
   /* ============================================================ state */
 
   var DEFAULT_CONFIG = {
-    programName: 'Koda Resolutions 2027', startDate: '2027-01-11', endDate: '2027-02-21', lengthDays: 42, registrationOpen: true,
+    programName: 'Koda Resolutions 2027', startDate: '2027-01-18', endDate: '2027-02-28', lengthDays: 42, registrationOpen: true,
     remotePrice: 99, venmo: '@kevin-schuetz-5', venmoUrl: 'https://venmo.com/u/kevin-schuetz-5', zelle: 'kodaironview@gmail.com', cardUrl: '',
     coaches: ['Kevin', 'Riley', 'Jamie', 'Maggie'], contactEmail: 'kodaironview@gmail.com', siteUrl: '', cookbookUrl: '', editDaysBack: 2,
     sizes: { tee: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], tank: ['XS', 'S', 'M', 'L', 'XL', '2XL'] }, sleepChoices: [6, 6.5, 7, 7.5, 8, 8.5, 9],

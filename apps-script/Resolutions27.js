@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.1.0 (2026-11-09)';
+var RES27_VERSION = '1.1.1 (2026-11-09)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -128,7 +128,7 @@ var RES27_TABS = {
 
 var RES27_SETTINGS_DEFAULTS = [
   ['program_name', 'Koda Resolutions 2027', 'The name at the top of the app'],
-  ['start_date', '2027-01-11', 'Day 1 of the challenge, typed like 2027-01-11'],
+  ['start_date', '2027-01-18', 'Day 1 of the challenge, typed like 2027-01-18'],
   ['length_days', 42, 'How many days the challenge runs'],
   ['registration_open', true, 'FALSE stops new sign-ups (signing in keeps working)'],
   ['remote_price', 99, 'What a remote participant pays, in dollars'],
@@ -144,7 +144,7 @@ var RES27_SETTINGS_DEFAULTS = [
   ['welcome_email', true, 'TRUE sends a welcome email after sign-up'],
   ['notify_email', '', 'Optional: also email this address about every new sign-up'],
   ['show_upcoming_titles', false, 'TRUE shows the titles of videos that have not unlocked yet'],
-  ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-14. Blank = the real date'],
+  ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-21. Blank = the real date'],
 ];
 var RES27_RETIRED_SETTINGS = ['venmo_url'];
 
@@ -682,7 +682,7 @@ function res27YouTubeId_(url) {
 }
 
 function res27Program_(cfg, person, clientToday) {
-  var start = res27ParseDateKey_(cfg.start_date) || '2027-01-11';
+  var start = res27ParseDateKey_(cfg.start_date) || '2027-01-18';
   var length = Math.max(1, Math.min(120, parseInt(cfg.length_days, 10) || 42));
   var end = res27AddDays_(start, length - 1);
   var serverToday = res27TodayKey_();
@@ -1910,7 +1910,7 @@ function res27WriteDays_(book, days, overwrite) {
   RES27_REQ_.headers = {};
   RES27_REQ_.sheets = {};
   var cfg = res27Settings_();
-  var start = res27ParseDateKey_(cfg.start_date) || '2027-01-11';
+  var start = res27ParseDateKey_(cfg.start_date) || '2027-01-18';
   var headers = res27Headers_('days');
   var rows = days.slice(0, 120).map(function (x) {
     var n = parseInt(x.day, 10);

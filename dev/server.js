@@ -91,7 +91,7 @@ function addDemo(at) {
   });
   if (!reg.ok) throw new Error('demo register failed: ' + reg.error);
   let token = reg.token;
-  const start = new Date('2027-01-11T20:00:00-07:00');
+  const start = new Date('2027-01-18T20:00:00-07:00');
   for (let d = new Date(start); d < now && d.toDateString() !== now.toDateString(); d = new Date(d.getTime() + 86400000)) {
     gas.setNow(d.toISOString());
     const me = post({ action: 'me', token }).me;

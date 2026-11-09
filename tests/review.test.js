@@ -51,9 +51,9 @@ test("sorting Participants (any way) never mixes up people's setup or history", 
   const { gas, post } = world();
   const zed = register(post, { email: 'zed@b.co', first: 'Zed', last: 'Zulu', setup: Object.assign({}, SETUP, { goal: 'performance' }) });
   const amy = register(post, { email: 'amy@b.co', first: 'Amy', last: 'Alpha', setup: Object.assign({}, SETUP, { goal: 'fatloss' }) });
-  gas.setNow('2027-01-12T19:00:00-07:00');
-  post({ action: 'save', token: zed.token, date: '2027-01-12', answers: { video: 1 } });
-  post({ action: 'save', token: amy.token, date: '2027-01-12', answers: { video: 1, workout: 1 } });
+  gas.setNow('2027-01-19T19:00:00-07:00');
+  post({ action: 'save', token: zed.token, date: '2027-01-19', answers: { video: 1 } });
+  post({ action: 'save', token: amy.token, date: '2027-01-19', answers: { video: 1, workout: 1 } });
   const sheet = gas.sheet('Participants');
   const width = sheet.getLastColumn();
   const rows = sheet.getRange(2, 1, 2, width).getValues();
@@ -62,9 +62,9 @@ test("sorting Participants (any way) never mixes up people's setup or history", 
   const a = post({ action: 'me', token: amy.token }).me;
   assert.equal(z.person.setup.goal, 'performance');
   assert.equal(a.person.setup.goal, 'fatloss');
-  assert.equal(z.history['2027-01-12'].p, 3);
-  assert.equal(a.history['2027-01-12'].p, 5);
-  assert.equal(post({ action: 'save', token: zed.token, date: '2027-01-12', answers: { video: 1, sleep: 1 } }).entry.p, 4);
+  assert.equal(z.history['2027-01-19'].p, 3);
+  assert.equal(a.history['2027-01-19'].p, 5);
+  assert.equal(post({ action: 'save', token: zed.token, date: '2027-01-19', answers: { video: 1, sleep: 1 } }).entry.p, 4);
   const people = gas.rows('Participants');
   assert.equal(people.find((p) => p.Email === 'zed@b.co').Points, 4);
   assert.equal(people.find((p) => p.Email === 'amy@b.co').Points, 5);
@@ -90,13 +90,13 @@ test('if App Data gets scrambled, the app refuses instead of overwriting someone
 test('made-up dates are refused and never count', () => {
   const { gas, post } = world();
   const r = register(post);
-  gas.setNow('2027-02-01T19:00:00-07:00');
+  gas.setNow('2027-02-08T19:00:00-07:00');
   for (const date of ['2027-01-32', '2027-01-99', '2027-02-00', '2027-13-01']) {
     const s = post({ action: 'save', token: r.token, date, answers: { video: 1 } });
     assert.equal(s.ok, false, date);
   }
   const fake = post({ action: 'me', token: r.token, today: '2027-01-32' }).me;
-  assert.equal(fake.program.today, '2027-02-01');
+  assert.equal(fake.program.today, '2027-02-08');
   assert.equal(fake.totals.points, 0);
 });
 
@@ -154,17 +154,17 @@ test("welcome email: reserve for Koda's other pages, logged and shown when not s
 test('a bonus Kevin adds after someone checked in still reaches them', () => {
   const { gas, post } = world();
   const r = register(post);
-  gas.setNow('2027-01-15T07:00:00-07:00');
-  post({ action: 'save', token: r.token, date: '2027-01-15', answers: { video: 1 } });
+  gas.setNow('2027-01-22T07:00:00-07:00');
+  post({ action: 'save', token: r.token, date: '2027-01-22', answers: { video: 1 } });
   const days = gas.sheet('Days');
   const headers = days.getRange(1, 1, 1, days.getLastColumn()).getValues()[0];
   days.getRange(6, headers.indexOf('Bonus Task') + 1).setValue('Post a photo of your meal prep');
   days.getRange(6, headers.indexOf('Bonus Points') + 1).setValue(4);
   gas.state.cache.clear();
-  gas.setNow('2027-01-15T12:00:00-07:00');
+  gas.setNow('2027-01-22T12:00:00-07:00');
   const me = post({ action: 'me', token: r.token }).me;
-  assert.ok(me.checklists['2027-01-15'].some((i) => i.id === 'bonus'));
-  const s = post({ action: 'save', token: r.token, date: '2027-01-15', answers: { bonus: 1 }, patch: true });
+  assert.ok(me.checklists['2027-01-22'].some((i) => i.id === 'bonus'));
+  const s = post({ action: 'save', token: r.token, date: '2027-01-22', answers: { bonus: 1 }, patch: true });
   assert.equal(s.entry.a.bonus, 1);
   assert.equal(s.entry.a.video, 1, 'patch keeps the earlier answer');
   assert.equal(s.entry.p, 7);
@@ -173,11 +173,11 @@ test('a bonus Kevin adds after someone checked in still reaches them', () => {
 test("two phones saving the same day keep each other's answers (patch saves)", () => {
   const { gas, post } = world();
   const r = register(post);
-  gas.setNow('2027-01-13T19:00:00-07:00');
-  post({ action: 'save', token: r.token, date: '2027-01-13', answers: { video: 1, 'nutrition:m2': 1 }, patch: true });
-  const s = post({ action: 'save', token: r.token, date: '2027-01-13', answers: { workout: 1 }, patch: true });
+  gas.setNow('2027-01-20T19:00:00-07:00');
+  post({ action: 'save', token: r.token, date: '2027-01-20', answers: { video: 1, 'nutrition:m2': 1 }, patch: true });
+  const s = post({ action: 'save', token: r.token, date: '2027-01-20', answers: { workout: 1 }, patch: true });
   assert.deepEqual(Object.keys(s.entry.a).sort(), ['nutrition:m2', 'video', 'workout']);
-  const cleared = post({ action: 'save', token: r.token, date: '2027-01-13', answers: { video: null }, patch: true });
+  const cleared = post({ action: 'save', token: r.token, date: '2027-01-20', answers: { video: null }, patch: true });
   assert.equal(cleared.entry.a.video, undefined);
   assert.equal(cleared.entry.a.workout, 1);
 });

@@ -1,7 +1,7 @@
 # Koda Resolutions 2027
 
 The member app for Koda CrossFit Iron View's six-week nutrition and lifestyle challenge
-(Jan 11 – Feb 21, 2027). People sign up as a **Current Koda Member** or a **Remote Participant**
+(Jan 18 – Feb 28, 2027). People sign up as a **Current Koda Member** or a **Remote Participant**
 ($99), answer a short intake, and get their own daily checklist. Every day they open the app,
 watch a short video and tap Yes or No on each habit. Answers save as they tap.
 
@@ -53,10 +53,10 @@ Changes to Settings and Days show in the app within about a minute.
 - **Forgot password:** people reset it themselves with an emailed 6-digit code. If email fails
   they're told to email the contact address.
 
-### Trying it as a participant before Jan 11
+### Trying it as a participant before Jan 18
 
 Sign up with your own email, then set that row's `Type` to `Test` and put a date like
-`2027-01-14` in `preview_today` (Settings). That account now sees Day 4 and can check in.
+`2027-01-21` in `preview_today` (Settings). That account now sees Day 4 and can check in.
 Test rows stay out of the summary. Clear every test account before launch with the
 `adminPurgeTests` request (below).
 
@@ -76,7 +76,7 @@ node --test tests/api.test.js tests/review.test.js   # backend tests (27)
 node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
 ```
 
-Dev-only URLs: `/dev/reset?demo=1&at=2027-01-20T19:30:00-07:00` (fresh world plus a demo
+Dev-only URLs: `/dev/reset?demo=1&at=2027-01-27T19:30:00-07:00` (fresh world plus a demo
 member, `demo@koda.test` / `koda2027`, with check-ins), `/dev/time?set=ISO`, `/dev/emails`,
 `/dev/rows?tab=Participants`, `/dev/as?email=…&password=…&to=%23%2Fprogress` (signs a browser in),
 `/dev/slow?ms=900`. `dev/shot.ps1` takes headless-Edge screenshots of any page.

@@ -24,7 +24,7 @@ const get = (p) => fetch(BASE + p).then((r) => r.json());
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 (async () => {
-  await get('/dev/reset?demo=1&at=' + encodeURIComponent('2027-01-20T19:30:00-07:00'));
+  await get('/dev/reset?demo=1&at=' + encodeURIComponent('2027-01-27T19:30:00-07:00'));
   const browser = await chromium.launch();
   const errors = [];
 
@@ -94,10 +94,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   let mine = rows.filter((r) => r.Name === 'Taylor Brooks');
   check('taps saved to the sheet', mine.length === 1 && /Meals 4\/4/.test(mine[0].Answers) && /Daily workout ✓/.test(mine[0].Answers), mine[0] && mine[0].Answers);
   await page.click('[data-act="answer"][data-key="sleep"][data-val="1"]');
-  await page.goto(BASE + '/#/day/2027-01-19');
+  await page.goto(BASE + '/#/day/2027-01-26');
   await wait(1500);
   const shown = await page.getAttribute('#checklistCard', 'data-date');
-  check('a save finishing elsewhere does not repaint another day', shown === '2027-01-19', shown);
+  check('a save finishing elsewhere does not repaint another day', shown === '2027-01-26', shown);
   rows = await get('/dev/rows?tab=Check-ins');
   mine = rows.filter((r) => r.Name === 'Taylor Brooks');
   check('the tap made just before leaving still saved', mine.length === 1 && /Slept .*✓/.test(mine[0].Answers), mine[0] && mine[0].Answers);
@@ -109,7 +109,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check('Today offers yesterday when it is not filled in', !!gap);
   await page.evaluate(() => {
     const c = JSON.parse(localStorage.getItem('res27.me'));
-    c.loadedDay = '2027-01-01';
+    c.loadedDay = '2027-01-08';
     localStorage.setItem('res27.me', JSON.stringify(c));
   });
   let slow = true;

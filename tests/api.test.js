@@ -65,8 +65,8 @@ test('register builds the account, the participant row and a token', () => {
   assert.equal(me.person.shirt, 'tank');
   assert.deepEqual(me.person.setup.coaches, ['Maggie', 'Kevin']);
   assert.equal(me.program.phase, 'before');
-  assert.equal(me.program.start, '2027-01-11');
-  assert.equal(me.program.end, '2027-02-21');
+  assert.equal(me.program.start, '2027-01-18');
+  assert.equal(me.program.end, '2027-02-28');
   assert.ok(me.preview.length >= 9, 'preview checklist has every tracked item');
 
   const people = gas.rows('Participants');
@@ -168,12 +168,12 @@ test('reset by emailed code', () => {
 test('daily check-ins: scoring, edit window, the sheet log', () => {
   const { gas, post } = world();
   const r = register(post);
-  gas.setNow('2027-01-13T19:30:00-07:00'); // Day 3
+  gas.setNow('2027-01-20T19:30:00-07:00'); // Day 3
   let me = post({ action: 'me', token: r.token }).me;
   assert.equal(me.program.phase, 'during');
   assert.equal(me.program.dayNumber, 3);
-  assert.deepEqual(Object.keys(me.checklists).sort(), ['2027-01-11', '2027-01-12', '2027-01-13']);
-  const list = me.checklists['2027-01-13'];
+  assert.deepEqual(Object.keys(me.checklists).sort(), ['2027-01-18', '2027-01-19', '2027-01-20']);
+  const list = me.checklists['2027-01-20'];
   const ids = list.map((i) => i.id);
   assert.deepEqual(ids.slice(0, 2), ['video', 'nutrition']);
   assert.ok(ids.includes('bonus'), 'Day 3 has the coach-goals bonus in the seed');
@@ -181,7 +181,7 @@ test('daily check-ins: scoring, edit window, the sheet log', () => {
   list.forEach((item) => item.units.forEach((u) => (answers[u[0]] = 1)));
   answers['nutrition:snack'] = 0;
   answers['bogus'] = 1;
-  const saved = post({ action: 'save', token: r.token, date: '2027-01-13', answers });
+  const saved = post({ action: 'save', token: r.token, date: '2027-01-20', answers });
   assert.equal(saved.ok, true, saved.error);
   assert.equal(saved.entry.a.bogus, undefined);
   const items = list.filter((i) => !i.units.every((u) => u[2]));
@@ -193,16 +193,16 @@ test('daily check-ins: scoring, edit window, the sheet log', () => {
   assert.equal(saved.totals.points, saved.entry.p);
   // edit again: one row, not two
   answers['nutrition:snack'] = 1;
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-13', answers }).entry.d, items.length);
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-20', answers }).entry.d, items.length);
   const log = gas.rows('Check-ins');
   assert.equal(log.length, 1);
   assert.match(log[0]['Answers'], /Meals 4\/4/);
   assert.equal(log[0]['Day'], 3);
   // window: two days back is fine, three is not, tomorrow is not
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-11', answers: { video: 1 } }).ok, true);
-  gas.setNow('2027-01-14T08:00:00-07:00');
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-11', answers: { video: 1 } }).code, 'locked_day');
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-15', answers: { video: 1 } }).code, 'locked_day');
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } }).ok, true);
+  gas.setNow('2027-01-21T08:00:00-07:00');
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } }).code, 'locked_day');
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-22', answers: { video: 1 } }).code, 'locked_day');
   me = post({ action: 'me', token: r.token }).me;
   assert.equal(Object.keys(me.history).length, 2);
   assert.equal(me.totals.days, 2);
@@ -213,27 +213,27 @@ test('daily check-ins: scoring, edit window, the sheet log', () => {
 test('the client date is trusted within a day, not further', () => {
   const { gas, post } = world();
   const r = register(post);
-  gas.setNow('2027-01-13T23:30:00-07:00');
-  assert.equal(post({ action: 'me', token: r.token, today: '2027-01-14' }).me.program.today, '2027-01-14');
-  assert.equal(post({ action: 'me', token: r.token, today: '2027-01-20' }).me.program.today, '2027-01-13');
+  gas.setNow('2027-01-20T23:30:00-07:00');
+  assert.equal(post({ action: 'me', token: r.token, today: '2027-01-21' }).me.program.today, '2027-01-21');
+  assert.equal(post({ action: 'me', token: r.token, today: '2027-01-27' }).me.program.today, '2027-01-20');
 });
 
 test('changing the setup mid-challenge updates today, keeps earlier days', () => {
   const { gas, post } = world();
   const r = register(post);
-  gas.setNow('2027-01-12T19:00:00-07:00');
-  post({ action: 'save', token: r.token, date: '2027-01-11', answers: { video: 1, workout: 1, sleep: 1 } });
-  post({ action: 'save', token: r.token, date: '2027-01-12', answers: { video: 1, workout: 1, mobility: 1 } });
+  gas.setNow('2027-01-19T19:00:00-07:00');
+  post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1, workout: 1, sleep: 1 } });
+  post({ action: 'save', token: r.token, date: '2027-01-19', answers: { video: 1, workout: 1, mobility: 1 } });
   const next = Object.assign({}, SETUP, { track: Object.assign({}, SETUP.track, { mobility: false, skill: false }) });
   const up = post({ action: 'setup', token: r.token, setup: next, shirt: 'tee', size: 'L' });
   assert.equal(up.ok, true, up.error);
   const me = up.me;
   assert.equal(me.person.shirt, 'tee');
   assert.equal(me.person.size, 'L');
-  assert.ok(!me.checklists['2027-01-12'].some((i) => i.id === 'mobility'), 'today follows the new setup');
-  assert.equal(me.history['2027-01-12'].a.mobility, undefined);
-  assert.equal(me.history['2027-01-12'].a.workout, 1, 'answers that still apply are kept');
-  assert.ok(me.checklists['2027-01-11'].some((i) => i.id === 'mobility'), 'yesterday keeps its own list');
+  assert.ok(!me.checklists['2027-01-19'].some((i) => i.id === 'mobility'), 'today follows the new setup');
+  assert.equal(me.history['2027-01-19'].a.mobility, undefined);
+  assert.equal(me.history['2027-01-19'].a.workout, 1, 'answers that still apply are kept');
+  assert.ok(me.checklists['2027-01-18'].some((i) => i.id === 'mobility'), 'yesterday keeps its own list');
 });
 
 test('removed participants are signed out', () => {
@@ -253,13 +253,13 @@ test('test accounts can preview a challenge day', () => {
   const settings = gas.sheet('Settings');
   const values = settings.getDataRange().getValues();
   const row = values.findIndex((r) => r[0] === 'preview_today') + 1;
-  settings.getRange(row, 2).setValue('2027-01-20');
+  settings.getRange(row, 2).setValue('2027-01-27');
   gas.state.cache.clear();
   const login = post({ action: 'login', email: 'kevin+test@example.com', password: 'secret1' });
-  assert.equal(login.me.program.today, '2027-01-20');
+  assert.equal(login.me.program.today, '2027-01-27');
   assert.equal(login.me.program.dayNumber, 10);
   assert.equal(login.me.program.preview, true);
-  assert.equal(post({ action: 'save', token: login.token, date: '2027-01-20', answers: { video: 1 } }).ok, true);
+  assert.equal(post({ action: 'save', token: login.token, date: '2027-01-27', answers: { video: 1 } }).ok, true);
 });
 
 test('admin actions need the key; summary counts people', () => {
@@ -297,9 +297,9 @@ test("purging test accounts removes their rows and nobody else's", () => {
   const { gas, post } = world();
   const keep = register(post, { email: 'keep@b.co' });
   const gone = register(post, { email: 'gone@b.co' });
-  gas.setNow('2027-01-12T19:00:00-07:00');
-  post({ action: 'save', token: keep.token, date: '2027-01-12', answers: { video: 1 } });
-  post({ action: 'save', token: gone.token, date: '2027-01-12', answers: { video: 1 } });
+  gas.setNow('2027-01-19T19:00:00-07:00');
+  post({ action: 'save', token: keep.token, date: '2027-01-19', answers: { video: 1 } });
+  post({ action: 'save', token: gone.token, date: '2027-01-19', answers: { video: 1 } });
   post({ action: 'adminSetType', key: ADMIN, email: 'gone@b.co', participantType: 'Test' });
   const r = post({ action: 'adminPurgeTests', key: ADMIN });
   assert.deepEqual(r.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 1 });
