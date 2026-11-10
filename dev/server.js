@@ -168,6 +168,18 @@ const server = http.createServer(async (req, res) => {
       const to = url.searchParams.get('to') || '#/';
       return send(res, 200, `<!doctype html><script>localStorage.clear();location.replace('/' + ${JSON.stringify(to)});</script>`, 'text/html; charset=utf-8');
     }
+    if (url.pathname === '/dev/cell') {
+      // One of Kevin's Participants cells for a person, e.g. /dev/cell?email=a@b.co&col=Team&value=Iron
+      const sheet = gas.sheet('Participants');
+      const values = sheet.getDataRange().getValues();
+      const head = values[0];
+      const row = values.findIndex((r) => String(r[head.indexOf('Email')]).toLowerCase() === String(url.searchParams.get('email') || '').toLowerCase());
+      const col = head.indexOf(url.searchParams.get('col') || '');
+      if (row < 1 || col < 0) return send(res, 400, { ok: false, error: 'no such person or column' });
+      sheet.getRange(row + 1, col + 1).setValue(url.searchParams.get('value') || '');
+      gas.state.cache.clear();
+      return send(res, 200, { ok: true });
+    }
     if (url.pathname === '/dev/slow') {
       slowMs = Number(url.searchParams.get('ms')) || 0;
       return send(res, 200, { slowMs });

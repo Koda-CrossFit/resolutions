@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.2.0';
+  var APP_VERSION = '1.3.0';
 
   /* ============================================================ small helpers */
 
@@ -158,6 +158,17 @@
     lastPaintHash: '',
     returnToReview: false,
     configLoaded: false,
+    board: null,
+    boardAt: 0,
+    boardLoading: false,
+    boardTriedAt: 0,
+    boardError: '',
+    boardView: 'overall',
+    myTeam: '',
+    cookbook: null,
+    cookbookLoading: false,
+    cookbookError: '',
+    cookbookQuery: '',
   };
   var cached = store.get('res27.me', null);
   if (S.token && cached && cached.token === S.token) { S.me = cached.me; S.loadedDay = cached.loadedDay || ''; }
@@ -294,6 +305,12 @@
     store.del('res27.me');
     store.del('res27.pending');
     S.pending = {};
+    S.board = null;
+    S.boardAt = 0;
+    S.boardTriedAt = 0;
+    S.boardLoading = false;
+    S.boardError = '';
+    S.myTeam = '';
     destroyPlayer();
     // Back on the landing page: fresh dates (a beta may have ended while signed in).
     S.configLoaded = false;
@@ -345,7 +362,9 @@
     if (r.name === 'edit') { paint(viewEdit(r.args[0] || 'track')); S.renderedDay = null; afterRender(r); return; }
     var tab = 'today';
     var inner;
-    if (r.name === 'progress') { tab = 'progress'; inner = viewProgress(); }
+    // The Progress tab became the Leaderboard (11/10); old #/progress links still land there.
+    if (r.name === 'leaderboard' || r.name === 'progress') { tab = 'leaderboard'; inner = viewLeaderboard(); }
+    else if (r.name === 'faqs') { tab = 'profile'; inner = viewFaqs(); }
     else if (r.name === 'nutrition') { tab = 'nutrition'; inner = viewNutrition(r.args[0] || 'mine'); }
     else if (r.name === 'videos') { tab = 'videos'; inner = viewVideos(); }
     else if (r.name === 'profile') { tab = 'profile'; inner = viewProfile(); }
@@ -360,17 +379,25 @@
     paint(shell(tab, inner));
     S.renderedDay = dayKey;
     afterRender(r);
+    if (tab === 'leaderboard') loadBoard(false);
+    if (tab === 'nutrition' && r.args[0] === 'cookbook') loadCookbook();
   }
 
   /** Replaces the page. On a re-render of the same page, the field being typed in keeps focus and caret. */
   function paint(html) {
-    var a = document.activeElement, keep = null;
-    if (location.hash === S.lastPaintHash && a && app.contains(a) && a.dataset && (a.dataset.field || a.dataset.search !== undefined)) {
-      keep = { sel: a.dataset.field ? '[data-field="' + a.dataset.field + '"]' : '[data-search]' };
+    var a = document.activeElement, keep = null, same = location.hash === S.lastPaintHash;
+    if (same && a && app.contains(a) && a.dataset && (a.dataset.field || a.dataset.search !== undefined || a.dataset.cbsearch !== undefined)) {
+      keep = { sel: a.dataset.field ? '[data-field="' + a.dataset.field + '"]' : a.dataset.cbsearch !== undefined ? '[data-cbsearch]' : '[data-search]' };
       try { keep.start = a.selectionStart; keep.end = a.selectionEnd; } catch (e) {}
     }
+    // A repaint of the same page (e.g. fresh data after the phone wakes) keeps open dropdowns (a
+    // recipe someone is cooking from, an FAQ answer) and the scroll position.
+    var opened = same ? Array.prototype.map.call(app.querySelectorAll('details[open][id]'), function (d) { return d.id; }) : [];
+    var y = window.scrollY;
     S.lastPaintHash = location.hash;
     app.innerHTML = html;
+    opened.forEach(function (id) { var d = document.getElementById(id); if (d && d.tagName === 'DETAILS') d.open = true; });
+    if (opened.length) window.scrollTo(0, y);
     if (keep) {
       var n = app.querySelector(keep.sel);
       if (n) {
@@ -396,7 +423,7 @@
   function navItems() {
     return [
       ['today', 'Today', 'today', '#/today'],
-      ['progress', 'Progress', 'chart', '#/progress'],
+      ['leaderboard', 'Leaderboard', 'trophy', '#/leaderboard'],
       ['nutrition', 'Nutrition', 'plate', '#/nutrition'],
       ['videos', 'Videos', 'video', '#/videos'],
       ['profile', 'Profile', 'user', '#/profile'],
@@ -417,7 +444,7 @@
     var tabs = navItems().map(function (n) {
       return '<a class="tab' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '><span class="tab-ico">' + icon(n[2]) + (n[0] === 'today' ? badge : '') + '</span>' + n[1] + '</a>';
     }).join('');
-    var who = person.team ? 'Team ' + person.team : person.type === 'Remote' ? 'Remote participant' : person.type === 'Test' ? (p.beta ? 'Beta tester' : 'Test account') : 'Koda member';
+    var who = person.team ? teamLabel(person.team) : person.type === 'Remote' ? 'Remote participant' : person.type === 'Test' ? (p.beta ? 'Beta tester' : 'Test account') : 'Koda member';
     return '<div class="shell">' +
       '<aside class="sidebar" aria-label="Main">' +
         '<a class="brand" href="#/today"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a>' +
@@ -1189,7 +1216,7 @@
     var n = diffDays(p.start, date) + 1;
     if (n < 1 || n > p.length) return '<div class="empty card">' + icon('calendar', 'ico-lg') + '<p>That day isn’t part of the challenge.</p><a class="btn btn-secondary" href="#/today">Back to today</a></div>';
     var day = dayInfo(date);
-    if (!day || !day.released) return '<a class="btn btn-ghost btn-sm" href="#/progress" style="margin-bottom:10px">' + icon('chevL', 'ico-sm') + 'Back</a><div class="empty card">' + icon('lock', 'ico-lg') + '<p><b>Day ' + n + ' unlocks ' + esc(fmtLong(date)) + '.</b></p></div>';
+    if (!day || !day.released) return '<a class="btn btn-ghost btn-sm" href="#/today" style="margin-bottom:10px">' + icon('chevL', 'ico-sm') + 'Today</a><div class="empty card">' + icon('lock', 'ico-lg') + '<p><b>Day ' + n + ' unlocks ' + esc(fmtLong(date)) + '.</b></p></div>';
     var key = date + '|' + videoKey(day);
     S.renderedDayNext = key;
     // The main screen lists every earlier day that's still open and unfinished (Overdue), one tap
@@ -1456,7 +1483,7 @@
     var getReady = '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Get ready for Day 1</h3><span class="badge">' + C.getReady.filter(function (x, i) { return ready[i]; }).length + ' of ' + C.getReady.length + '</span></div><ul class="checklist">' +
       C.getReady.map(function (g, i) {
         var on = !!ready[i];
-        var more = g.cookbook && c.cookbookUrl ? ' <a href="' + esc(c.cookbookUrl) + '" target="_blank" rel="noopener">Open the cookbook</a>' : g.link ? ' <a href="' + g.link + '">Open</a>' : '';
+        var more = g.cookbook ? ' <a href="#/nutrition/cookbook">Open the cookbook</a>' : g.link ? ' <a href="' + g.link + '">Open</a>' : '';
         return '<li class="ci' + (on ? ' is-done' : '') + '"><span class="ci-icon">' + icon(on ? 'check' : 'calendar') + '</span><div><div class="ci-label">' + esc(g.title) + '</div><div class="ci-sub">' + esc(g.text) + more + '</div></div>' +
           '<button class="yn-btn yes' + (on ? ' is-on' : '') + '" data-act="ready" data-i="' + i + '" aria-pressed="' + on + '">' + (on ? icon('check', 'ico-sm') + 'Done' : 'Done?') + '</button></li>';
       }).join('') + '</ul></section>';
@@ -1478,8 +1505,8 @@
     return '<section class="hero">' + kx('watermark') + '<div class="kick">' + esc((p.beta ? 'Beta test · ' : '') + S.config.programName) + '</div><div class="day" style="font-size:54px;margin-top:10px">You finished!</div><div class="date">' + esc(weeksText(p.length)) + ', ' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
       '<div class="hero-stats"><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<b>' + fmtPts(t.points) + '</b> points</span><span class="hero-stat">' + icon('calendar', 'ico-sm') + '<b>' + t.days + '</b> days logged</span><span class="hero-stat">' + icon('chart', 'ico-sm') + '<b>' + fmtScore(t.average) + '</b> average out of 10</span></div></section>' +
       (p.beta
-        ? '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">Thanks for testing!</h3><p class="muted" style="margin:0 0 14px">That was the beta. Beta accounts are deleted before the real challenge starts ' + esc(fmtLong(S.config.startDate)) + ', so sign up again for that one when sign-ups open.</p><a class="btn btn-secondary" href="#/progress">See your ' + esc(p.length === 7 ? 'week' : weeksText(p.length)) + '</a></section>'
-        : '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">What’s next?</h3><p class="muted" style="margin:0 0 14px">Keep the habits that worked. Your videos and nutrition guides stay here for you.</p><a class="btn btn-secondary" href="#/progress">See your ' + esc(p.length === 7 ? 'week' : weeksText(p.length)) + '</a></section>');
+        ? '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">Thanks for testing!</h3><p class="muted" style="margin:0 0 14px">That was the beta. Beta accounts are deleted before the real challenge starts ' + esc(fmtLong(S.config.startDate)) + ', so sign up again for that one when sign-ups open.</p><a class="btn btn-secondary" href="#/leaderboard">See the leaderboard</a></section>'
+        : '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">What’s next?</h3><p class="muted" style="margin:0 0 14px">Keep the habits that worked. Your videos and nutrition guides stay here for you.</p><a class="btn btn-secondary" href="#/leaderboard">See the final standings</a></section>');
   }
 
   function installCard() {
@@ -1637,68 +1664,116 @@
     if (dropped) toast('Some answers for a day that’s now locked couldn’t be saved.', true);
   }
 
-  /* ============================================================ progress */
+  /* ============================================================ leaderboard */
 
-  function viewProgress() {
-    var p = S.me.program, t = totals();
-    if (p.phase === 'before') {
-      return '<h1 class="page-title">Progress</h1><p class="page-sub">Your daily scores, streak and calendar fill in starting ' + esc(fmtLong(p.start)) + '.</p>' + calendarCard() + teamCard();
-    }
-    var stats = '<div class="stats">' +
-      statCard('trophy', 'Points', fmtPts(t.points), '') + statCard('chart', 'Daily average', fmtScore(t.average), '/10') + statCard('flame', 'Streak', t.streak, t.streak === 1 ? ' day' : ' days') + statCard('calendar', 'Days logged', t.days, '/' + Math.min(p.length, Math.max(1, p.dayNumber))) +
-      '</div>';
-    return '<h1 class="page-title">Progress</h1><p class="page-sub">Week ' + Math.min(Math.ceil(p.dayNumber / 7), Math.ceil(p.length / 7)) + ' of ' + Math.ceil(p.length / 7) + '. Tap any day to see it.</p>' + stats + calendarCard() + habitsCard() + teamCard();
-  }
-  function statCard(ic, k, v, unit) { return '<div class="card stat"><div class="k">' + icon(ic, 'ico-sm') + esc(k) + '</div><div class="v">' + esc(v) + '<small>' + esc(unit) + '</small></div></div>'; }
+  /** "Team Iron" for "Iron"; a name that already starts with Team stays as it is. */
+  function teamLabel(name) { name = String(name || '').trim(); return /^team\b/i.test(name) ? name : 'Team ' + name; }
+  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
-  function calendarCard() {
-    var p = S.me.program;
-    var heads = [];
-    for (var i = 0; i < 7; i++) heads.push('<div class="cal-h">' + fmt(addDays(p.start, i), { weekday: 'short' }).slice(0, 3) + '</div>');
-    var cells = [], any = { overdue: false, missed: false };
-    for (var n = 0; n < p.length; n++) {
-      if (n % 7 === 0) cells.push('<div class="cal-week"><span>Week ' + (n / 7 + 1) + '</span><span class="subtle" style="font-weight:600">' + esc((dayInfo(addDays(p.start, n)) || {}).theme || '') + '</span></div>');
-      var d = addDays(p.start, n), future = d > p.today, sc = future ? null : dayScore(d), isLogged = !future && logged(d);
-      var st = future || stale() ? '' : dayState(d);
-      if (st === 'overdue' || st === 'missed') any[st] = true;
-      var cls = 'cal-d' + (future ? ' future' : '') + (d === p.today ? ' today' : '') + (sc && isLogged && sc.score >= 10 ? ' full' : '') + (st === 'overdue' ? ' overdue' : st === 'missed' ? ' missed' : '');
-      var inner = '<span>' + (n + 1) + '</span>' + (isLogged && sc ? '<span class="fillbar"><span style="width:' + sc.pct + '%"></span></span>' : '') + (st === 'overdue' ? '<span class="flag" aria-hidden="true">!</span>' : '');
-      var said = st === 'overdue' ? ', overdue: tap to fill it in' : sc && isLogged ? ', score ' + fmtScore(sc.score) + ' out of 10' : st === 'missed' ? ', missed' : ', not logged';
-      cells.push(future ? '<div class="' + cls + '" aria-label="Day ' + (n + 1) + ', upcoming">' + inner + '</div>' : '<a class="' + cls + '" href="#/day/' + d + '" title="' + esc(fmt(d)) + (st === 'overdue' ? ' · overdue' : sc && isLogged ? ' · ' + fmtScore(sc.score) + '/10' : '') + '" aria-label="Day ' + (n + 1) + ', ' + esc(fmt(d)) + said + '">' + inner + '</a>');
-    }
-    var legend = any.overdue || any.missed ? '<div class="cal-legend">' + (any.overdue ? '<span><i class="lg-over">!</i>Overdue, tap to fill it in</span>' : '') + (any.missed ? '<span><i class="lg-miss"></i>Missed</span>' : '') + '</div>' : '';
-    return '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your ' + esc(p.length === 7 ? 'week' : weeksText(p.length)) + '</h3><span class="subtle" style="font-size:13px">' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</span></div><div class="card-body"><div class="cal">' + heads.join('') + cells.join('') + '</div>' + legend + '</div></section>';
-  }
-
-  function habitsCard() {
-    var p = S.me.program, stats = {}, order = [];
-    var ref = (S.me.checklists && S.me.checklists[p.today]) || S.me.preview || [];
-    var labels = {};
-    ref.forEach(function (it) { labels[it.id] = { label: it.kind === 'meals' ? 'Meals on plan' : it.label, icon: it.icon }; });
-    allDates().forEach(function (d) {
-      if (d > p.today) return;
-      var items = itemsForDate(d);
-      if (!items) return;
-      var a = answersFor(d);
-      if (!Object.keys(a).length) return;
-      items.forEach(function (it) {
-        if (it.id === 'bonus' || it.id === 'finisher') return; // one-off and weekly items don't have a daily yes rate
-        if (!stats[it.id]) { stats[it.id] = { yes: 0, of: 0 }; order.push(it.id); if (!labels[it.id]) labels[it.id] = { label: it.kind === 'meals' ? 'Meals on plan' : it.label, icon: it.icon }; }
-        it.units.forEach(function (u) { stats[it.id].of++; if (a[u[0]] === 1) stats[it.id].yes++; });
-      });
+  /** Team standings from the server (team averages only), refreshed when the page opens if older than a minute. */
+  function loadBoard(force) {
+    if (!S.token || !S.me || S.boardLoading) return;
+    // At most one automatic try a minute, success or not, so a phone with no signal never loops.
+    if (!force && Date.now() - S.boardTriedAt < 60000) return;
+    S.boardTriedAt = Date.now();
+    S.boardLoading = true;
+    var session = S.session;
+    api('leaderboard').then(function (r) {
+      if (session !== S.session) return;
+      S.boardLoading = false;
+      S.board = r.board;
+      S.myTeam = r.myTeam || '';
+      S.boardAt = Date.now();
+      S.boardError = '';
+      if (route().name === 'leaderboard' || route().name === 'progress') render();
+    }, function (e) {
+      if (session !== S.session) return;
+      S.boardLoading = false;
+      S.boardError = e.message;
+      if (route().name === 'leaderboard' || route().name === 'progress') render();
     });
-    if (!order.length) return '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">Your habits</h3><p class="muted" style="margin:0">Check in today and your habit breakdown shows up here.</p></section>';
-    return '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your habits</h3><span class="subtle" style="font-size:13px">Yes rate, days logged</span></div><div class="card-body bars">' +
-      order.map(function (id) {
-        var s = stats[id], pct = s.of ? Math.round(s.yes / s.of * 100) : 0;
-        return '<div class="bar-row"><span class="bar-name">' + icon(labels[id].icon || 'star', 'ico-sm') + '<span>' + esc(labels[id].label) + '</span></span><span class="bar-pct">' + pct + '%</span><span class="bar-track"><span style="width:' + pct + '%"></span></span></div>';
-      }).join('') + '</div></section>';
   }
 
-  function teamCard() {
-    var team = S.me.person.team;
-    return '<section class="card card-pad" style="margin-top:16px;display:flex;gap:14px;align-items:flex-start"><span class="avatar silver">' + icon('users') + '</span><span><b>' + (team ? 'Team ' + esc(team) : 'Teams & leaderboard') + '</b><p class="muted" style="margin:4px 0 0;font-size:14px">' +
-      (team ? 'Your team leaderboard is coming soon.' : S.me.program.phase === 'before' ? 'Teams are announced before Day 1. The team leaderboard will live right here.' : 'Your team will show here once it’s set. The leaderboard is coming soon.') + '</p></span></section>';
+  /**
+   * Leaderboard (Kevin, 11/10/2026): the team standings first, plus your own few numbers. Nobody
+   * sees anyone else's own score: the server only sends team averages, and none at all for a team
+   * of fewer than 3 people (their average would be someone's own score).
+   */
+  function rankTeams(teams, view) {
+    var scored = teams.filter(function (x) { return x[view] !== null && x[view] !== undefined; });
+    scored.sort(function (x, y) { return (y[view] - x[view]) || x.name.localeCompare(y.name); });
+    var rank = 0, prev = null;
+    scored.forEach(function (x, i) { if (x[view] !== prev) { rank = i + 1; prev = x[view]; } x.rank = rank; });
+    var small = teams.filter(function (x) { return scored.indexOf(x) < 0; }).sort(function (x, y) { return x.name.localeCompare(y.name); });
+    small.forEach(function (x) { x.rank = 0; });
+    return { scored: scored, small: small };
+  }
+
+  function viewLeaderboard() {
+    var p = S.me.program, person = S.me.person, t = totals(), b = S.board;
+    var weeks = Math.ceil(p.length / 7);
+    var started = p.phase !== 'before';
+    var sub = !started ? 'Starts ' + fmtLong(p.start) : p.phase === 'after' ? 'Final standings' : 'Week ' + Math.min(Math.ceil(p.dayNumber / 7), weeks) + ' of ' + weeks;
+    var canWeek = !!(b && b.week);
+    var view = canWeek && S.boardView === 'week' ? 'week' : 'overall';
+    var copy = function () { return b ? b.teams.map(function (x) { return Object.assign({}, x); }) : []; };
+    var shownRows = rankTeams(copy(), view);
+    // Your place is always the overall one, whichever view the list is on.
+    var overall = rankTeams(copy(), 'overall');
+    var myKey = S.myTeam || String(person.team || '').trim().replace(/^team\s+/i, '').toLowerCase();
+    var mineOverall = overall.scored.concat(overall.small).filter(function (x) { return x.key === myKey; })[0] || null;
+    // Before Day 1, or before anyone has a point, there's nothing to rank yet.
+    var ranked = started && overall.scored.some(function (x) { return x.overall > 0; });
+    var place = ranked && mineOverall && mineOverall.rank ? mineOverall.rank : 0;
+
+    // You: your team and overall place, then four plain numbers.
+    var teamName = mineOverall ? mineOverall.name : person.team;
+    var teamLine = person.team ? teamLabel(teamName) + (place ? ' · ' + ordinal(place) + ' of ' + plural(overall.scored.length, 'team') : '') : (started ? 'Not on a team yet' : 'Teams are announced before Day 1');
+    var soFar = Math.min(p.length, p.phase === 'after' ? p.length : Math.max(1, p.dayNumber));
+    var stats = started
+      ? '<div class="lb-stats">' +
+          '<div><b>' + esc(fmtPts(t.points)) + '</b><span>points</span></div>' +
+          '<div><b>' + esc(fmtScore(t.average)) + '<small>/10</small></b><span>daily average</span></div>' +
+          '<div><b>' + t.days + '<small>/' + soFar + '</small></b><span>days logged</span></div>' +
+          '<div><b>' + t.streak + '</b><span>day streak</span></div>' +
+        '</div>'
+      : '<p class="lb-later">Your points, daily average and streak start counting on Day 1, ' + esc(fmtLong(p.start)) + '.</p>';
+    var you = '<section class="card lb-you">' +
+      '<div class="lb-you-top"><span class="avatar">' + esc(initials(person)) + '</span><span class="lb-you-name"><b>' + esc(person.first + ' ' + person.last) + '</b><span>' + esc(teamLine) + '</span></span>' +
+        (place ? '<span class="lb-place' + (place === 1 ? ' is-first' : '') + '" aria-hidden="true">' + ordinal(place) + '</span>' : '') + '</div>' + stats + '</section>';
+
+    // Team standings.
+    var all = shownRows.scored.concat(shownRows.small);
+    var mineKey = mineOverall ? mineOverall.key : '';
+    var min = (b && b.minPeople) || 3;
+    var body;
+    if (!b && S.boardError) {
+      body = '<div class="lb-empty"><p>' + esc(S.boardError) + '</p><button class="btn btn-secondary btn-sm" data-act="board-retry">Try again</button></div>';
+    } else if (!b) {
+      body = '<ol class="lb-list" aria-busy="true">' + [1, 2, 3].map(function () { return '<li class="lb-row"><span class="lb-rank"></span><span class="skeleton" style="height:20px"></span><span></span></li>'; }).join('') + '</ol>';
+    } else if (!all.length) {
+      body = '<div class="lb-empty">' + icon('users', 'ico-lg') + '<p>' + esc(started ? 'Teams aren’t set yet. The standings show up here as soon as they are.' : 'Teams are announced before Day 1. The team standings show up right here.') + '</p></div>';
+    } else {
+      var row = function (x) {
+        var isMine = x.key === mineKey;
+        var hasScore = x.rank > 0;
+        var score = !hasScore ? '<span class="lb-score is-none"><span>Score shows once the team has ' + min + ' people</span></span>'
+          : ranked ? '<span class="lb-score"><b>' + esc(fmtPts(x[view])) + '</b><span>pts per person</span></span>' : '<span class="lb-score"></span>';
+        return '<li class="lb-row' + (isMine ? ' is-mine' : '') + (hasScore && ranked ? '' : ' is-unranked') + '"><span class="lb-rank' + (ranked && x.rank && x.rank <= 3 ? ' r' + x.rank : '') + '">' + (ranked && x.rank ? x.rank : '') + '</span>' +
+          '<span class="lb-team"><b>' + esc(teamLabel(x.name)) + '</b><span>' + esc(plural(x.people, 'person', 'people')) + (isMine ? ' · your team' : '') + '</span></span>' + score + '</li>';
+      };
+      body = (ranked ? '' : '<p class="lb-range">' + esc(started ? 'Standings show up once teams start scoring.' : 'Standings start ' + fmtLong(p.start) + '.') + '</p>') +
+        '<ol class="lb-list">' + all.map(row).join('') + '</ol>';
+    }
+    var weekName = p.phase === 'after' ? 'Last week' : 'This week';
+    var seg = canWeek && ranked ? '<div class="seg seg-sm" role="group" aria-label="Which standings">' +
+      '<button data-act="board-view" data-view="overall" class="' + (view === 'overall' ? 'is-on' : '') + '" aria-pressed="' + (view === 'overall') + '">Overall</button>' +
+      '<button data-act="board-view" data-view="week" class="' + (view === 'week' ? 'is-on' : '') + '" aria-pressed="' + (view === 'week') + '">' + weekName + '</button></div>' : '';
+    var range = view === 'week' && b && ranked ? '<p class="lb-range">Week ' + b.week + ' · ' + esc(fmt(b.weekFrom, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(b.weekTo, { month: 'short', day: 'numeric' })) + '</p>' : '';
+    var board = '<section class="card lb-board"><div class="card-head"><h3>Team standings</h3>' + seg + '</div>' + range + body +
+      (all.length ? '<p class="lb-foot">A team’s score is its average points per person, so every team has the same shot, whatever its size.</p>' : '') + '</section>';
+
+    return '<h1 class="page-title">Leaderboard</h1><p class="page-sub">' + esc(sub) + '</p>' + you + board;
   }
 
   /* ============================================================ nutrition */
@@ -1706,7 +1781,7 @@
   function viewNutrition(tab) {
     var s = S.me.person.setup, t = s.track || {};
     var plan = t.nutrition ? s.plan : 'recommended';
-    var tabs = [['mine', 'My plan'], ['recommended', 'Recommended'], ['plant', 'Plant Based'], ['other', 'Other plans'], ['resources', 'Cookbook & more']];
+    var tabs = [['mine', 'My plan'], ['recommended', 'Recommended'], ['plant', 'Plant Based'], ['other', 'Other plans'], ['cookbook', 'Koda Cookbook'], ['resources', 'More']];
     var head = '<h1 class="page-title">Nutrition</h1><p class="page-sub">Your food rules and resources for all six weeks.</p>' +
       '<div class="tabs-scroll" role="tablist">' + tabs.map(function (x) { return '<a class="tab-chip' + (tab === x[0] ? ' is-on' : '') + '" role="tab" aria-selected="' + (tab === x[0]) + '" href="#/nutrition/' + x[0] + '">' + x[1] + '</a>'; }).join('') + '</div>';
     var body;
@@ -1714,6 +1789,7 @@
     else if (tab === 'plant') body = guideHtml('plant');
     else if (tab === 'other') body = otherPlansHtml();
     else if (tab === 'resources') body = resourcesHtml();
+    else if (tab === 'cookbook') body = cookbookHtml();
     else {
       var info = planInfo(plan) || {};
       var label = plan === 'other' && s.planOther ? s.planOther : info.label;
@@ -1769,7 +1845,7 @@
   }
 
   function otherPlansHtml() {
-    return ['whole30', 'carnivore', 'macros', 'other'].map(function (id) {
+    return ['macros', 'whole30', 'carnivore', 'other'].map(function (id) {
       var x = C.otherPlans[id], info = planInfo(id) || {};
       return '<section class="card card-pad prose" style="margin-top:16px"><div class="plan-hero" style="margin-bottom:12px"><span class="icon-tile">' + icon(info.icon || 'plate', 'ico-lg') + '</span><span><span style="display:block;font-size:19px;font-weight:800">' + esc(x.title) + '</span><span class="muted" style="font-size:14px">' + esc(info.blurb || '') + '</span></span></div>' +
         x.body.map(function (b) { return '<p>' + b + '</p>'; }).join('') + '</section>';
@@ -1778,11 +1854,105 @@
 
   function resourcesHtml() {
     var c = S.config;
-    return (c.cookbookUrl ? '<a class="card list-row" style="border-radius:var(--radius-lg)" href="' + esc(c.cookbookUrl) + '" target="_blank" rel="noopener"><span class="avatar silver">' + icon('book') + '</span><span class="grow"><span class="title">Koda Cookbook</span><span class="meta" style="display:block">Years of member-favorite recipes. Free.</span></span>' + icon('external') + '</a>' : '') +
+    return '<a class="card list-row" style="border-radius:var(--radius-lg)" href="#/nutrition/cookbook"><span class="avatar silver">' + icon('book') + '</span><span class="grow"><span class="title">Koda Cookbook</span><span class="meta" style="display:block">Recipes from the Koda community, right here in the app.</span></span>' + icon('chevR') + '</a>' +
       '<section class="card card-pad prose" style="margin-top:16px"><div class="plan-hero" style="margin-bottom:12px"><span class="icon-tile">' + icon('scale', 'ico-lg') + '</span><span><span style="display:block;font-size:19px;font-weight:800">InBody scan</span><span class="muted" style="font-size:14px">Optional, at the start and end of the challenge</span></span></div>' +
         '<p><b>Before your scan:</b></p><ul><li>No eating or exercise for 3 hours before.</li><li>Be hydrated (water alongside any coffee).</li><li>No alcohol or flying the night before.</li><li>Light clothes, with arms and thighs not touching.</li><li>Not for anyone with a pacemaker or who is pregnant.</li></ul>' +
         '<p><b>Taking it:</b> download the InBody app, connect to the scanner over Bluetooth, enter your height, stand barefoot with heels on the back edge, and hold the handles out at about 45°.</p></section>' +
       '<section class="card card-pad" style="margin-top:16px"><b>Questions about your plan?</b><p class="muted" style="margin:4px 0 12px;font-size:14px">Your coach is here to help. You can also email us.</p><a class="btn btn-secondary btn-sm" href="mailto:' + esc(c.contactEmail) + '">' + icon('mail', 'ico-sm') + esc(c.contactEmail) + '</a></section>';
+  }
+
+  /* ============================================================ Koda Cookbook */
+
+  /** The 2026 Koda Resolutions Cookbook (content/cookbook.json, built from the PDF), loaded the first time its tab opens. */
+  function loadCookbook(force) {
+    if (S.cookbook || S.cookbookLoading || (!force && S.cookbookError)) return;
+    S.cookbookLoading = true;
+    var onTab = function () { var r = route(); return r.name === 'nutrition' && r.args[0] === 'cookbook'; };
+    fetch('content/cookbook.json?v=' + APP_VERSION).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      S.cookbookLoading = false;
+      S.cookbook = data;
+      S.cookbookError = '';
+      if (onTab()) render();
+    }, function () {
+      S.cookbookLoading = false;
+      S.cookbookError = 'The cookbook didn’t load. Check your connection and try again.';
+      if (onTab()) render();
+    });
+  }
+
+  /**
+   * Kevin, 11/10: the PDF's sections as dropdowns with the same titles; each opens to its recipes,
+   * and each recipe opens to its ingredients, directions and the rest, just as the PDF has them.
+   */
+  function cookbookHtml() {
+    var cb = S.cookbook;
+    if (!cb) {
+      return S.cookbookError
+        ? '<div class="card lb-empty"><p>' + esc(S.cookbookError) + '</p><button class="btn btn-secondary btn-sm" data-act="cookbook-retry">Try again</button></div>'
+        : '<section class="cb-hero" aria-busy="true"><div class="cb-kicker">Koda Resolutions</div><div class="cb-title">Cookbook</div><p class="cb-tag">Loading the recipes…</p></section>';
+    }
+    return '<section class="cb-hero">' + kx('watermark') +
+        '<div class="cb-kicker">Koda Resolutions</div><div class="cb-title">Cookbook</div>' +
+        (cb.tagline ? '<p class="cb-tag">' + esc(cb.tagline) + '</p>' : '') +
+        '<div class="cb-meta"><span>' + esc(plural(cb.count, 'recipe')) + '</span><span>' + esc(plural(cb.sections.length, 'section')) + '</span>' + (cb.edition ? '<span>' + esc(cb.edition) + '</span>' : '') + '</div>' +
+        '<label class="cb-search"><span class="sr-only">Search the cookbook</span>' + icon('search') + '<input type="search" data-cbsearch placeholder="Search recipes or ingredients" value="' + esc(S.cookbookQuery) + '" autocomplete="off" enterkeyhint="search"></label>' +
+      '</section>' + cookbookListHtml();
+  }
+
+  function cookbookListHtml() {
+    var cb = S.cookbook, q = S.cookbookQuery.trim().toLowerCase(), shown = 0;
+    var sections = cb.sections.map(function (s) {
+      var recipes = q ? s.recipes.filter(function (r) { return recipeMatches(r, q); }) : s.recipes;
+      if (q && !recipes.length) return '';
+      shown += recipes.length;
+      return '<details class="acc-item cb-sec" id="cb-' + esc(s.id) + '"' + (q ? ' open' : '') + '><summary><span class="cb-sec-name"><b>' + esc(s.title) + '</b><span>' + esc(plural(recipes.length, 'recipe')) + (q ? ' found' : '') + '</span></span>' + icon('chevR', 'ico-sm acc-chev') + '</summary>' +
+        '<div class="cb-sec-body">' + (s.intro && !q ? '<p class="cb-intro">' + esc(s.intro) + '</p>' : '') +
+          recipes.map(function (r) { return recipeHtml(r, q); }).join('') + '</div></details>';
+    }).join('');
+    var none = '<div class="lb-empty"><p>No recipe has “' + esc(S.cookbookQuery.trim()) + '” in it. Try another word.</p></div>';
+    return '<section class="card acc cb-list" id="cbList" aria-live="polite">' + (q && !shown ? none : sections) + '</section>';
+  }
+
+  /** A search word anywhere in the title, a tag, an ingredient, a step or a note. */
+  function recipeMatches(r, q) {
+    var texts = [r.title].concat(r.tags || []);
+    (r.blocks || []).forEach(function (b) { (b.lines || []).forEach(function (l) { texts.push(l.text); }); });
+    return texts.some(function (t) { return String(t).toLowerCase().indexOf(q) >= 0; });
+  }
+
+  /** A recipe's lines, as the PDF has them: bullets as a list, numbered steps as a numbered list, the rest as paragraphs. */
+  function cookbookLines(lines) {
+    var html = '', i = 0;
+    while (i < lines.length) {
+      var t = lines[i].t;
+      if (t === 'li' || t === 'step') {
+        var items = '', num = 0;
+        while (i < lines.length && lines[i].t === t) {
+          num = Number(lines[i].n) || num + 1; // the PDF's own step numbers; count on if one is missing
+          items += '<li' + (t === 'step' ? ' value="' + num + '"' : '') + '>' + esc(lines[i].text) + '</li>';
+          i++;
+        }
+        html += t === 'li' ? '<ul class="cb-ul">' + items + '</ul>' : '<ol class="cb-ol">' + items + '</ol>';
+      } else {
+        html += '<p>' + esc(lines[i].text) + '</p>';
+        i++;
+      }
+    }
+    return html;
+  }
+
+  function recipeHtml(r, q) {
+    var credit = '';
+    var body = (r.blocks || []).map(function (b) {
+      if (/^credits?$/i.test(String(b.heading).trim())) { credit = b.lines.map(function (l) { return l.text; }).join(', '); return ''; }
+      return '<div class="cb-block">' + (b.heading ? '<h4>' + esc(b.heading) + '</h4>' : '') + cookbookLines(b.lines || []) + '</div>';
+    }).join('');
+    var tags = (r.tags || []).length ? '<span class="cb-tags">' + r.tags.map(function (t) { return '<span class="cb-tag-chip">' + esc(t) + '</span>'; }).join('') + '</span>' : '';
+    return '<details class="cb-recipe" id="r-' + esc(r.id) + '"><summary><span class="cb-num">' + esc(r.n) + '</span><span class="cb-rt"><b>' + esc(r.title) + '</b>' + tags + '</span>' + icon('chevR', 'ico-sm acc-chev') + '</summary>' +
+      '<div class="cb-body">' + body + (credit ? '<p class="cb-credit">Recipe from ' + esc(credit) + '</p>' : '') + '</div></details>';
   }
 
   /* ============================================================ videos */
@@ -1823,10 +1993,9 @@
       esc(p.paid ? 'Thanks! Your $' + c.remotePrice + ' remote spot is paid.' : 'Send $' + c.remotePrice + ' ' + (p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle : 'by card') + (p.payment === 'Credit Card' ? '' : ' with your name in the note') + '. We’ll mark it here when it comes in.') + '</p>' +
       (p.paid ? '' : (function () { var b = payButtons(p, true); return b ? '<div style="margin-top:12px">' + b + '</div>' : ''; })()) + '</div></section>' : '';
     var shirtLocked = !!(c.shirtChangesUntil && localToday() > c.shirtChangesUntil);
-    var faq = C.faq.map(function (f) { return '<details class="list-row" style="display:block"><summary style="cursor:pointer;font-weight:600">' + esc(f.q) + '</summary><p class="muted" style="margin:8px 0 0;font-size:14px">' + esc((!c.editDaysBack && f.aNoBack ? f.aNoBack : f.a).replace('{editDays}', c.editDaysBack)) + '</p></details>'; }).join('');
     return '<h1 class="page-title">Profile</h1><p class="page-sub">Your challenge setup. Change anything, any time.</p>' +
       '<section class="card card-pad" style="display:flex;gap:16px;align-items:center"><span class="avatar avatar-lg">' + esc(initials(p)) + '</span><span style="min-width:0"><b style="font-size:19px;display:block">' + esc(p.first + ' ' + p.last) + '</b><span class="muted" style="font-size:14px;overflow-wrap:anywhere">' + esc(p.email) + '</span>' +
-        '<span class="chips" style="margin-top:8px"><span class="badge">' + (p.type === 'Remote' ? 'Remote participant' : p.type === 'Test' ? (S.me.program.beta ? 'Beta tester' : 'Test account') : 'Koda member') + '</span>' + (p.team ? '<span class="badge badge-brand">Team ' + esc(p.team) + '</span>' : '') + (p.coach ? '<span class="badge badge-silver">Coach ' + esc(p.coach) + '</span>' : '') + '</span></span></section>' +
+        '<span class="chips" style="margin-top:8px"><span class="badge">' + (p.type === 'Remote' ? 'Remote participant' : p.type === 'Test' ? (S.me.program.beta ? 'Beta tester' : 'Test account') : 'Koda member') + '</span>' + (p.team ? '<span class="badge badge-brand">' + esc(teamLabel(p.team)) + '</span>' : '') + (p.coach ? '<span class="badge badge-silver">Coach ' + esc(p.coach) + '</span>' : '') + '</span></span></section>' +
       '<section class="card" style="margin-top:16px"><div class="card-head"><h3>My challenge</h3></div><div style="padding-top:8px">' +
         row('target', 'Main focus', esc(goalLabel(s.goal)), '#/edit/goal') +
         row('plate', 'Nutrition plan', esc(plan), '#/edit/track') +
@@ -1836,13 +2005,28 @@
           ? '<div class="list-row"><span class="ci-icon">' + icon('shirt') + '</span><span class="grow"><span class="meta">Shirt · ordered</span><span class="title" style="display:block">' + esc((p.shirt === 'tank' ? 'Ladies Tank' : 'T-Shirt') + ' · ' + p.size) + '</span><span class="meta" style="display:block">Need a swap? Email us.</span></span></div>'
           : row('shirt', 'Shirt', esc((p.shirt === 'tank' ? 'Ladies Tank' : 'T-Shirt') + ' · ' + p.size), '#/edit/shirt')) +
       '</div></section>' + payment +
-      '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Help</h3></div><div style="padding-top:8px">' + faq +
+      '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Help</h3></div><div style="padding-top:8px">' +
+        '<a class="list-row" href="#/faqs"><span class="ci-icon">' + icon('help') + '</span><span class="grow"><span class="title">FAQs</span><span class="meta" style="display:block">Answers to common questions</span></span>' + icon('chevR') + '</a>' +
         '<a class="list-row" href="mailto:' + esc(c.contactEmail) + '"><span class="ci-icon">' + icon('mail') + '</span><span class="grow"><span class="title">Email us</span><span class="meta" style="display:block">' + esc(c.contactEmail) + '</span></span>' + icon('external') + '</a></div></section>' +
       '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Account</h3></div><div style="padding-top:8px">' +
         '<a class="list-row" href="#/edit/password"><span class="ci-icon">' + icon('key') + '</span><span class="grow"><span class="title">Change password</span></span>' + icon('chevR') + '</a>' +
         '<button class="list-row" data-act="signout"><span class="ci-icon">' + icon('logout') + '</span><span class="grow"><span class="title">Sign out</span><span class="meta" style="display:block">On this device</span></span></button>' +
         '<button class="list-row" data-act="signout-all"><span class="ci-icon">' + icon('logout') + '</span><span class="grow"><span class="title">Sign out everywhere</span><span class="meta" style="display:block">Every phone and computer</span></span></button>' +
       '</div></section><p class="center subtle" style="font-size:12px;margin-top:20px">Koda Resolutions 2027 · v' + APP_VERSION + '</p>';
+  }
+
+  /** FAQs: the Help questions, moved off the Profile page onto their own page (Kevin, 11/10). */
+  function viewFaqs() {
+    var c = S.config;
+    var items = C.faq.map(function (f, i) {
+      var a = (!c.editDaysBack && f.aNoBack ? f.aNoBack : f.a).replace('{editDays}', c.editDaysBack);
+      return '<details class="acc-item faq-item" id="faq-' + i + '"><summary><span>' + esc(f.q) + '</span>' + icon('chevR', 'ico-sm acc-chev') + '</summary><p>' + esc(a) + '</p></details>';
+    }).join('');
+    return '<a class="btn btn-ghost btn-sm" href="#/profile" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Profile</a>' +
+      '<h1 class="page-title">FAQs</h1><p class="page-sub">Quick answers about the challenge and the app.</p>' +
+      '<section class="card acc">' + items + '</section>' +
+      '<section class="card card-pad" style="margin-top:16px"><b>Still have a question?</b><p class="muted" style="margin:4px 0 12px;font-size:14px">Ask your coach, or email us.</p>' +
+        '<a class="btn btn-secondary btn-sm" href="mailto:' + esc(c.contactEmail) + '">' + icon('mail', 'ico-sm') + esc(c.contactEmail) + '</a></section>';
   }
 
   function draftFromPerson() {
@@ -1966,6 +2150,13 @@
 
   document.addEventListener('input', function (e) {
     var el = e.target;
+    if (el.dataset && el.dataset.cbsearch !== undefined) {
+      // Cookbook search: repaint just the list, so the box keeps focus and the keyboard stays up.
+      S.cookbookQuery = el.value;
+      var list = document.getElementById('cbList');
+      if (list && S.cookbook) list.outerHTML = cookbookListHtml();
+      return;
+    }
     if (el.dataset && el.dataset.search !== undefined) {
       S.nutritionQuery = el.value;
       var box = document.getElementById('searchResults');
@@ -2043,6 +2234,15 @@
     var rerender = function () { if (!editing) saveDraft(); render(); };
     switch (act) {
       case 'join-beta': store.set('res27.beta', true); render(); window.scrollTo(0, 0); break;
+      case 'board-view':
+        S.boardView = el.dataset.view === 'week' ? 'week' : 'overall';
+        render();
+        // The repaint replaced the toggle: keep keyboard and screen-reader focus on the chosen button.
+        var pressed = document.querySelector('[data-act="board-view"][data-view="' + S.boardView + '"]');
+        if (pressed) pressed.focus({ preventScroll: true });
+        break;
+      case 'board-retry': S.boardError = ''; render(); loadBoard(true); break;
+      case 'cookbook-retry': S.cookbookError = ''; loadCookbook(true); render(); break;
       case 'choose-type':
         S.draft.memberType = el.dataset.type;
         if (el.dataset.type === 'member') S.draft.payment = '';
@@ -2162,7 +2362,7 @@
     if (old || stale()) loadMe(true);
     flushAllPending();
   });
-  window.addEventListener('online', function () { flushAllPending(); });
+  window.addEventListener('online', function () { S.boardTriedAt = 0; S.cookbookError = ''; flushAllPending(); });
   // A tab left open past midnight: lock yesterday's screen and fetch today.
   setInterval(function () {
     if (S.token && S.me && document.visibilityState === 'visible' && stale()) { render(); loadMe(true); }

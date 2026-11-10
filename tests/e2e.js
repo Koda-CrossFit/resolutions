@@ -330,20 +330,47 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await b7.goto(BASE + '/#/today');
   await b7.waitForSelector('#overdueCard');
   check('beta: …and back on Today it is still there', !!(await b7.$('#overdueCard')));
+  // Leaderboard (was Progress): no teams yet, then two beta teams.
+  const tabs = await b7.$$eval('.tabbar .tab', (els) => els.map((e) => e.textContent.trim()));
+  check('the second tab is now Leaderboard', tabs[1] === 'Leaderboard', tabs.join(','));
   await b7.goto(BASE + '/#/progress');
-  await b7.waitForSelector('.cal');
-  const bcal = await b7.evaluate(() => {
-    const cal = document.querySelector('.cal');
-    const widths = Array.from(cal.querySelectorAll('.cal-d')).map((e) => Math.round(e.getBoundingClientRect().width));
-    return {
-      overdue: document.querySelectorAll('.cal-d.overdue').length, cells: widths.length, legend: (document.querySelector('.cal-legend') || {}).textContent || '',
-      head: Array.from(document.querySelectorAll('.card-head h3')).map((h) => h.textContent).join('|'),
-      even: Math.max.apply(null, widths) - Math.min.apply(null, widths) <= 1, fits: cal.scrollWidth <= cal.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth,
-    };
-  });
-  check('beta Progress: 7 days, Day 1 overdue in the calendar with a legend, "Your week"', bcal.cells === 7 && bcal.overdue === 1 && /Overdue/.test(bcal.legend) && /Your week/.test(bcal.head), JSON.stringify(bcal));
-  check('beta Progress: the calendar days are all the same size and fit the card', bcal.even && bcal.fits, JSON.stringify(bcal));
-  await b7.screenshot({ path: path.join(OUT, 'beta-02-progress.png'), fullPage: true });
+  await b7.waitForSelector('.lb-you');
+  await b7.waitForSelector('.lb-empty, .lb-row');
+  const lb0 = await b7.evaluate(() => ({ title: document.querySelector('.page-title').textContent, you: document.querySelector('.lb-you').textContent, board: document.querySelector('.lb-board').textContent }));
+  check('old #/progress links open the Leaderboard; no teams yet says so', lb0.title === 'Leaderboard' && /Beta/.test(lb0.you) && /day streak/.test(lb0.you) && /Teams aren’t set yet/.test(lb0.board), JSON.stringify(lb0).slice(0, 300));
+  // Two teams of 3 and a team of 1 (no score: it would be that person's own).
+  const tester = async (first, team) => {
+    const r = await api({ action: 'register', memberType: 'member', first, last: 'Mate', email: first.toLowerCase() + '.beta@example.com', password: 'koda2027', shirt: 'tee', size: 'M', setup: { goal: 'health', track: { nutrition: true, workout: true, sleep: true }, plan: 'recommended', sleepHours: 7, coaches: [] }, beta: true });
+    await get('/dev/cell?email=' + encodeURIComponent(first.toLowerCase() + '.beta@example.com') + '&col=Team&value=' + encodeURIComponent(team));
+    return r;
+  };
+  await get('/dev/cell?email=' + encodeURIComponent('beta.e2e@example.com') + '&col=Team&value=Iron');
+  const annB = await tester('Ann', 'Iron');
+  await tester('Bo', 'team iron');
+  const tessB = await tester('Tess', 'Steel');
+  await tester('Cy', 'Steel');
+  await tester('Dot', 'Steel');
+  await tester('Eve', 'Bronze');
+  await api({ action: 'save', token: annB.token, date: yesterday, answers: { video: 1, workout: 1, sleep: 1 }, patch: true });
+  await api({ action: 'save', token: tessB.token, date: todayKey, answers: { video: 1 }, patch: true });
+  await b7.reload();
+  await b7.waitForSelector('.lb-row');
+  const lb1 = await b7.evaluate(() => ({
+    rows: Array.from(document.querySelectorAll('.lb-row')).map((r) => ({ text: r.textContent, mine: r.classList.contains('is-mine'), rank: r.querySelector('.lb-rank').textContent })),
+    you: document.querySelector('.lb-you').textContent,
+    stats: document.querySelectorAll('.lb-stats > div').length,
+    overflow: document.documentElement.scrollWidth - window.innerWidth,
+  }));
+  const allText = JSON.stringify(lb1);
+  check('Leaderboard: Iron (with "team iron") 1st, Steel 2nd, yours marked, your place and 4 numbers',
+    lb1.rows.length === 3 && /Team Iron/.test(lb1.rows[0].text) && lb1.rows[0].rank === '1' && lb1.rows[0].mine && /3 people/.test(lb1.rows[0].text) && /Team Steel/.test(lb1.rows[1].text) && lb1.rows[1].rank === '2' &&
+    /1st of 2 teams/.test(lb1.you) && lb1.stats === 4 && lb1.overflow <= 0, allText.slice(0, 500));
+  check('Leaderboard: a team of 1 is listed without a score or a rank', /Team Bronze/.test(lb1.rows[2].text) && /Score shows once the team has 3 people/.test(lb1.rows[2].text) && lb1.rows[2].rank === '', lb1.rows[2] && lb1.rows[2].text);
+  check('Leaderboard: no one else’s name is shown', !/Ann|Tess|Mate|Eve/.test(allText));
+  await b7.click('[data-act="board-view"][data-view="week"]');
+  await b7.waitForSelector('.lb-range');
+  check('Leaderboard: the This week view shows the week’s dates', /Week 1/.test(await b7.textContent('.lb-range')));
+  await b7.screenshot({ path: path.join(OUT, 'beta-02-leaderboard.png'), fullPage: true });
   await b7.goto(BASE + '/#/today');
   await b7.waitForSelector('#overdueCard a.od-row');
   await b7.click('#overdueCard a.od-row');
@@ -417,12 +444,55 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await c11.close();
   await get('/dev/time?set=' + encodeURIComponent('2027-01-27T19:30:00-07:00'));
 
+  // ---------------------------------------------------------------- 11/10 later: FAQs page, Macros first, the Koda Cookbook
+  const c12 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const p12 = await c12.newPage();
+  p12.on('pageerror', (e) => errors.push(e.message));
+  await p12.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent('#/profile'));
+  await p12.waitForSelector('a[href="#/faqs"]');
+  check('Profile: the questions moved off (no FAQ list), with a link to FAQs', (await p12.$$('details')).length === 0);
+  await p12.click('a[href="#/faqs"]');
+  await p12.waitForSelector('.faq-item');
+  const faqCount = await p12.$$eval('.faq-item', (els) => els.length);
+  await p12.click('.faq-item summary');
+  const faqOpen = await p12.evaluate(() => document.querySelector('.faq-item').open && /\S/.test(document.querySelector('.faq-item p').textContent));
+  check('FAQs page: every question, tap one to open its answer', faqCount >= 6 && faqOpen && (await p12.textContent('.page-title')) === 'FAQs' && /Profile/.test(await p12.textContent('.tabbar .tab.is-on')), 'questions ' + faqCount);
+  await p12.goto(BASE + '/#/nutrition/other');
+  await p12.waitForSelector('.plan-hero');
+  const otherFirst = (await p12.textContent('.plan-hero')).trim();
+  check('Nutrition › Other plans: Macros is first, above Whole30', /^Macros/.test(otherFirst), otherFirst.slice(0, 40));
+  const ntabs = await p12.$$eval('.tab-chip', (els) => els.map((e) => e.textContent.trim()));
+  check('Nutrition tabs: a Koda Cookbook tab', ntabs.indexOf('Koda Cookbook') >= 0, ntabs.join(','));
+  await p12.goto(BASE + '/#/nutrition/cookbook');
+  await p12.waitForSelector('.cb-sec', { timeout: 15000 });
+  const cb = await p12.evaluate(() => ({
+    sections: Array.from(document.querySelectorAll('.cb-sec .cb-sec-name b')).map((b) => b.textContent),
+    recipes: document.querySelectorAll('.cb-recipe').length,
+    meta: document.querySelector('.cb-meta').textContent,
+    overflow: document.documentElement.scrollWidth - window.innerWidth,
+  }));
+  check('Cookbook: the PDF’s six sections with the same titles, 65 recipes', cb.sections.join('|') === 'BREAKFAST|LUNCH|DINNER|SOUPS & CHILI|SNACKS|SIDES' && cb.recipes === 65 && /65 recipes/.test(cb.meta) && cb.overflow <= 0, JSON.stringify(cb));
+  await p12.click('#cb-breakfast > summary');
+  await p12.click('#cb-breakfast .cb-recipe > summary');
+  const r1 = await p12.evaluate(() => {
+    const r = document.querySelector('#cb-breakfast .cb-recipe');
+    return { open: r.open, title: r.querySelector('.cb-rt b').textContent, heads: Array.from(r.querySelectorAll('.cb-block h4')).map((h) => h.textContent), items: r.querySelectorAll('.cb-ul li').length, steps: r.querySelectorAll('.cb-ol li').length };
+  });
+  check('Cookbook: Breakfast opens to its recipes; a recipe opens to ingredients and directions', r1.open && r1.title === 'Banana Pancakes' && r1.heads.indexOf('INGREDIENTS') >= 0 && r1.heads.indexOf('DIRECTIONS') >= 0 && r1.items >= 3 && r1.steps >= 3, JSON.stringify(r1));
+  await p12.screenshot({ path: path.join(OUT, 'cookbook-01-recipe.png'), fullPage: true });
+  await p12.fill('[data-cbsearch]', 'salmon');
+  await wait(200);
+  const found = await p12.evaluate(() => ({ focused: document.activeElement && document.activeElement.hasAttribute('data-cbsearch'), shown: document.querySelectorAll('.cb-recipe').length, open: Array.from(document.querySelectorAll('.cb-sec')).every((d) => d.open) }));
+  check('Cookbook search: "salmon" narrows the list, opens the sections, keeps the keyboard up', found.shown > 0 && found.shown < 65 && found.open && found.focused, JSON.stringify(found));
+  await p12.screenshot({ path: path.join(OUT, 'cookbook-02-search.png'), fullPage: true });
+  await c12.close();
+
   // ---------------------------------------------------------------- screenshots: demo member, light + dark, phone + desktop
   for (const scheme of ['light', 'dark']) {
     const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: scheme });
     const p2 = await c2.newPage();
     p2.on('pageerror', (e) => errors.push(e.message));
-    for (const [name, hash] of [['today', '#/today'], ['progress', '#/progress'], ['nutrition', '#/nutrition'], ['videos', '#/videos'], ['profile', '#/profile']]) {
+    for (const [name, hash] of [['today', '#/today'], ['leaderboard', '#/leaderboard'], ['nutrition', '#/nutrition'], ['cookbook', '#/nutrition/cookbook'], ['videos', '#/videos'], ['profile', '#/profile'], ['faqs', '#/faqs']]) {
       await p2.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent(hash));
       await wait(1200);
       await p2.screenshot({ path: path.join(OUT, `phone-${scheme}-${name}.png`), fullPage: true });
@@ -431,7 +501,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   }
   const c3 = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const p3 = await c3.newPage();
-  for (const [name, hash] of [['today', '#/today'], ['progress', '#/progress']]) {
+  for (const [name, hash] of [['today', '#/today'], ['leaderboard', '#/leaderboard'], ['cookbook', '#/nutrition/cookbook']]) {
     await p3.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent(hash));
     await wait(1200);
     await p3.screenshot({ path: path.join(OUT, `desktop-${name}.png`), fullPage: true });

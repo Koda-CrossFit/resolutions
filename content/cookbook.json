@@ -1,0 +1,2784 @@
+{
+  "title": "Koda Resolutions Cookbook",
+  "edition": "2026 Edition",
+  "tagline": "Recipes from the Koda community - built for stronger meals, better habits, and everyday performance.",
+  "count": 65,
+  "sections": [
+    {
+      "id": "breakfast",
+      "title": "BREAKFAST",
+      "intro": "Performance-focused meals from the Koda community.",
+      "count": 17,
+      "recipes": [
+        {
+          "n": 1,
+          "id": "banana-pancakes",
+          "title": "Banana Pancakes",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "for one serving - after you try these you'll want to double it up!" },
+                { "t": "li", "text": "Baking Powder: 1/2 dash" },
+                { "t": "li", "text": "Cinnamon: 1/2 dash" },
+                { "t": "li", "text": "Vanilla Extract: 1/4 tsp" },
+                { "t": "li", "text": "Eggs: 1 large" },
+                { "t": "li", "text": "Banana, ripe: 1 large" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "In a bowl, lightly mash the banana" },
+                { "t": "step", "n": 2, "text": "Add in egg, baking powder, vanilla, and cinnamon, whip to a smooth batter" },
+                { "t": "step", "n": 3, "text": "Heat a non-stick skillet over medium heat; add 3 tablespoons of batter for each pancake" },
+                { "t": "step", "n": 4, "text": "Cook for a few minutes until bubbles form on the top of the pancake, and flip to brown the other side." },
+                { "t": "step", "n": 5, "text": "Serve with yogurt and cinnamon - and/or maple syrup if allowed." },
+                { "t": "p", "text": "236 cals, 8g protein, 6g fat,35g carbs, 3 g fiber" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "id": "banana-protein-muffins",
+          "title": "Banana Protein Muffins",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "3-4 bananas, depending on size" },
+                { "t": "li", "text": "1/4 C avocado oil" },
+                { "t": "li", "text": "1 scoop protein, any flavor" },
+                { "t": "li", "text": "2 C steel cut oats, ground into a fine flour (I use a Vitamix with a dry blade)" },
+                { "t": "li", "text": "1/2 tsp salt" },
+                { "t": "li", "text": "1 tsp baking powder" },
+                { "t": "li", "text": "1-2 tsp cinnamon" },
+                { "t": "li", "text": "Feel free to add additional spices as desired, I ways add 1 t nutmeg" },
+                { "t": "li", "text": "1 tsp vanilla" },
+                { "t": "li", "text": "chocolate chips with stevia, optional" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Mash bananas well, add avocado oil and mix until well blended. The fluffier the better. Add vanilla, salt, baking powder, cinnamon and stir. Add oats and protein powder. Mix in chocolate chips if using." },
+                { "t": "p", "text": "Bake at 350 degrees for 10-12 minutes. Makes 12 muffins." },
+                { "t": "p", "text": "I use silicone muffin tins and grease with avocado oil and the muffins don't stick." }
+              ]
+            },
+            {
+              "heading": "CREDIT",
+              "lines": [
+                { "t": "p", "text": "Erin Eastwood" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 3,
+          "id": "beet-green-smoothie-breakfast-lunch-snack",
+          "title": "Beet Green Smoothie (Breakfast / Lunch / Snack)",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Frozen Cherries - 125 g" },
+                { "t": "li", "text": "Banana - 115 g" },
+                { "t": "li", "text": "Power Greens (I like the Costco blend) - 60 g" },
+                { "t": "li", "text": "Transparent Labs - Whey Protein Isolate - 1 scoop" },
+                { "t": "li", "text": "Unsweetened Almond Milk - 1 cup" },
+                { "t": "li", "text": "Almond Butter - 1 tablespoon" },
+                { "t": "li", "text": "Raw Beets - 4 oz" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "put all ingredients into a blender and obliterate" }
+              ]
+            },
+            {
+              "heading": "NUTRITION",
+              "lines": [
+                { "t": "li", "text": "Calories: 480" },
+                { "t": "li", "text": "Marcros" },
+                { "t": "li", "text": "Carbs: 58g (33g from sugar, 0 added) (46%)" },
+                { "t": "li", "text": "Fat: 14g (24%)" },
+                { "t": "li", "text": "Protein: 36g (29%)" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 4,
+          "id": "blended-breakfast-coffee",
+          "title": "Blended Breakfast Coffee",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 banana" },
+                { "t": "li", "text": "1 1/2 cups unsweetened almond milk" },
+                { "t": "li", "text": "2 scoops whey protein" },
+                { "t": "li", "text": "1 tablespoon natural almond butter" },
+                { "t": "li", "text": "1/3 cup unsweetened cold brew coffee" },
+                { "t": "li", "text": "Ice" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Blend all ingredients in blender and serve cold." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 5,
+          "id": "chocolate-chia-pudding",
+          "title": "Chocolate Chia Pudding",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "1 serving (I usually make 2 jars at a time)" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1/4 Cup old fashioned oats" },
+                { "t": "li", "text": "1 scoop protein powder (I use a collagen protein)" },
+                { "t": "li", "text": "1 tsp cinnamon" },
+                { "t": "li", "text": "1 Tbs ground flaxseeds" },
+                { "t": "li", "text": "1-2 Tbs chia seeds" },
+                { "t": "li", "text": "1 Tbs unsweetened cocoa powder" },
+                { "t": "li", "text": "Pinch of salt" },
+                { "t": "li", "text": "1/2 Cup unsweetened almond milk" },
+                { "t": "li", "text": "1-2 Tbs almond butter" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Mix everything in a jar and put in the fridge overnight" },
+                { "t": "p", "text": "Serve with fruit topping or chopped dates" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 6,
+          "id": "elissas-banana-breakfast-cookies",
+          "title": "Elissa's Banana Breakfast Cookies",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "-2 large bananas" },
+                { "t": "li", "text": "-2 large eggs" },
+                { "t": "li", "text": "-1/4 - 1/2 c. maple syrup (sub date paste or applesause)" },
+                { "t": "li", "text": "-3 c. oats" },
+                { "t": "li", "text": "-1 c. almond flour" },
+                { "t": "li", "text": "-130g peanut butter powder/ 100g nut butter" },
+                { "t": "li", "text": "-1 tsp. Cinnamon" },
+                { "t": "li", "text": "-1/2 tsp. Baking soda" },
+                { "t": "li", "text": "-1/2 tsp salt" },
+                { "t": "li", "text": "-1 scoop whey protein powder" },
+                { "t": "li", "text": "Mash bananas and whisk together with maple syrup and eggs." },
+                { "t": "p", "text": "In large bowl whisk dry ingredients. Pour wet ingredients into the dry and mix." },
+                { "t": "li", "text": "Bake at 350 for 10-12 minutes." },
+                { "t": "p", "text": "For 20 cookies macros are: C 17g, P 6g, F 6.5g" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 7,
+          "id": "gf-cinnamon-apple-waffles",
+          "title": "GF Cinnamon Apple Waffles",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Gluten Free Cinnamon Apple Waffles - Breakfast or Snack Concocted by Adrienne Noyes" },
+                { "t": "p", "text": "Makes 6 circle waffles - 12 servings (Serving = 2 \"triangles\")" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "(Keep in mind this recipe is just me experimenting in the kitchen! At this altitude I find sometimes a recipe can need a little more liquid, so tweak as you see fit.)" },
+                { "t": "p", "text": "WET" },
+                { "t": "li", "text": "1/3 cup Avocado Oil" },
+                { "t": "li", "text": "1 cup Milk of your choice" },
+                { "t": "li", "text": "1 Dropper of Sweet Leaf brand (Sweet Drops - Vanilla Creme)" },
+                { "t": "li", "text": "4 large eggs, beaten" },
+                { "t": "p", "text": "DRY" },
+                { "t": "li", "text": "1 cup GF Flour (I have kept some grain in my diet for Resolutions, need the carbs)" },
+                { "t": "li", "text": "1 cup Almond Flour" },
+                { "t": "li", "text": "1/4 cup Coconut Flour" },
+                { "t": "li", "text": "1 Tbs Baking Powder" },
+                { "t": "li", "text": "1/2 Teaspoon Sea Salt" },
+                { "t": "li", "text": "3 scoops Ascent Vanilla Protein Powder (from CostCo)" },
+                { "t": "li", "text": "1 tsp Cinnamon, or more to your liking" },
+                { "t": "p", "text": "MIX-INS" },
+                { "t": "li", "text": "1 Green Apple, grated (or more if you like for texture and moisture)" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Mix all wet ingredients in a large bowl." },
+                { "t": "step", "n": 2, "text": "Place a sifter over the bowl and then add the dry ingredients to the sifter." },
+                { "t": "step", "n": 3, "text": "Sift the dry ingredients into the wet and combine until smooth." },
+                { "t": "step", "n": 4, "text": "Fold in the grated apple." },
+                { "t": "step", "n": 5, "text": "Let sit for a few minutes while waffle iron heats up." },
+                { "t": "step", "n": 6, "text": "Grease waffle iron as needed, scoop in batter (sorry I did not measure exactly!)" },
+                { "t": "step", "n": 7, "text": "Enjoy with butter and more sprinkled cinnamon on top (maybe maple syrup?)" },
+                { "t": "p", "text": "According to Chronometer - Per serving of 2 Triangles (if whole waffle just double)" },
+                { "t": "p", "text": "169. Calories, 8.5g Fat, 13g Carbs, 10g Protein" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 8,
+          "id": "high-protein-banana-oatmeal-muffins",
+          "title": "High Protein Banana Oatmeal Muffins",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "High-Protein Banana Oatmeal Muffins" },
+                { "t": "p", "text": "Clean ingredients Uses liquid protein shake Small-batch friendly" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "(9-10 muffins)" },
+                { "t": "p", "text": "Dry" },
+                { "t": "li", "text": "1 cup rolled oats (blended into flour)" },
+                { "t": "li", "text": "1/2 tsp baking powder" },
+                { "t": "li", "text": "1/2 tsp baking soda" },
+                { "t": "li", "text": "1/2 tsp cinnamon" },
+                { "t": "li", "text": "1/4 tsp salt" },
+                { "t": "p", "text": "Wet" },
+                { "t": "li", "text": "2 ripe bananas, mashed" },
+                { "t": "li", "text": "1 cup liquid protein shake" },
+                { "t": "li", "text": "3 eggs" },
+                { "t": "li", "text": "1/4 cup oil (coconut, avocado, or olive)" },
+                { "t": "li", "text": "1 tsp vanilla extract" },
+                { "t": "li", "text": "2-3 tbsp maple syrup or honey (optional)" },
+                { "t": "li", "text": "Optional add-ins: dark chocolate chips, walnuts, blueberries" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Preheat oven to 350 deg F (175 deg C). Line or grease a muffin tin." },
+                { "t": "step", "n": 2, "text": "Blend rolled oats into a fine flour." },
+                { "t": "step", "n": 3, "text": "Whisk all wet ingredients until smooth." },
+                { "t": "step", "n": 4, "text": "Stir dry ingredients into wet ingredients until just combined." },
+                { "t": "step", "n": 5, "text": "Let batter rest for 7-10 minutes so oats absorb liquid." },
+                { "t": "step", "n": 6, "text": "Fill muffin cups about 3/4 full." },
+                { "t": "step", "n": 7, "text": "Bake for 20-24 minutes, until set and lightly golden." },
+                { "t": "step", "n": 8, "text": "Cool for 10 minutes before removing from the pan." },
+                { "t": "p", "text": "Helpful Tips If batter is too thin after resting, add 1-2 tbsp blended oats." },
+                { "t": "p", "text": "If batter is too thick, add a splash of protein shake." },
+                { "t": "p", "text": "For extra protein without texture change, add 1-2 tbsp collagen peptides." },
+                { "t": "p", "text": "Muffins firm up as they cool - avoid overbaking." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 9,
+          "id": "high-protein-oats",
+          "title": "High Protein Oats",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1/3 cup steel cut (not rolled) oats" },
+                { "t": "li", "text": "2/3 cup water" },
+                { "t": "li", "text": "1/2 c egg whites" },
+                { "t": "li", "text": "Cinnamon" },
+                { "t": "li", "text": "1/2 scoop Vanilla protein powder or Vanilla extract" },
+                { "t": "li", "text": "1 scoop Creatine" },
+                { "t": "li", "text": "1 scoop Collagen" },
+                { "t": "li", "text": "Fruit of choice" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Rapid boil oats and water, then simmer 5 minutes." },
+                { "t": "p", "text": "Add egg whites and whisk continuously for 2 minutes." },
+                { "t": "p", "text": "Remove from stovetop." },
+                { "t": "p", "text": "Stir in cinnamon, protein powder, creatine, and collagen." },
+                { "t": "p", "text": "Add your choice of fruit and enjoy." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 10,
+          "id": "kevins-paleo-breakfast-scramble",
+          "title": "Kevin's Paleo Breakfast Scramble",
+          "tags": ["PALEO"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Kevin's Breakfast Scramble:" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Makes enough quantity for 2 people, 2 days or 1 hungry Kevin" },
+                { "t": "li", "text": "2 tbsp Coconut Oil" },
+                { "t": "li", "text": "1 Medium Sweet Potato" },
+                { "t": "li", "text": "~1/4 Cup Red Onion" },
+                { "t": "li", "text": "~1/2 Bell Pepper" },
+                { "t": "li", "text": "1/4 cup Mushrooms" },
+                { "t": "li", "text": "8oz Ground Beef (substitute any breakfast meat you like)" },
+                { "t": "li", "text": "7 eggs" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Heat oil in large pan" },
+                { "t": "p", "text": "Chop sweet potatoes first and add to warm pan" },
+                { "t": "p", "text": "Chop red onion and add to pan" },
+                { "t": "p", "text": "Chop bell pepper and add to pan" },
+                { "t": "p", "text": "Chop mushrooms and add to pan" },
+                { "t": "p", "text": "Move all veggies to half of pan and add ground beef" },
+                { "t": "p", "text": "Break apart ground beef as it cooks" },
+                { "t": "p", "text": "Once Ground beef is cooked mix it all together" },
+                { "t": "p", "text": "Add eggs and scramble until cooked to liking" },
+                { "t": "p", "text": "Add sea salt, pepper, and/or favorite spices" },
+                { "t": "p", "text": "(I like to switch it up to make it taste different)" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 11,
+          "id": "oatmeal-protein-cookies",
+          "title": "Oatmeal protein cookies",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 cups old-fashioned rolled oats" },
+                { "t": "li", "text": "1 teaspoon ground cinnamon" },
+                { "t": "li", "text": "1 teaspoon pure vanilla extract" },
+                { "t": "li", "text": "1/3 cup pure maple syrup" },
+                { "t": "li", "text": "2 tablespoons ground flaxseed" },
+                { "t": "li", "text": "2 tablespoons chia seeds" },
+                { "t": "li", "text": "1/2 cup unsweetened applesauce" },
+                { "t": "li", "text": "1/2 cup almond butter" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "li", "text": "Preheat your oven to 325 deg F (163 deg C) and line a baking sheet with parchment paper" },
+                { "t": "li", "text": "Combine all ingredients in bowl" },
+                { "t": "li", "text": "Shape into 12 balls" },
+                { "t": "li", "text": "Place on cookie sheet - smash down into cookie shape" },
+                { "t": "li", "text": "Bake 15 min" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 12,
+          "id": "paleo-breakfast-chicken-sausage-egg-bites",
+          "title": "Paleo Breakfast Chicken Sausage Egg Bites",
+          "tags": ["PALEO"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 large egg" },
+                { "t": "li", "text": "~15-20g egg whites (amount can vary depending on size of muffin pan)" },
+                { "t": "li", "text": "1 chicken sausage" },
+                { "t": "li", "text": "Few leaves of chopped spinach" },
+                { "t": "li", "text": "Chopped bell peppers" },
+                { "t": "li", "text": "Chopped green onion" },
+                { "t": "li", "text": "Dash salt and pepper" },
+                { "t": "p", "text": "\\Recipe.is.for.7.muffin.cup.per.muffin.tin" },
+                { "t": "p", "text": "Grease a muffin pan with butter or cooking spray. In a bowl, mix the large egg and egg whites in a bowl. Cut the chicken sausage, I use the Amylu Breakfast Time Mini Sausages, and add to bowl. Add veggies and spices and mix in. Transfer from the bowl to the muffin tin and bake for 20 mins at 350 degrees." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 13,
+          "id": "paleo-breakfast-quiche",
+          "title": "Paleo breakfast quiche",
+          "tags": ["PALEO"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "3/4 pound crumbled chorizo sausage cooked and drained" },
+                { "t": "li", "text": "8 ounces organic spinach cooked and drained" },
+                { "t": "li", "text": "2 medium shallots thinly sliced and sauteed" },
+                { "t": "li", "text": "4 large eggs" },
+                { "t": "li", "text": "1 1/2 cups full fat canned coconut milk" },
+                { "t": "li", "text": "3/4 teaspoon kosher salt" },
+                { "t": "li", "text": "1/4 teaspoon freshly ground black pepper" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Literally put it all together in a pan and bake until it's done. Don't overthink it. Sub any proteins of choice." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 14,
+          "id": "plant-based-breakfast-red-lentil-sheet-pan-pancakes",
+          "title": "Plant Based Breakfast Red Lentil Sheet Pan Pancakes",
+          "tags": ["HIGH PROTEIN", "PLANT BASED", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Red Lentil Sheet Pan Pancakes" },
+                { "t": "p", "text": "These Baked Red Lentil Protein Pancakes are an easy blender recipe for a sheet pan or meal prep. Naturally high fiber, steady energy, no flipping, and customizable." },
+                { "t": "p", "text": "Prep Time: 5 mins | Cook Time: 35 mins | Soaking time: 30 mins | Total Time: 40 mins" },
+                { "t": "p", "text": "Servings: 3 servings" }
+              ]
+            },
+            {
+              "heading": "EQUIPMENT",
+              "lines": [
+                { "t": "p", "text": "3 glass storage containers approximately 8×6.5x3 inches, or 2 quarter sheets (9×13 inches) nonstick rimmed sheet pans" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 cup split red lentils" },
+                { "t": "li", "text": "1 cup rolled oats or high protein rolled oats (see notes)" },
+                { "t": "li", "text": "1 large banana" },
+                { "t": "p", "text": "1 1/4 cups unsweetened nondairy milk plus 1 to 2 tablespoons more as needed" },
+                { "t": "li", "text": "1 tablespoon baking powder" },
+                { "t": "li", "text": "1 teaspoon apple cider vinegar" },
+                { "t": "li", "text": "1 teaspoon Ceylon cinnamon" },
+                { "t": "li", "text": "1 teaspoon vanilla extract" },
+                { "t": "li", "text": "2-3 large Medjool dates see notes" },
+                { "t": "li", "text": "Optional Toppings:" },
+                { "t": "li", "text": "Berries, fresh or frozen" },
+                { "t": "li", "text": "Chopped apple" },
+                { "t": "li", "text": "Slivered almonds" },
+                { "t": "li", "text": "Hemp hearts" },
+                { "t": "li", "text": "Dark chocolate chips" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Soak lentils: Bring a few cups of water to a boil in a kettle or small saucepan. Place the uncooked split red lentils in a heatproof bowl and pour the hot water over them, fully covering the lentils since they will expand. Soak for 30 minutes, and no longer. If the water level drops below the lentils, top off with more hot water. Drain using a fine-mesh sieve, rinse under running water, and drain well." },
+                { "t": "step", "n": 2, "text": "Blend: Add drained soaked lentils, oats, banana, milk, baking powder, apple cider vinegar, cinnamon, vanilla, and pitted dates to a high-speed blender. Blend until completely smooth." },
+                { "t": "step", "n": 3, "text": "Transfer batter: Pour the batter into three baking dishes so it is about 1 1/2 inches deep, or 1 (10×15 inch or 9×13 inch) nonstick rimmed sheet pan. Tap gently to level." },
+                { "t": "step", "n": 4, "text": "Add toppings: Sprinkle fruit and toppings directly on top, if using." },
+                { "t": "step", "n": 5, "text": "Bake at 350 deg F until the center is fully set and a toothpick comes out clean - about 35-40 minutes at this depth. Tent loosely if the top browns too quickly." },
+                { "t": "step", "n": 6, "text": "Serving: Allow to cool completely, then cover and store in the refrigerator for up to 5 days, or enjoy immediately while warm. You can also use a spatula to remove the pancakes from the glassware. Serve with unsweetened plant-based yogurt to boost protein and and drizzle of nut or tahini for heart-healthy fats." }
+              ]
+            },
+            {
+              "heading": "NOTES",
+              "lines": [
+                { "t": "li", "text": "Sweetness: Use 2 to 3 dates. These are perfect with 3 dates, but the recipe will work without dates. (Or use 3 to 4 tablespoons of maple syrup.)" },
+                { "t": "li", "text": "Fluffy tip: Add both the baking powder and apple cider vinegar to the blender last so they bubble a bit, blend quickly, and immediately pour the batter into the baking dish for the fluffiest texture. Do not overload the toppings or the batter will end up more dense. Give it space to rise." },
+                { "t": "li", "text": "Container: Dividing the batter into smaller bakes gives the best texture. I used three glass storage containers (about 8 × 6.5 × 3 inches each). You can also use two nonstick rimmed quarter-sheet pans (9 × 13 inches). Most baking dishes that keep the batter around 1 1/2 inches thick will work." },
+                { "t": "li", "text": "Greasing the pan (optional, they don't really stick): If baking in glass and planning to remove the pancakes, lightly oil the dish so they release easily. Use a metal spatula to release the sides. Or use parchment or a silicone mat." },
+                { "t": "li", "text": "For baking: Pour the batter into the baking dish so it is about 1 1/2 inches deep. This ensures even baking and a moist, fluffy texture." },
+                { "t": "li", "text": "For extra protein, use high-protein rolled oats and/or add hemp seeds to the batter" }
+              ]
+            },
+            {
+              "heading": "NUTRITION",
+              "lines": [
+                { "t": "p", "text": "Calories: 552kcal | Carbohydrates: 100g | Protein: 29g | Fat: 6g | Saturated Fat: 1g | Polyunsaturated Fat: 1g | Monounsaturated Fat: 0.5g | Sodium: 41mg | Potassium: 1617mg | Fiber: 28g | Sugar: 23g | Vitamin A: 265IU | Vitamin C: 7mg | Calcium: 386mg | Iron: 9mg" }
+              ]
+            },
+            {
+              "heading": "SOURCE",
+              "lines": [
+                { "t": "p", "text": "https://cookingforpeanuts.com/baked-red-lentil-protein-pancakes/" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 15,
+          "id": "protein-berry-smoothie",
+          "title": "Protein Berry Smoothie",
+          "tags": ["HIGH PROTEIN", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "This is my go-to recipe when I need to finish off my macros at the end of day or get a meal in super early in the morning. It's easy to manipulate as well to have less or more carbs and fats." }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 cup unsweetened almond milk" },
+                { "t": "li", "text": "1 scoop protein powder (I prefer vanilla Thorne protein powder)" },
+                { "t": "li", "text": "1/2 a banana" },
+                { "t": "li", "text": "3/4 a cup of frozen mixed berries" },
+                { "t": "li", "text": "1/2-1 tablespoon of almond butter" },
+                { "t": "li", "text": "Dash of cinnamon" },
+                { "t": "li", "text": "Ice" },
+                { "t": "p", "text": "Add almond milk then protein powder, add your fruit, almond butter and cinnamon and then finally add ice." },
+                { "t": "p", "text": "Blend! Add more ice or almond milk depending on what texture you want." },
+                { "t": "li", "text": "can substitute any frozen fruit you want, I use a bag of frozen blueberries, strawberries and mango." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 16,
+          "id": "sheet-pan-breakfast-burritos",
+          "title": "Sheet Pan Breakfast Burritos",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "You get 10 (!!) breakfast burritos that you can store frozen and reheat in just a few minutes every morning" },
+                { "t": "p", "text": "Per burrito (Makes 10):" },
+                { "t": "p", "text": "445 Calories 33g Protein 46g Carbs 14g Fat" },
+                { "t": "p", "text": "I used a \"Jelly Roll\" pan (the exact dimensions were 10\"x15\", 1 inch lip) for this recipe, which is a common sized sheet pan found at grocery stores. - A quarter sheet pan will be smaller, so you'll need to scale down the" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "slightly - You can also scale up the recipe by using a larger sheet pan, just be sure it has at least a 1\" raised edge" },
+                { "t": "li", "text": "1 red bell pepper" },
+                { "t": "li", "text": "diced 1 orange bell pepper" },
+                { "t": "li", "text": "diced 1 yellow onion" },
+                { "t": "li", "text": "diced 400g yellow Potatoes (~2-3)" },
+                { "t": "li", "text": "diced 30g (2 Tbsp) olive oil" },
+                { "t": "li", "text": "Salt/pepper to taste" },
+                { "t": "p", "text": "(My addition: Can of green chiles!" },
+                { "t": "li", "text": "Lean Ground Breakfast Sausage: 448g (16oz)" },
+                { "t": "li", "text": "Blended egg mixture:" },
+                { "t": "li", "text": "650g (2.75 cups) egg whites" },
+                { "t": "li", "text": "3 eggs 200g" },
+                { "t": "li", "text": "1 cup) cottage cheese" },
+                { "t": "li", "text": "8g (1 Tbsp) corn starch" },
+                { "t": "li", "text": "50g (1/2 cup) shredded cheddar" },
+                { "t": "li", "text": "10 burrito sized tortillas" },
+                { "t": "li", "text": "High Protein Cream Sauce:" },
+                { "t": "li", "text": "400g (2 cups) fat free Greek yogurt" },
+                { "t": "li", "text": "50g (3 Tbsp) hot sauce of choice" },
+                { "t": "li", "text": "Garlic" },
+                { "t": "li", "text": "salt and pepper to taste" },
+                { "t": "li", "text": "Cilantro as garnish" },
+                { "t": "li", "text": "This recipe is highly customizable - here's the general method I follow for making sheet pan burritos" },
+                { "t": "p", "text": "STEP 1: Add your veggies/roasting ingredients of choice, and roast until softened" },
+                { "t": "p", "text": "STEP 2: Add your protein source of choice over the top, bake until browned" },
+                { "t": "p", "text": "STEP 3: Add your egg mixture and cheese, bake until middle is firm and edges are crisp - Let sit for 10 minutes before slicing" },
+                { "t": "p", "text": "STEP 4: Assemble your burritos - Slice into equally sized rectangles, add to a burrito sized tortilla along with any sauce or garnishes of choice - Roll your burritos, and enjoy!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 17,
+          "id": "superhero-muffins",
+          "title": "Superhero Muffins",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "From Run Fast, Eat Slow: Nourishing Recipes for Athletes , by Shalane Flanagan and Elyse Kopecky (with minor tweaks). Their original recipe is here . Note: These are gluten-free." },
+                { "t": "p", "text": "Yield: 12. Pro-tip - Measure out several batches of the dry ingredients and store in ziplock bags to have muffin mix on hand for future batches." }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 cups almond meal (same thing as almond flour)" },
+                { "t": "p", "text": "1 cup old-fashioned rolled oats (use gluten-free for resolutions)" },
+                { "t": "li", "text": "1/2 cup chopped walnuts" },
+                { "t": "li", "text": "1/2 cup raisins" },
+                { "t": "li", "text": "2 teaspoons ground cinnamon" },
+                { "t": "li", "text": "1/2 teaspoon ground nutmeg" },
+                { "t": "li", "text": "1 teaspoon baking soda" },
+                { "t": "li", "text": "1/2 teaspoon kosher salt" },
+                { "t": "li", "text": "3 eggs, beaten" },
+                { "t": "li", "text": "1 cup grated carrot (about 2 carrots)" },
+                { "t": "li", "text": "6 tablespoons unsalted butter, melted" },
+                { "t": "li", "text": "1/2 cup Grade B maple syrup (omit for Resolutions)" },
+                { "t": "li", "text": "1 teaspoon vanilla" },
+                { "t": "li", "text": "paper muffin cups" },
+                { "t": "p", "text": "Arrange a rack in the center of the oven and preheat the oven to 350 deg F. Line a 12-cup standard muffin tin with paper muffin cups." },
+                { "t": "p", "text": "In a large bowl, combine the almond meal, oats, nuts, raisins, cinnamon, nutmeg, baking soda, and salt." },
+                { "t": "p", "text": "In a separate bowl, mix together the eggs, carrot, butter, maple syrup, and vanilla." },
+                { "t": "p", "text": "Add the wet ingredients to the dry ingredients, mixing until just combined." },
+                { "t": "p", "text": "Spoon the batter into the muffin cups filling each to the brim. Bake until the muffins are nicely browned on top and a toothpick inserted in the center of a muffin comes out clean, about 25 to 35 minutes ." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "title": "LUNCH",
+      "intro": "Performance-focused meals from the Koda community.",
+      "count": 12,
+      "recipes": [
+        {
+          "n": 18,
+          "id": "asian-style-turkey-lettuce-wraps",
+          "title": "Asian Style Turkey Lettuce Wraps",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Asian-Style Ground Turkey Lettuce Wraps" },
+                { "t": "p", "text": "(Koda-Compliant)" },
+                { "t": "p", "text": "Serves: 3-4" },
+                { "t": "p", "text": "Time: ~20 minutes" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 lb ground turkey" },
+                { "t": "li", "text": "1 tbsp avocado oil or olive oil" },
+                { "t": "li", "text": "3 cloves garlic, minced" },
+                { "t": "li", "text": "1 tbsp fresh ginger, minced (or 1 tsp dried)" },
+                { "t": "li", "text": "1 cup shredded carrots" },
+                { "t": "li", "text": "1/2 cup chopped green onions" },
+                { "t": "li", "text": "Juice of 1 lime" },
+                { "t": "li", "text": "1-2 tbsp coconut aminos (optional; or use salt + lime)" },
+                { "t": "li", "text": "1/2 tsp salt (adjust to taste)" },
+                { "t": "li", "text": "1/4 tsp black pepper" },
+                { "t": "li", "text": "1/2 tsp chili flakes (optional)" },
+                { "t": "li", "text": "1 head butter lettuce or romaine hearts" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Heat oil in a large skillet over medium-high heat." },
+                { "t": "step", "n": 2, "text": "Add garlic and ginger; cook 30-45 seconds until fragrant." },
+                { "t": "step", "n": 3, "text": "Add ground turkey, breaking it up. Cook until no longer pink." },
+                { "t": "step", "n": 4, "text": "Stir in carrots and green onions; cook 2-3 minutes." },
+                { "t": "step", "n": 5, "text": "Add lime juice, coconut aminos (if using), salt, pepper, and chili flakes." },
+                { "t": "step", "n": 6, "text": "Taste and adjust seasoning." },
+                { "t": "step", "n": 7, "text": "Spoon turkey mixture into lettuce leaves." },
+                { "t": "step", "n": 8, "text": "Eat like tacos. Optional Add-Ins (All Compliant) Diced bell pepper Water chestnuts Shredded cabbage Avocado slices on top" },
+                { "t": "p", "text": "Make It a Full Meal" },
+                { "t": "p", "text": "Serve with roasted sweet potatoes, white rice or quinoa, and fresh fruit." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 19,
+          "id": "asian-tacos",
+          "title": "Asian Tacos",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Pack of lean ground turkey" },
+                { "t": "li", "text": "1/4 cup green onions" },
+                { "t": "li", "text": "1/4 cup cilantro" },
+                { "t": "li", "text": "Fish sauce (splashes to taste, about 1 T)" },
+                { "t": "li", "text": "GF Tamari (splashes to taste)" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Mix all together." },
+                { "t": "p", "text": "Put onto your favorite tortilla and smash it onto hot pan until cooked like a smash burger." },
+                { "t": "p", "text": "Top with kimchi, lime, and whatever veg you like. I like to make a cilantro, carrot, cabbage, bell pepper slaw with a sesame ginger dressing." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 20,
+          "id": "clean-thai-tacos-with-coconut-rice",
+          "title": "Clean Thai Tacos with Coconut Rice",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 lbs ground pork or ground turkey" },
+                { "t": "li", "text": "1 jar green Thai curry paste" },
+                { "t": "li", "text": "Corn tortillas" },
+                { "t": "li", "text": "Slaw mix (cabbage or coleslaw blend)" },
+                { "t": "li", "text": "Sesame oil" },
+                { "t": "p", "text": "Coconut Rice Ingredients" },
+                { "t": "li", "text": "White rice" },
+                { "t": "li", "text": "Coconut milk" },
+                { "t": "li", "text": "Water (as needed depending on coconut milk thickness)" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Heat a large skillet over medium heat and add the ground pork or turkey." },
+                { "t": "step", "n": 2, "text": "Cook until fully browned, breaking it up as it cooks." },
+                { "t": "step", "n": 3, "text": "Stir in the jar of green curry paste and mix thoroughly until the meat is evenly coated and fragrant. Let it simmer for a few minutes so the flavors combine." },
+                { "t": "step", "n": 4, "text": "In a separate bowl, toss the slaw with a small drizzle of sesame oil until lightly coated." },
+                { "t": "step", "n": 5, "text": "Warm the corn tortillas." },
+                { "t": "step", "n": 6, "text": "Assemble tacos by folding the curry meat into the tortilla and topping with the sesame slaw. Have over rice if you are skipping the tortilla." },
+                { "t": "p", "text": "Coconut Rice Instructions (Instant Pot)" },
+                { "t": "step", "n": 1, "text": "Rinse rice thoroughly until the water runs clear." },
+                { "t": "step", "n": 2, "text": "Add rice and coconut milk to the Instant Pot, adjusting with a little water if needed to reach a 2:1 liquid-to-rice ratio." },
+                { "t": "step", "n": 3, "text": "Stir gently." },
+                { "t": "step", "n": 4, "text": "Set Instant Pot to Rice mode and cook." },
+                { "t": "step", "n": 5, "text": "Allow natural release, then fluff with a fork." },
+                { "t": "p", "text": "Serving Tip Serve tacos alongside coconut rice for a balanced, clean meal with bold flavor and a little comfort-food energy." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 21,
+          "id": "easy-paleo-taco-bowl",
+          "title": "Easy Paleo Taco Bowl",
+          "tags": ["PALEO", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Servings 3-4" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "3-4 bundles of romaine lettuce chopped" },
+                { "t": "li", "text": "1lb grass fed beef, browned" },
+                { "t": "li", "text": "1 package organic taco seasoning" },
+                { "t": "li", "text": "3-4 cups cooked white rice" },
+                { "t": "li", "text": "1 can salsa" },
+                { "t": "li", "text": "3-4 avocados diced" },
+                { "t": "li", "text": "1 diced onion" },
+                { "t": "li", "text": "1 diced poblano pepper" },
+                { "t": "li", "text": "Hot sauce (optional)" },
+                { "t": "li", "text": "Diced cilantro (optional)" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Brown ground beef and toss in taco seasoning. Assemble ingredients into bowl and enjoy!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 22,
+          "id": "green-goddess-salad-baked-by-melissa",
+          "title": "Green Goddess Salad - Baked by Melissa",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Rated 3.7 stars by 386 users" },
+                { "t": "p", "text": "CATEGORY AUTHOR: Recipes Melissa Ben-Ishay" },
+                { "t": "p", "text": "Get all my tool recommendations for making the Green Goddess easily here." },
+                { "t": "p", "text": "I can't count how many times I've made this salad over the past few years - the first time I made it, it became the hit of the party, with all my friends asking for the recipe. Since I posted it on TikTok in September 2021, more than 26 MILLION people have viewed the video. It landed me on the TODAY Show and even became the number 6 top searched recipe of 2022. So crazy." },
+                { "t": "p", "text": "Because of its popularity, I also know the most typical variations. Truly, I encourage you to take the components of this recipe and make it your own, using the veggies and flavors you love. Go ahead and add an avocado for extra creaminess or a jalapeño for heat. Swap out the herbs to change the flavor profile. Eat it with a chip, a fork, on tacos, or on toast. Create the perfect green goddess salad you love, that will keep you excited to eat it again and again. I can't wait to see how you make it." },
+                { "t": "p", "text": "The goddess, as written, will keep in the fridge for up to a week, but I recommend dressing each serving individually if you aren't planning to eat it all at once." },
+                { "t": "p", "text": "Cook Mode" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "For The Salad" },
+                { "t": "li", "text": "1 small head green cabbage" },
+                { "t": "li", "text": "3-4 baby cucumbers (or 1 large cucumber)" },
+                { "t": "li", "text": "1/4 cup chives" },
+                { "t": "li", "text": "1 bunch scallions, light green & white parts" },
+                { "t": "p", "text": "For The Dressing" },
+                { "t": "li", "text": "1 cup basil leaves" },
+                { "t": "li", "text": "1 cup fresh spinach" },
+                { "t": "li", "text": "2 cloves garlic" },
+                { "t": "li", "text": "1 small shallot" },
+                { "t": "li", "text": "2 lemons, juiced" },
+                { "t": "li", "text": "1/4 cup olive oil" },
+                { "t": "li", "text": "1/4 cupraw, unsalted cashews" },
+                { "t": "li", "text": "1/3 cup nutritional yeast" },
+                { "t": "li", "text": "1 teaspoon salt" },
+                { "t": "li", "text": "2 tablespoons rice vinegar" },
+                { "t": "li", "text": "3-4 chives, optional" },
+                { "t": "li", "text": "1 bunch scallions, dark green tips" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Finely chop the cabbage, cucumbers, chives, and light green & white parts of the scallions and add to a large bowl." },
+                { "t": "step", "n": 2, "text": "Add the dressing ingredients to a high-powered blender in the order listed (liquids should go in first). Use whatever parts of the scallions you didn't toss in the salad. Pulse until the dressing is completely smooth and no green specks remain." },
+                { "t": "step", "n": 3, "text": "Pour the dressing over the salad and mix well to evenly coat. Serve immediately." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 23,
+          "id": "healthy-chipotle-on-the-go-meal",
+          "title": "Healthy Chipotle On-The-Go Meal",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "The Order (5-Block Zone Meal) - Chipotle Salad" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Romaine lettuce base" },
+                { "t": "li", "text": "Black beans (full 4 oz serving)" },
+                { "t": "li", "text": "Fajita veggies (full 2 oz serving)" },
+                { "t": "li", "text": "Grilled chicken (full 4 oz serving)" },
+                { "t": "li", "text": "Fresh tomato salsa (mild)" },
+                { "t": "li", "text": "Tomatillo-green chili salsa (medium)" },
+                { "t": "li", "text": "Guacamole (~1.5 oz - about 2 tablespoons, ask for it on the side)" },
+                { "t": "p", "text": "Skip" },
+                { "t": "li", "text": "Rice" },
+                { "t": "li", "text": "Cheese" },
+                { "t": "li", "text": "Sour cream" },
+                { "t": "li", "text": "Queso" },
+                { "t": "li", "text": "Chips" },
+                { "t": "p", "text": "Pro Tips for Ordering Order everything regular portions - no need to say \"light.\"" },
+                { "t": "p", "text": "Ask for guac on the side so you can measure about 1.5 tablespoons." },
+                { "t": "p", "text": "Get extra fajita veggies for more volume (minimal impact on macros)." },
+                { "t": "p", "text": "Both salsas are almost zero calories - load up for flavor." },
+                { "t": "p", "text": "This is the easiest version to order - no special requests needed." },
+                { "t": "p", "text": "Adjusting Block Size" },
+                { "t": "li", "text": "For 4 blocks: Reduce chicken to 3 oz (ask for \"light chicken\") and beans to 3 oz" },
+                { "t": "li", "text": "For 6 blocks: Add a small portion of rice (2 oz) to boost carbs" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 24,
+          "id": "easy-buffalo-chicken-meatballs",
+          "title": "Easy Buffalo Chicken Meatballs",
+          "tags": ["PALEO", "WHOLE30", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "buffalo chicken meatballs in a pan with green onions" },
+                { "t": "p", "text": "Easy Buffalo Chicken Meatballs (Whole30 and Keto)" },
+                { "t": "p", "text": "These easy buffalo chicken meatballs are made with ground chicken, almond flour and come swimming in a creamy, tangy, and spicy buffalo sauce. Eat them alongside your favorite side dish or throw them onto a salad. They are gluten free, dairy free, paleo, keto, and Whole30." },
+                { "t": "p", "text": "Course Main Course" },
+                { "t": "p", "text": "Cuisine American" },
+                { "t": "p", "text": "Keyword Buffalo Chicken Meatballs" },
+                { "t": "p", "text": "Prep Time 10 minutes" },
+                { "t": "p", "text": "Cook Time 20 minutes" },
+                { "t": "p", "text": "Servings 6" },
+                { "t": "p", "text": "Calories 310kcal" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Meatballs" },
+                { "t": "li", "text": "1 pound ground chicken see notes" },
+                { "t": "li", "text": "1 cup almond flour" },
+                { "t": "li", "text": "1 large egg" },
+                { "t": "li", "text": "4 garlic cloves minced" },
+                { "t": "li", "text": "1/3 cup hot sauce see notes" },
+                { "t": "li", "text": "1/4 cup green onions, plus extra for garnish thinly sliced" },
+                { "t": "li", "text": "Creamy Buffalo Sauce" },
+                { "t": "li", "text": "1/2 cup hot sauce see notes" },
+                { "t": "li", "text": "2 tablespoons grass-fed butter or ghee" },
+                { "t": "li", "text": "4 garlic cloves minced" },
+                { "t": "li", "text": "1/4 cup coconut cream see notes" },
+                { "t": "li", "text": "kosher salt to taste" },
+                { "t": "li", "text": "big pinch of black pepper" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Preheat the oven to 400 degrees Fahrenheit, and adjust the oven rack to the middle position. Line a baking sheet with parchment paper and set aside." },
+                { "t": "step", "n": 2, "text": "Combine all of the meatball ingredients together in a bowl. Do not over-mix. I like to use my hands for this step, but you can alternatively use a large spoon." },
+                { "t": "step", "n": 3, "text": "Divide into (20) meatballs- this will be about 2 tablespoons of mixture per meatball. Roll them gently between your hands and place on the parchment lined baking sheet a few inches apart." },
+                { "t": "step", "n": 4, "text": "Bake at 400 degrees Fahrenheit for 18 minutes. Pull the pan out of the oven and let them rest for about 10 minutes before touching them." },
+                { "t": "step", "n": 5, "text": "While they are baking, prepare the sauce. In a small saucepan, combine all of the sauce ingredients together and stir. Cook over medium-low heat until simmering. Once simmering, turn the heat down to low and let cook for another 3-4 minutes, stirring often as it thickens up." },
+                { "t": "step", "n": 6, "text": "Turn off the heat and drench the meatballs in the sauce. Top off with extra green onions and serve warm." },
+                { "t": "step", "n": 7, "text": "Leftovers will keep in an airtight container refrigerated for at least 5 days." },
+                { "t": "step", "n": 8, "text": "As always, lots of tips, FAQ's and substitution information in the" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 25,
+          "id": "kale-salad-side-dish-whole-30-compliant",
+          "title": "Kale Salad side dish - whole 30 compliant",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "Submitted by Kale" },
+                { "t": "li", "text": "Spiralized beets (You could also just chop the beets up, but the spiralizer makes them look fancy)" },
+                { "t": "li", "text": "Carrots" },
+                { "t": "li", "text": "Radishes" },
+                { "t": "li", "text": "Everything bagel seasoning" },
+                { "t": "li", "text": "Olive oil" },
+                { "t": "li", "text": "Salt" },
+                { "t": "li", "text": "Lemon juice" },
+                { "t": "li", "text": "(optional) roasted chickpeas" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Remove the kale leaves from the stems and wash them well. Spread them on kitchen towels to dry, or quickly dry them in a salad spinner." },
+                { "t": "step", "n": 2, "text": "Tear the kale leaves into bite-sized pieces." },
+                { "t": "step", "n": 3, "text": "Place them in a large bowl and add fresh lemon juice, 1/2 teaspoon olive oil, and a few pinches of salt." },
+                { "t": "step", "n": 4, "text": "Use your hands to massage the lemon and oil into the leaves until they become soft and wilted and reduce in the bowl by about half." },
+                { "t": "step", "n": 5, "text": "Add all the other stuff and mix it all up. Chickpeas roasted in the oven are tasty in this recipe, but not compliant with Resolutions :)" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 26,
+          "id": "lunch-tuna-seaweed-wraps",
+          "title": "Lunch Tuna Seaweed Wraps",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Serves 1" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 can 5oz Skipjack or Albacore Tuna in water" },
+                { "t": "li", "text": "2 tbsp Guacamole" },
+                { "t": "li", "text": "1/4 cup kimchi (optional)" },
+                { "t": "li", "text": "1 package Gimme Seaweed (Avocado oil version)" },
+                { "t": "li", "text": "1/2 cup white rice (can substitute cauliflower rice)" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Gently warm rice and place in bowl" },
+                { "t": "step", "n": 2, "text": "Drain tuna, mix in guacamole (feel free to add other spices you like)" },
+                { "t": "step", "n": 3, "text": "Lightly fold tuna into bowl of rice" },
+                { "t": "step", "n": 4, "text": "Put kimchi a separate small bowl" },
+                { "t": "step", "n": 5, "text": "Fill one sheet of seaweed with rice and tuna and top with the kimchi (or some hot sauce), and roll up like a taco - until all the seaweed is gone :)" },
+                { "t": "step", "n": 6, "text": "Enjoy!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 27,
+          "id": "salmon-tuna-poke-bowls",
+          "title": "Salmon-Tuna Poke Bowls",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Salmon/Tuna Poke Bowls" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Bowl" },
+                { "t": "li", "text": "1-2 cups cooked white rice, cooled slightly" },
+                { "t": "li", "text": "3 oz sushi-grade salmon, cubed" },
+                { "t": "li", "text": "3 oz sushi-grade tuna, cubed" },
+                { "t": "li", "text": "1/2 avocado, sliced" },
+                { "t": "li", "text": "1/2 cup mango, cubed" },
+                { "t": "li", "text": "1/4 cup fresh cilantro, roughly chopped" },
+                { "t": "li", "text": "5 slices cucumber" },
+                { "t": "li", "text": "Green onions, for garnish" },
+                { "t": "li", "text": "Sauce" },
+                { "t": "li", "text": "2 tablespoons coconut aminos (sugar free)" },
+                { "t": "li", "text": "1 teaspoon water (replaces oil for thinning)" },
+                { "t": "li", "text": "1 teaspoon red pepper flakes (adjust to taste)" },
+                { "t": "li", "text": "1/4 teaspoon freshly grated ginger" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Cook the rice according to package instructions. Fluff and allow it to cool slightly before assembling the bowl." },
+                { "t": "step", "n": 2, "text": "Make the sauce: In a small bowl, whisk together coconut aminos, water, red pepper flakes, and grated ginger. Set aside." },
+                { "t": "step", "n": 3, "text": "Assemble: In a large bowl, combine the rice, salmon, tuna, avocado, mango, cilantro, and cucumber." },
+                { "t": "step", "n": 4, "text": "Dress: Drizzle with as much sauce as desired and gently toss to coat." },
+                { "t": "step", "n": 5, "text": "Finish: Get the gains." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 28,
+          "id": "warm-rice-salad-with-salmon-and-arugula",
+          "title": "Warm Rice Salad With Salmon and Arugula",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Yield: 4 servings" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 1/2 cups white jasmine rice" },
+                { "t": "li", "text": "1/4 cup extra-virgin olive oil, divided" },
+                { "t": "li", "text": "Kosher salt and freshly ground black pepper" },
+                { "t": "li", "text": "1 (3/4-pound) salmon fillet, skin removed" },
+                { "t": "li", "text": "2 tablespoons Dijon mustard, divided" },
+                { "t": "li", "text": "1/4 cup chopped dill" },
+                { "t": "li", "text": "3 tablespoons fresh lemon juice" },
+                { "t": "li", "text": "2 tablespoons capers, chopped" },
+                { "t": "li", "text": "1 small shallot, minced" },
+                { "t": "li", "text": "5 ounces baby arugula" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Rinse the rice until the water runs clear. In a wide, lidded pot or Dutch oven, bring the rice, 2 1/4 cups of water and 2 tablespoons of olive oil to a boil. Season with 1 teaspoon of salt, cover and simmer for 5 minutes over medium-low." },
+                { "t": "p", "text": "Brush salmon with 1 tablespoon of mustard and season with salt and pepper on all sides." },
+                { "t": "p", "text": "Gently lay the salmon on top of the rice. Cover and simmer on low heat for an additional 10 minutes, until all liquid is absorbed and the salmon is just cooked through. Remove from heat and allow to steam for an additional 5 minutes without lifting the cover." },
+                { "t": "p", "text": "While the salmon and rice cook, make the dressing: In a small bowl, whisk together the remaining 1 tablespoon mustard with the dill, lemon juice, capers and shallot. Stream in the remaining 2 tablespoons olive oil while continuously whisking. Taste and adjust seasoning if needed." },
+                { "t": "p", "text": "Fluff the rice with a fork, break up the salmon into bite-size pieces, and drizzle in the dressing and gently fold in the arugula, which will wilt slightly from the heat. A final taste and seasoning adjustment, if needed, completes the meal. Serve warm or at room temperature." },
+                { "t": "p", "text": "Note: I cooked this with about 14 oz of salmon instead of 12 oz, and enjoyed this as a big dinner calling it 2 servings instead of 4. - Andy" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 29,
+          "id": "whole30-chicken-pork-lettuce-wraps",
+          "title": "Whole30 Chicken/Pork Lettuce Wraps",
+          "tags": ["WHOLE30"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Lettuce wraps" },
+                { "t": "li", "text": "1/4 cup coconut aminos" },
+                { "t": "li", "text": "2 tsp sesame oil" },
+                { "t": "li", "text": "1 tsp rice wine vinegar" },
+                { "t": "li", "text": "1 TBSP almond butter" },
+                { "t": "li", "text": "2 tsp freshly grated butter" },
+                { "t": "li", "text": "1 TBSP compliant hot sauce" },
+                { "t": "li", "text": "1 TBSP olive oil" },
+                { "t": "li", "text": "1/2 of one yellow onion diced" },
+                { "t": "li", "text": "3 cloves garlic minced" },
+                { "t": "li", "text": "1 lb ground pork or chicken" },
+                { "t": "li", "text": "1/2 cup shredded carrots" },
+                { "t": "li", "text": "Salt to taste" },
+                { "t": "li", "text": "Freshly ground black pepper to taste" },
+                { "t": "li", "text": "1 8 oz can water chestnuts diced" },
+                { "t": "li", "text": "3 green onions thinly sliced" },
+                { "t": "li", "text": "1 head bibb lettuce (or lettuce of your choice)" },
+                { "t": "p", "text": "Sauce" },
+                { "t": "li", "text": "1/4 cup coconut aminos" },
+                { "t": "li", "text": "1 1/2 tsp sesame oil" },
+                { "t": "li", "text": "1 tsp rice wine vinegar" },
+                { "t": "p", "text": "Compliant hot sauce (optional_" },
+                { "t": "li", "text": "1 TBSP green onions" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Garnishes (optional)" },
+                { "t": "p", "text": "Sesame seeds Thinly sliced green onions" },
+                { "t": "p", "text": "In a small bowl, whisk together 1/4 cup coconut aminos, 2 tsp sesame oil, 1 tsp rice wine vinegar, 1 TBSP almond butter, 2 tsp grated ginger and 1 TBSP hot sauce. Whisk vigorously until all ingredients are fully incorporated, then set bowl aside" },
+                { "t": "p", "text": "Heat large skillet over medium heat, add olive oil when heated add diced onion, cook until onion begins to soften then add minced mushrooms, add garlic until garlic is fragrant, stirring constantly." },
+                { "t": "p", "text": "Add ground meat to skillet, cook crumbling with wooden spoon until meat is browned. Add shredded carrots and cook stirring constantly." },
+                { "t": "p", "text": "Pour prepared coconut amino mixture into skillet with ground meat. Stir until ingredients are incorporated and then add water chestnuts and green onions. Cook 3-4 minutes and remove from heat. Season with salt and pepper to taste." },
+                { "t": "p", "text": "Add all sauce ingredients to small bowl and whisk vigorously until ingredients are fully incorporated." },
+                { "t": "p", "text": "Assemble lettuce wraps by spooning meat into center of lettuce and garnish with sesame seeds/onions if desired, and serve immediately with prepared sauce." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dinner",
+      "title": "DINNER",
+      "intro": "Performance-focused meals from the Koda community.",
+      "count": 23,
+      "recipes": [
+        {
+          "n": 30,
+          "id": "air-fryer-pork-tenderloin",
+          "title": "Air Fryer Pork Tenderloin",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "(serves 3-4)" },
+                { "t": "li", "text": "1-1 1/4 lb pork tenderloin (not pork loin)" },
+                { "t": "li", "text": "1 tbsp olive oil" },
+                { "t": "li", "text": "1 tsp garlic powder or 2 cloves of fresh garlic" },
+                { "t": "li", "text": "1 tsp smoked paprika" },
+                { "t": "li", "text": "1 tsp salt" },
+                { "t": "li", "text": "1/2 tsp black pepper" },
+                { "t": "li", "text": "1 tsp dried thyme or rosemary" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Prep" },
+                { "t": "p", "text": "Remove silver skin if present" },
+                { "t": "p", "text": "Pat dry (important for browning)" },
+                { "t": "p", "text": "Mix olive oil, salt, pepper, paprika, garlic and herbs" },
+                { "t": "p", "text": "Rub with olive oil and seasonings" },
+                { "t": "p", "text": "Preheat" },
+                { "t": "p", "text": "Air fryer: 400 deg F" },
+                { "t": "p", "text": "Cook" },
+                { "t": "p", "text": "Place tenderloin in basket (not touching sides if possible)" },
+                { "t": "p", "text": "Cook 12-15 minutes, flipping halfway" },
+                { "t": "p", "text": "Pull at 140-142 deg F internal temp" },
+                { "t": "p", "text": "Rest (don't skip!)" },
+                { "t": "p", "text": "Rest 5 minutes → juices redistribute Final temp lands around 145 deg F (perfectly safe + juicy)" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 31,
+          "id": "braised-short-ribs",
+          "title": "Braised Short Ribs",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "(This recipe does use wine - you are cooking with it, so… grey area?)" },
+                { "t": "p", "text": "You do need a large dutch oven - ceramic coated are preferred." }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "5ish lbs beef short ribs - the meatier the better" },
+                { "t": "li", "text": "2 large sweet onions, halved and sliced" },
+                { "t": "p", "text": "3-4 carrots, peeled, chopped into 2\" pieces (don't use baby carrots, they cook funny)" },
+                { "t": "li", "text": "3 stalks celery, chopped into 2\" pieces" },
+                { "t": "li", "text": "4-5 garlic cloves" },
+                { "t": "li", "text": "2tbsp tomato paste" },
+                { "t": "li", "text": "2ish cups dry red wine" },
+                { "t": "p", "text": "Box of chicken stock (get high quality - bone broth also is good)" },
+                { "t": "li", "text": "Prune juice - the small 8oz cans are great" },
+                { "t": "li", "text": "1tsp Ground Sage" },
+                { "t": "li", "text": "1tbsp Ground Thyme" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Preheat the oven to 275" },
+                { "t": "p", "text": "Trim the silverskin of the short ribs and remove excess top fat layers" },
+                { "t": "p", "text": "Sear the ribs in the dutch oven over medium heat in a dash of olive oil. Remove and place in a bowl for now." },
+                { "t": "p", "text": "In the fond, (making sure it doesn't burn, reduce heat if needed), saute the onions until golden." },
+                { "t": "p", "text": "Add the thyme, sage, tomato paste, garlic, celery and carrots and cook until nice and fragrant." },
+                { "t": "p", "text": "Stir in the wine and the prune juice." },
+                { "t": "p", "text": "Top with the ribs. The dutch oven should be nice and full." },
+                { "t": "p", "text": "Cover the ribs with the chicken stock - the liquid should be just covering them." },
+                { "t": "p", "text": "Bring the entire mixture to a gentle boil, then remove and place covered in the oven." },
+                { "t": "p", "text": "Braise at 275 for 4 - 5 hours. I typically check at the 4 hour mark and add additional chicken stock if needed." },
+                { "t": "p", "text": "At about 5 hours, remove the ribs and carrots and skim off the fat (I use a fat separator measuring cup)" },
+                { "t": "p", "text": "Strain the remaining liquid into a large pan to reduce for about 30 min ( you want it to be able to coat a spoon)" },
+                { "t": "p", "text": "Place the ribs back into the liquid and let them heat back up." },
+                { "t": "p", "text": "I place about 3-4 ribs over a mound of mashed potatoes, top with plenty of the sauce and decoratively arrange the carrots." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 32,
+          "id": "crockpot-carnitas",
+          "title": "Crockpot Carnitas",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 kg / 4 lb pork shoulder (pork butt) , skinless, boneless (5lb/2.5kg bone in) (Note 1)" },
+                { "t": "li", "text": "2 1/2 tsp salt" },
+                { "t": "li", "text": "1 tsp black pepper" },
+                { "t": "li", "text": "1 onion , chopped" },
+                { "t": "li", "text": "1 jalapeno , deseeded, chopped" },
+                { "t": "li", "text": "4 cloves garlic, minced" },
+                { "t": "li", "text": "3/4 cup juice from orange (2 oranges)" },
+                { "t": "li", "text": "Rub" },
+                { "t": "li", "text": "1 tbsp dried oregano" },
+                { "t": "li", "text": "2 tsp ground cumin" },
+                { "t": "li", "text": "1 tbsp olive oil" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Rinse and dry the pork shoulder, rub all over with salt and pepper." },
+                { "t": "p", "text": "Combine the Rub ingredients then rub all over the pork." },
+                { "t": "p", "text": "Place the pork in a slow cooker (fat cap up), top with the onion, jalapeño, minced garlic (don't worry about spreading it) and squeeze over the juice of the oranges." },
+                { "t": "p", "text": "Slow Cook on low for 10 hours or on high for 7 hours. (Note 2 for other cook methods)" },
+                { "t": "p", "text": "Pork should be tender enough to shred. Remove from slow cooker and let cool slightly. Then shred using two forks." },
+                { "t": "p", "text": "If you have a lot more than 2 cups of juice, then reduce it down to about 2 cups. The liquid will be salty, it is the seasoning for the pork. Set liquid aside - don't bother straining onion etc, it's super soft." },
+                { "t": "p", "text": "Crisp up in skillet before serving if desired." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 33,
+          "id": "fish-in-veracruz-sauce",
+          "title": "Fish in Veracruz Sauce",
+          "tags": ["PALEO", "WHOLE30"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 tablespoons extra virgin olive oil" },
+                { "t": "li", "text": "1 medium yellow onion halved and thinly sliced" },
+                { "t": "li", "text": "Diamond Crystal kosher salt" },
+                { "t": "li", "text": "1 Anaheim pepper seeded and finely diced" },
+                { "t": "li", "text": "3 garlic cloves minced" },
+                { "t": "li", "text": "14.5 ounce canned fire roasted diced tomatoes" },
+                { "t": "li", "text": "1/2 cup green olives pitted and cut in half" },
+                { "t": "li", "text": "1 tablespoon drained capers" },
+                { "t": "li", "text": "1/2 teaspoon dried oregano" },
+                { "t": "li", "text": "1 dried bay leaf" },
+                { "t": "li", "text": "freshly ground black pepper" },
+                { "t": "p", "text": "4 white fish filets (skinless and boneless) about 6 ounces each and 1-inch thick (sea bass, red snapper, halibut, cod, or tilapia)" },
+                { "t": "li", "text": "1/4 cup minced fresh cilantro" },
+                { "t": "li", "text": "1 lime cut into wedges" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Heat a large skillet over medium heat and add the oil when the pan is hot." },
+                { "t": "p", "text": "Toss in the onion and sprinkle on some salt and cook until softened, about 8 to 10 minutes." },
+                { "t": "p", "text": "Stir in the chopped pepper and garlic. Cook until fragrant, about 30 seconds." },
+                { "t": "p", "text": "Add the tomatoes, green olives, capers, dried oregano, and bay leaf." },
+                { "t": "p", "text": "Bring the sauce to a boil and decrease the heat to maintain a simmer. Taste the sauce and season with salt and pepper if needed." },
+                { "t": "p", "text": "Pat the fish filets dry with a paper towel and sprinkle both sides with salt and pepper." },
+                { "t": "p", "text": "Nestle the fish filets into the sauce and place some of the sauce on top of each one. Cover the skillet and cook on low heat for about 10 minutes or until fish is opaque and cooked through, about 140 deg F on an instant-read thermometer." },
+                { "t": "p", "text": "Sprinkle on some fresh cilantro and serve the fish with lime wedges so you can squeeze on some fresh lime juice on before taking a bite." }
+              ]
+            },
+            {
+              "heading": "NOTES",
+              "lines": [
+                { "t": "p", "text": "What can you serve with Fish in Veracruz Sauce?" },
+                { "t": "p", "text": "To keep this paleo, Whole30, and keto, you can serve this dish with cauliflower rice in lieu of white rice. It also tastes great served with my Instant Pot Crispy Potatoes!" }
+              ]
+            },
+            {
+              "heading": "NUTRITION",
+              "lines": [
+                { "t": "p", "text": "Calories: 405kcal | Carbohydrates: 12g | Protein: 21g | Fat: 31g | Cholesterol: 7mg | Fiber: 3g | Sugar: 4g" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 34,
+          "id": "garlic-butter-chicken-with-zucchini-noodles",
+          "title": "Garlic Butter Chicken with Zucchini Noodles",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Juicy and flavorful Garlic Butter Chicken Bites with Zucchini Noodles ready in less than 30 minutes! Made in one pan, perfectly seasoned bite-size pieces of chicken are cooked in a mouthwatering garlic butter sauce and served with low-carb zucchini noodles for the perfect weeknight dinner." },
+                { "t": "p", "text": "Prep: 10 minutes" },
+                { "t": "p", "text": "Cook: 15 minutes" },
+                { "t": "p", "text": "Total: 25 minutes" },
+                { "t": "p", "text": "Servings: 4 people" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "4 boneless skinless chicken breasts, chopped into small chunks" },
+                { "t": "li", "text": "2 tablespoon olive oil, divided" },
+                { "t": "li", "text": "2 teaspoon Italian seasoning" },
+                { "t": "li", "text": "1 teaspoon garlic powder" },
+                { "t": "li", "text": "1 teaspoon salt" },
+                { "t": "li", "text": "1/2 teaspoon freshly cracked black pepper" },
+                { "t": "li", "text": "4 tablespoon butter, divided" },
+                { "t": "li", "text": "6 medium zucchini, spirilized" },
+                { "t": "li", "text": "6 cloves garlic, minced" },
+                { "t": "li", "text": "2 tablespoon fresh parsley, minced" },
+                { "t": "li", "text": "2 tablespoon chicken broth" },
+                { "t": "li", "text": "1/2 cup parmesan cheese, shredded (optional)" },
+                { "t": "li", "text": "1 lemon, sliced into wedges" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Prepare the chicken - Slice each chicken breast into small, bite-size chunks equal in size. Transfer to a large mixing bowl and mix with 1 tablespoon of olive oil, Italian seasoning, garlic seasoning, salt, and pepper. Set aside." },
+                { "t": "p", "text": "Prepare remaining ingredients - Allow the chicken to rest as you mince the garlic, parsley, and spiralize your zucchini. Set these things aside and get started on cooking the chicken." },
+                { "t": "p", "text": "Cook the chicken - Grab a large cast-iron skillet (if you have one) and set it over medium-high heat. Add the remaining tablespoon of olive oil and one tablespoon of butter and swirl to coat the bottom of the pan. Work in batches, if needed, adding the chicken to the skillet in a single layer (avoid overcrowding). Cook the chicken on all sides until just cooked. Remove from the skillet and set aside." },
+                { "t": "p", "text": "Cook the zucchini - return the skillet to medium heat. Add the remaining 3 tablespoons of butter, minced garlic, parsley, and chicken broth. Allow the butter to melt and garlic to cook just until fragrant (approximately 30 seconds). Add the zucchini noodles. Mix well to combine the zucchini with the garlic butter and continue to cook just until the zucchini is warm (approximately 2 minutes of continuous tossing)." },
+                { "t": "p", "text": "Return the chicken and assemble - Add the chicken back to the skillet and continue to cook just until the chicken is reheated, 1-2 minutes more. Sprinkle with shredded parmesan cheese, if desired, and lemon wedges for serving." }
+              ]
+            },
+            {
+              "heading": "NOTES",
+              "lines": [
+                { "t": "p", "text": "This recipe may also be made using boneless skinless chicken thighs or shrimp. Adjust cooking time accordingly." },
+                { "t": "p", "text": "Zucchini, once cooked for a certain period of time, will drop its water and become quite soggy. You can help prevent this by sprinkling your pre-cooked spiralized zucchini noodles with salt, allowing them to drop their moisture before cooking. Just be sure to rinse and dry your noodles thoroughly before cooking. OR, you can keep an extra close eye on your noodles and plate them before overcooking." },
+                { "t": "p", "text": "Broccoli, asparagus, or green beans would be delicious alternatives to zucchini." }
+              ]
+            },
+            {
+              "heading": "NUTRITION",
+              "lines": [
+                { "t": "p", "text": "Calories: 541kcal | Carbohydrates: 15g | Protein: 57g | Fat: 28g | Saturated Fat: 11g | Cholesterol: 183mg | Sodium: 1199mg | Potassium: 1701mg | Fiber: 4g | Sugar: 8g | Vitamin A: 1285IU | Vitamin C: 74.1mg | Calcium: 242mg | Iron: 2.7mg" }
+              ]
+            },
+            {
+              "heading": "NUTRITION",
+              "lines": [
+                { "t": "p", "text": "information is automatically calculated, so should only be used as an approximation." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 35,
+          "id": "greek-chicken-potatoes",
+          "title": "Greek Chicken & Potatoes",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "4 bone-in, skin-on chicken thighs" },
+                { "t": "li", "text": "0.67 pound small Yukon Gold potatoes, halved" },
+                { "t": "li", "text": "0.33 cup olive oil" },
+                { "t": "li", "text": "0.22 cup lemon juice" },
+                { "t": "li", "text": "0.67 teaspoon lemon zest" },
+                { "t": "li", "text": "1.33 teaspoons kosher salt" },
+                { "t": "li", "text": "0.67 teaspoon pepper" },
+                { "t": "li", "text": "0.67 tablespoon minced garlic" },
+                { "t": "li", "text": "1.33 teaspoons dried oregano" },
+                { "t": "li", "text": "1.33 tablespoons chopped fresh parsley" },
+                { "t": "li", "text": "Lemon wedges (for garnish)" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Preheat the oven to 400 degrees F." },
+                { "t": "step", "n": 2, "text": "In a large bowl, whisk together the olive oil, lemon juice, lemon zest, salt, pepper, garlic, and oregano." },
+                { "t": "step", "n": 3, "text": "Add the chicken and potatoes to the bowl and toss to coat thoroughly with the marinade." },
+                { "t": "step", "n": 4, "text": "Arrange the chicken and potatoes in a single layer on a sheet pan coated with cooking spray." },
+                { "t": "step", "n": 5, "text": "Bake for 40-45 minutes, or until the chicken is cooked through and the potatoes are tender, stirring halfway through the cooking time." },
+                { "t": "step", "n": 6, "text": "Sprinkle with parsley and serve with lemon wedges." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 36,
+          "id": "ground-turkey-mexican-bowls",
+          "title": "Ground Turkey Mexican Bowls",
+          "tags": ["WHOLE30", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "(Whole30)" },
+                { "t": "p", "text": "Serves: 3-4" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Roasted Sweet Potatoes" },
+                { "t": "li", "text": "2 large sweet potatoes, peeled and diced" },
+                { "t": "li", "text": "1 1/2 tbsp olive oil" },
+                { "t": "li", "text": "1/2 tsp salt" },
+                { "t": "li", "text": "1/2 tsp smoked paprika (optional)" },
+                { "t": "li", "text": "Turkey + Veg" },
+                { "t": "li", "text": "1 lb ground turkey" },
+                { "t": "li", "text": "1 red bell pepper, sliced" },
+                { "t": "li", "text": "1 green or yellow bell pepper, sliced" },
+                { "t": "li", "text": "1 small onion, sliced" },
+                { "t": "li", "text": "1 tbsp olive oil" },
+                { "t": "li", "text": "Seasoning" },
+                { "t": "li", "text": "1 1/2 tsp chili powder (check compliant)" },
+                { "t": "li", "text": "1 tsp ground cumin" },
+                { "t": "li", "text": "1/2 tsp garlic powder" },
+                { "t": "li", "text": "1/2 tsp onion powder" },
+                { "t": "li", "text": "1/2 tsp paprika" },
+                { "t": "li", "text": "3/4 tsp salt (adjust to taste)" },
+                { "t": "li", "text": "1/4 tsp black pepper" },
+                { "t": "li", "text": "Toppings" },
+                { "t": "li", "text": "1-2 avocados, sliced or diced" },
+                { "t": "li", "text": "Fresh cilantro (optional)" },
+                { "t": "li", "text": "Lime wedges" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Roast the sweet potatoes Preheat oven to 425 deg F." },
+                { "t": "p", "text": "Toss sweet potatoes with olive oil, salt, and paprika." },
+                { "t": "p", "text": "Roast 25-30 minutes, flipping once, until tender and caramelized." },
+                { "t": "step", "n": 2, "text": "Cook the veggies" },
+                { "t": "p", "text": "Heat olive oil in a large skillet over medium-high." },
+                { "t": "p", "text": "Add onion and peppers and sauté 5-7 minutes until softened and lightly charred." },
+                { "t": "p", "text": "Remove and set aside." },
+                { "t": "step", "n": 3, "text": "Brown the turkey" },
+                { "t": "p", "text": "In the same skillet, add ground turkey. Cook, breaking it up, until no longer pink." },
+                { "t": "step", "n": 4, "text": "Season it up" },
+                { "t": "p", "text": "Add all seasonings to the turkey along with 2-3 tbsp water." },
+                { "t": "p", "text": "Stir and simmer 2-3 minutes so everything coats evenly and stays juicy." },
+                { "t": "step", "n": 5, "text": "Combine" },
+                { "t": "p", "text": "Add peppers and onions back into the skillet with the turkey. Stir to combine and heat through." },
+                { "t": "step", "n": 6, "text": "Assemble bowls" },
+                { "t": "p", "text": "Sweet potatoes on the bottom → turkey & veg → avocado → squeeze of lime → cilantro if using." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 37,
+          "id": "korean-beef-bowl-recipe",
+          "title": "Korean Beef Bowl recipe",
+          "tags": ["WHOLE30"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Ingreadients" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 shallot, diced" },
+                { "t": "li", "text": "2 inches fresh ginger, peeled and grated on a microplane (can also us" },
+                { "t": "li", "text": "1 tablespoon toasted sesame oil" },
+                { "t": "li", "text": "2 pounds ground beef, (see notes)" },
+                { "t": "li", "text": "1 teaspoon red pepper flakes, (omit if you don't want it spicy)" },
+                { "t": "li", "text": "1 teaspoon garlic powder" },
+                { "t": "li", "text": "1 teaspoon onion powder" },
+                { "t": "li", "text": "1/2 cup coconut aminos, (see notes)" },
+                { "t": "li", "text": "2 tbsp fish sauce, (see notes)" },
+                { "t": "li", "text": "4 cups cauliflower rice, (can sub white rice if you're not doing Whole30)" },
+                { "t": "li", "text": "6 cups greens of choice, (chopped romaine, arugula, spinach, etc.)" },
+                { "t": "p", "text": "Optional sauce" },
+                { "t": "li", "text": "1/4 cup mayo" },
+                { "t": "li", "text": "1 tbsp hot sauce (siracha) -adjust to taste, siracha" },
+                { "t": "p", "text": "Optional toppings" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Sauteed/steamed broccoli and carrots (shredded)" },
+                { "t": "p", "text": "chopped green onions" },
+                { "t": "p", "text": "sliced avocado" },
+                { "t": "p", "text": "Chopped purple cabbage" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Start by preparing rice to have it ready. If serving with cauliflower rice, wait until the beef is almost done as it only takes a few minutes to cook." },
+                { "t": "p", "text": "Dice shallot and grate ginger to have it ready." },
+                { "t": "p", "text": "Heat a large skillet over medium-high heat and add sesame oil. Once hot, add in ground beef. Break the beef up into small bits." },
+                { "t": "p", "text": "Add the shallot, ginger, red pepper, garlic powder, and onion powder and mix with the beef. Continue cooking, stirring occasionally, until the meat is browned and developing some crispy bits, about 8 minutes." },
+                { "t": "p", "text": "Add the coconut aminos and fish sauce and cook for another 3-4 minutes." },
+                { "t": "p", "text": "If you are making the optional sauce, mix the mayo and hot sauce in a small bowl." },
+                { "t": "p", "text": "Serve beef in a bowl over a bed of greens with rice or cauliflower rice. Top with optional sauce and enjoy." }
+              ]
+            },
+            {
+              "heading": "SOURCE",
+              "lines": [
+                { "t": "p", "text": "https://realsimplegood.com/korean-beef-bowl/" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 38,
+          "id": "minced-beef-lamb-with-green-peas",
+          "title": "Minced Beef - Lamb with Green Peas",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "Curry" },
+                { "t": "li", "text": "3 tbsp avocado oil" },
+                { "t": "li", "text": "1 tsp cumin seeds" },
+                { "t": "li", "text": "1 (~220 g) medium onion, finely chopped" },
+                { "t": "li", "text": "5-6 garlic cloves, crushed or very finely chopped" },
+                { "t": "li", "text": "1- inch piece ginger, crushed or very finely chopped" },
+                { "t": "li", "text": "1 lb ground beef" },
+                { "t": "li", "text": "1 medium (2 small) ripe tomato, finely chopped" },
+                { "t": "li", "text": "1-2 green chili peppers (such as a small Serrano or Thai chili), chopped" },
+                { "t": "li", "text": "1 tbsp plain whole-milk yogurt (or dairy free yoghurt)" },
+                { "t": "li", "text": "1 tsp coriander powder" },
+                { "t": "li", "text": "3/4 tsp mild red chili powder, or to taste" },
+                { "t": "li", "text": "1/2 tsp turmeric powder" },
+                { "t": "li", "text": "1 1/8 tsp kosher salt, or to taste" },
+                { "t": "li", "text": "After cooking" },
+                { "t": "li", "text": "1 cup frozen green peas, thawed" },
+                { "t": "li", "text": "1 small mild green chili pepper (such as a Serrano), chopped - optional" },
+                { "t": "li", "text": "1 tsp freshly ground black pepper" },
+                { "t": "li", "text": "1/4-1/2 tsp garam masala, start with 1/4 tsp if using store-bought" },
+                { "t": "li", "text": "1/4 cup cilantro leaves, chopped, plus more for garnish" },
+                { "t": "li", "text": "1/2 tsp fresh lemon or lime juice, or serve with lemon/lime wedges" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "li", "text": "Heat oil in a medium-sized pan over high heat. Once hot, add the cumin seeds and onion and sauté until the onions are golden brown, about 8 minutes." },
+                { "t": "li", "text": "Add the garlic and ginger and stir for a minute, until aromatic. Add the ground beef and cook for 5 minutes, stirring often, until it's no longer pink and most of the moisture dries up. Use a wooden spatula to break up the meat into small pieces to ensure no lumps." },
+                { "t": "li", "text": "Add the tomato, green chili pepper, yogurt, coriander powder, red chili powder, turmeric, and salt and continue to sauté for 2 minutes, until the tomatoes start to break down. You'll notice the liquid in the mixture is beginning to come to a boil. Add 1/4 cup water and allow it to come to a simmer again." },
+                { "t": "li", "text": "Lower the heat to medium, cover and allow it to cook for 15 minutes, stirring once in between. If you feel that there is not enough moisture and the meat is sticking to the bottom of the pan, add another 1/4 cup water." },
+                { "t": "li", "text": "Uncover, and stir in the peas, more green chili pepper (if using), and 1/2 cup water. Cover again and allow the mixture to cook for 3-5 minutes, or until the peas are cooked through. (See Note 3)" },
+                { "t": "li", "text": "Add the black pepper, garam masala, and cilantro and sauté for another minute or two, until you can see the oil separating from the curry. Taste and adjust salt and spice. Lower the heat to the lowest setting, cover, and allow the flavors to settle for 5 minutes." },
+                { "t": "li", "text": "Turn off the heat, sprinkle with more cilantro and squeeze in lemon or lime juice. Serve hot with any kind of bread (roti, naan, sliced bread), or rice." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 39,
+          "id": "one-skillet-chicken-pot-pie-paleo",
+          "title": "One Skillet Chicken Pot Pie {Paleo}",
+          "tags": ["PALEO", "QUICK"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "crust:" },
+                { "t": "li", "text": "1 1/2 cups blanched almond flour" },
+                { "t": "li", "text": "3/4 cup tapioca flour or arrowroot" },
+                { "t": "li", "text": "1/2 cup grass fed butter ghee, or palm oil shortening, cold and cut or broken into pieces" },
+                { "t": "li", "text": "1/2 tsp fine sea salt" },
+                { "t": "li", "text": "1 tsp maple sugar or coconut sugar" },
+                { "t": "li", "text": "1 large egg" },
+                { "t": "li", "text": "filling:" },
+                { "t": "li", "text": "3 Tbsp ghee or other cooking fat" },
+                { "t": "li", "text": "1 small onion diced" },
+                { "t": "li", "text": "1 cup celery sliced" },
+                { "t": "li", "text": "3 cloves garlic minced" },
+                { "t": "li", "text": "2 tsp fresh minced rosemary leaves" },
+                { "t": "li", "text": "2 tsp fresh minced sage leaves" },
+                { "t": "li", "text": "1 tsp fresh thyme leaves" },
+                { "t": "li", "text": "3 Tbsp arrowroot flour or tapioca" },
+                { "t": "li", "text": "2 cups chicken bone broth" },
+                { "t": "li", "text": "1/2 cup full fat coconut milk" },
+                { "t": "li", "text": "2 cups frozen Peas and carrots" },
+                { "t": "li", "text": "3 cups cooked and cubed or shredded chicken*" },
+                { "t": "li", "text": "3/4 tsp sea salt or to taste" },
+                { "t": "li", "text": "1/4 tsp black pepper or to taste" },
+                { "t": "li", "text": "egg wash:" },
+                { "t": "li", "text": "1 egg" },
+                { "t": "li", "text": "1 Tbsp coconut milk" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Prepare the crust first. You will make the filling while the dough chills. In a food processor or large bowl, combine the almond flour, tapioca or arrowroot, cut up fat, salt and sugar." },
+                { "t": "step", "n": 2, "text": "If using a food processor, pulse the mixture until coarse crumbs form, or use a pastry blender to cut the fat/butter into the dry ingredients. Add in the egg and mix/pulse until a dough forms. Gather the dough into a ball, wrap it in plastic wrap and flatten it into a disc shape. Chill the dough in the refrigerator while you prepare the pot pie filling. You can also chill the dough overnight to get a head start on the recipe." },
+                { "t": "step", "n": 3, "text": "For the filling, heat a deep oven proof skillet over medium heat and add the ghee. I used a 10.25\" cast iron skillet in the photos but a 12\" skillet will also work well." },
+                { "t": "step", "n": 4, "text": "Add in the onions and celery and cook until translucent, the add the garlic and fresh herbs, sprinkle with salt and pepper, and cook another 2-3 minutes." },
+                { "t": "step", "n": 5, "text": "Stir in the arrowroot or tapioca to coat the veggies evenly, then pour in the broth and coconut milk and stir. Bring to a boil, then lower the heat to medium-low and simmer for another 3-5 minutes. Stir in the peas and carrots and the chicken and cook for another 2 minutes. Taste, then season as desired with sea salt and black pepper, remove from heat. Preheat your oven to 375 deg F." },
+                { "t": "step", "n": 6, "text": "To roll out the dough, place a piece of parchment paper on a cutting board and sprinkle with arrowroot or tapioca flour. Place the dough on top and sprinkle more flour on the dough, then cover with another sheet of parchment." },
+                { "t": "step", "n": 7, "text": "Roll the dough into a large circle, slightly larger than the diameter of the top of your skillet. Remove the top sheet of parchment, repair the edges as needed, then carefully flip the crust onto the top of the skillet. Flute the edges as desired and cut 3-4 slits in middle of the dough for venting. In a small bowl, whisk together the egg and coconut milk for the egg wash and brush all over the crust." },
+                { "t": "step", "n": 8, "text": "Place the skillet on a large baking sheet to catch leaks and bake on the middle rack of the preheated oven for 30 minutes or until the crust is golden brown and the filling is bubbly. Allow the pot pie to sit for 10 minutes to set before serving. Serve hot and enjoy!" },
+                { "t": "p", "text": "https://www.paleorunningmomma.com/one-skillet-chicken-pot-pie-paleo/#wprm-recipe-container-31655" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 40,
+          "id": "paella",
+          "title": "Paella",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Mixed Sausage (or Chicken) Paella" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "4 cups chicken stock" },
+                { "t": "li", "text": "1/2 teaspoon saffron threads" },
+                { "t": "li", "text": "3 tablespoons extra-virgin olive oil" },
+                { "t": "li", "text": "6 ounces chorizo, sliced" },
+                { "t": "li", "text": "6 ounces merguez (lamb sausage)," },
+                { "t": "li", "text": "sliced 6 ounces garlic sausage, sliced (or chicken thighs, 1\" pieces)" },
+                { "t": "li", "text": "1 large onion, finely chopped" },
+                { "t": "li", "text": "1/2 cup red bell pepper, finely chopped" },
+                { "t": "li", "text": "3 cloves garlic, minced" },
+                { "t": "li", "text": "1 teaspoon Spanish smoked paprika" },
+                { "t": "li", "text": "1 1/2 cups Spanish short-grain rice" },
+                { "t": "li", "text": "1/2 cup tomato purée, fresh or canned" },
+                { "t": "li", "text": "Salt" },
+                { "t": "li", "text": "Freshly ground black pepper" },
+                { "t": "li", "text": "1 head of brocolli, chopped" },
+                { "t": "li", "text": "1/2 tablespoon chopped flat-leaf parsley" }
+              ]
+            },
+            {
+              "heading": "PREPARATION",
+              "lines": [
+                { "t": "p", "text": "Step 1 Heat stock in a saucepan. Add saffron and set aside. Heat oil in a 12- to 14-inch paella pan or cast-iron skillet." },
+                { "t": "p", "text": "Add sausages and sauté on medium until lightly browned." },
+                { "t": "p", "text": "Step 2 Add onion, bell pepper and garlic to same pan. Sauté until soft. Stir in paprika and rice. Stir in tomato purée." },
+                { "t": "p", "text": "Add brocolli than the stock. Season the liquid to taste , stir and cook, uncovered, on medium about 25 minutes, until liquid is absorbed and rice is tender." },
+                { "t": "p", "text": "Step 3 Remove from heat and place sheet of parchment paper on surface for 10 minutes. Remove parchment, scatter parsley on top and serve, making sure to include any crusty bits that cling to pan with each portion." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 41,
+          "id": "paleo-chicken-fajitas",
+          "title": "Paleo Chicken Fajitas",
+          "tags": ["PALEO"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "3 lbs chicken breast, cut in thin strips;" },
+                { "t": "li", "text": "3 bell peppers;" },
+                { "t": "li", "text": "3 onions, sliced;" },
+                { "t": "li", "text": "2 tablespoon each oregano, chili powder, cumin and coriander;" },
+                { "t": "li", "text": "6 garlic cloves, chopped;" },
+                { "t": "li", "text": "Juice of 5 lemons;" },
+                { "t": "li", "text": "4 tablespoon cooking fat (coconut oil, tallow or ghee are excellent here)," },
+                { "t": "li", "text": "Butter lettuce to serve;" },
+                { "t": "li", "text": "You choice of toppings: diced tomatoes, fermented pickles, sauerkraut, sliced avocados, salsa, guacamole, mayonnaise and/or salsa verde" },
+                { "t": "li", "text": "Preparation" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Combine the chicken, bell peppers, onions, spices, garlic and lemon juice in a bowl and mix well." },
+                { "t": "step", "n": 2, "text": "If preparing ahead of time, let marinate in the refrigerator for about 4 hours." },
+                { "t": "step", "n": 3, "text": "When ready to cook, heat a large skillet on medium heat and cook the whole preparation with the cooking fat until the chicken is cooked through and the onion and bell pepper are soft." },
+                { "t": "step", "n": 4, "text": "Put the hot chicken preparation in a large bowl and let the people prepare their own fajitas on top of lettuce leaves with their favorite toppings." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 42,
+          "id": "paleo-game-day-chicken-tenders",
+          "title": "Paleo Game Day Chicken Tenders",
+          "tags": ["PALEO"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 lbs boneless, skinless chicken breast" },
+                { "t": "li", "text": "2 tbsp arrowroot starch" },
+                { "t": "li", "text": "1/2 tsp garlic powder" },
+                { "t": "li", "text": "1/2 tsp onion powder" },
+                { "t": "li", "text": "1/4 tsp sea salt" },
+                { "t": "li", "text": "1/4 tsp red cayenne pepper" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Preheat your oven to 400 degrees. Line a large baking sheet with aluminum foil, then pace a wire rack over the baking sheet." },
+                { "t": "p", "text": "Pat the chicken breast dry with paper towel to absorb excess water." },
+                { "t": "p", "text": "Cut the chicken breasts into chicken tender strips (remove tendon). Put in a bowl. Sprinkel all over with the arrowroot, garlic and onion powder, salt and red pepper - toss to evenly coat." },
+                { "t": "p", "text": "Arrange tenders on wire rack and place in the middle rack of the preheated oven." },
+                { "t": "p", "text": "Bake at 400 degrees for 15 to 20 mins, flipping halfway through until they reach an internal temperature of 165 degrees." },
+                { "t": "p", "text": "Remove and serve hot." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 43,
+          "id": "pan-seared-scallops-with-lemon-herb-butter",
+          "title": "Pan Seared Scallops with Lemon Herb Butter",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "8 ounces softened unsalted butter + 2 tablespoons" },
+                { "t": "li", "text": "1/2 peeled and finely minced shallot" },
+                { "t": "li", "text": "2 finely minced cloves of garlic" },
+                { "t": "li", "text": "2 tablespoons chopped fresh chives" },
+                { "t": "li", "text": "2 tablespoons chopped fresh thyme" },
+                { "t": "li", "text": "1/4 cup chopped fresh parsley" },
+                { "t": "li", "text": "juice and zest of 1 lemon" },
+                { "t": "li", "text": "1 pound U12 sea scallops, foot removed" },
+                { "t": "li", "text": "2 tablespoons oil" },
+                { "t": "li", "text": "1/3 cup white wine" },
+                { "t": "li", "text": "sea salt and fresh cracked pepper to taste" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "In a stand mixer with the paddle attachment, whip together the 2 sticks of butter for 4-6 minutes on medium to high speed until it is light and fluffy." },
+                { "t": "step", "n": 2, "text": "Next, add the lemon juice and mix until combined, about 1 minute." },
+                { "t": "step", "n": 3, "text": "Add the garlic, shallot, lemon zest, parsley, thyme, chives, and salt and pepper until completely combined. Chill." },
+                { "t": "step", "n": 4, "text": "Remove the foot of the scallops, pat dry with paper towels, and season the scallops on both sides with salt and pepper." },
+                { "t": "step", "n": 5, "text": "Heat 2 tablespoons of oil in a sauté pan over high heat until it begins to lightly smoke. Add in the scallops quickly and turn the heat down to medium-high." },
+                { "t": "step", "n": 6, "text": "Immediately add the 2 tablespoons of unsalted butter to help brown and season the scallops" },
+                { "t": "step", "n": 7, "text": "Turn the scallops over after 1:30 to 2 minutes or until golden brown on the bottom." },
+                { "t": "step", "n": 8, "text": "Cook the scallops for a further 30 to 45 seconds or until the desired internal temperature is achieved." },
+                { "t": "step", "n": 9, "text": "Remove the scallops and deglaze with the white wine and cook until it is almost gone over medium heat, about 2 to 3 minutes." },
+                { "t": "step", "n": 10, "text": "Remove the pan from the burner and add in 1/4 cup of the herb butter and whisk until melted. Reserve the remaining in the freezer for a later date." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 44,
+          "id": "quick-grilled-lemon-salmon",
+          "title": "Quick Grilled Lemon Salmon",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "2 lb salmon fillet (love the one from Costco as it comes skinless)" },
+                { "t": "p", "text": "1 lemon" },
+                { "t": "p", "text": "Butter - 5 to 6 pats" },
+                { "t": "p", "text": "Salt, pepper, dill" },
+                { "t": "p", "text": "Tin foil" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Heat your grill to 450 degrees" },
+                { "t": "step", "n": 2, "text": "Layout a piece of tin foil that is large enough to cover and wrap the salmon" },
+                { "t": "step", "n": 3, "text": "Put 5 - 6 slices of butter on the salmon placed evenly, season with salt, pepper and dill generously." },
+                { "t": "step", "n": 4, "text": "Slice lemon into thin slices (8-10 slices) and cover the salmon" },
+                { "t": "step", "n": 5, "text": "Wrap the salmon and then place on the heated grill" },
+                { "t": "step", "n": 6, "text": "Cook time should be 10-12 minutes." },
+                { "t": "step", "n": 7, "text": "Don't overcook and check 1/2 way through" },
+                { "t": "step", "n": 8, "text": "Once done, take off the grill and let rest for 10 minutes." },
+                { "t": "step", "n": 9, "text": "Enjoy!!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 45,
+          "id": "reverse-seared-tri-tip",
+          "title": "Reverse Seared Tri-tip",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 large Tri-tip (Costco has them in packs of two)" },
+                { "t": "li", "text": "Seasoning blend of choice" },
+                { "t": "li", "text": "Recommendation: Great Plains Coffee Rub from Savory Spice shop in Boulder" },
+                { "t": "li", "text": "1-2 TBSP EVOO" },
+                { "t": "li", "text": "A wired or wireless leave-in meat thermometer" },
+                { "t": "li", "text": "1 TBSP butter (or beef tallow)" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Pat the Tri-tip dry" },
+                { "t": "step", "n": 2, "text": "If necessary, trim any large pieces of fat from from the Tri-Tip and remove any remaining silver skin" },
+                { "t": "step", "n": 3, "text": "Coat lightly with EVOO to use as a binder" },
+                { "t": "step", "n": 4, "text": "Season liberally with your spice blend of choice" },
+                { "t": "li", "text": "If possible, do this ~1-2 hours before you cook the Tri-tip and let it rest in the fridge." },
+                { "t": "step", "n": 5, "text": "If you are using a smoker, set it to 225. If you are using a grill, prepare it for indirect cooking and target the temp to be 225" },
+                { "t": "step", "n": 6, "text": "Insert the thermometer probe into the thickest part of the tri-tip and cook until the internal temp is 110" },
+                { "t": "li", "text": "Cook time range 45-60 minutes depending on your smoker/grill and the ambient air temperature outside" },
+                { "t": "step", "n": 7, "text": "Remove from the smoker/grill and cover loosely with foil" },
+                { "t": "step", "n": 8, "text": "Turn the heat up on your grill to high and give it a few minutes to heat up" },
+                { "t": "step", "n": 9, "text": "Sear the Tri-tip for 8-10 minutes flipping every 2 minutes until the internal temp hits 125" },
+                { "t": "step", "n": 10, "text": "Remove from the grill" },
+                { "t": "step", "n": 11, "text": "Add 1 tbsp of butter to the center of the Tri-tip and wrap in foil" },
+                { "t": "step", "n": 12, "text": "Let the Tri-tip rest 10 minutes before slicing (across the grain)" }
+              ]
+            },
+            {
+              "heading": "NOTES",
+              "lines": [
+                { "t": "li", "text": "If you buy the meat at Costco you can freeze one of the two Tri-tips. Assume 24 hours in the fridge to defrost" },
+                { "t": "li", "text": "Can be used for steak tacos, layered on top of baked sweet potatoes, or added as a protein to a salad" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 46,
+          "id": "rosemary-lemon-chicken-thighs",
+          "title": "Rosemary Lemon Chicken Thighs",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "4-6 Chicken thighs with the skin on" },
+                { "t": "li", "text": "1-2 Lemons" },
+                { "t": "li", "text": "Fresh Rosemary sprigs (dried is fine too)" },
+                { "t": "li", "text": "Olive Oil (1-2 TBSP)" },
+                { "t": "li", "text": "Salt" },
+                { "t": "li", "text": "Pepper" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Prep oven and turn on to 375 degrees" },
+                { "t": "step", "n": 2, "text": "In a baking pan place chicken thighs in baking pan with skin side up." },
+                { "t": "step", "n": 3, "text": "Pour olive oil evenly over chicken thighs so it covers the skin" },
+                { "t": "step", "n": 4, "text": "Squeeze 1 lemon over the thighs, 2 if needed. I cut up some of the left overs and place in pan as well" },
+                { "t": "step", "n": 5, "text": "If you are using dried rosemary, sprinkle on each chicken thighs." },
+                { "t": "step", "n": 6, "text": "If you are using fresh rosemary, I would use 4-6 sprigs, depending on the amount of chicken and like for rosemary. Sprinkle the sprigs all over the chicken." },
+                { "t": "step", "n": 7, "text": "Add salt and pepper to the chicken" },
+                { "t": "step", "n": 8, "text": "Cover with foil and cook for 35 minutes" },
+                { "t": "step", "n": 9, "text": "Turn up oven to 425 degrees, remove foil and cook for 5-10 minutes until the skin is crispy." },
+                { "t": "p", "text": "I like to pair this with an arugula salad with avocado and lemon, olive oil and salt dressing and oven baked white sweet potatoes." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 47,
+          "id": "sheet-pan-paleo-meatballs-with-root-vegetables",
+          "title": "Sheet Pan Paleo Meatballs with Root Vegetables",
+          "tags": ["PALEO", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "These sheet pan meatballs are a complete paleo meal and so easy. Feel free to use all beef or swap chicken or turkey in the gluten-free mixture. Leave out the garlic if you want to make this recipe low FODMAP. The ingredient list might seem involved, but this is weeknight cooking at its easiest!" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "For the kale salsa verde:" },
+                { "t": "li", "text": "4 Lacinato kale leaves" },
+                { "t": "li", "text": "1 cup mixed herbs chives, mint, parsley" },
+                { "t": "li", "text": "1 garlic clove optional" },
+                { "t": "li", "text": "1/4 cup extra-virgin olive oil" },
+                { "t": "li", "text": "2 tablespoons lemon juice from 1/2 a lemon" },
+                { "t": "li", "text": "2 tablespoons capers" },
+                { "t": "li", "text": "1/2 teaspoon sea salt" },
+                { "t": "li", "text": "Pinch of red pepper flakes" },
+                { "t": "p", "text": "For the sheet pan:" },
+                { "t": "li", "text": "4 medium carrots thinly sliced on the bias" },
+                { "t": "li", "text": "2 small sweet potatoes cut into thin wedges" },
+                { "t": "li", "text": "1 delicata squash seeded, and thinly sliced" },
+                { "t": "li", "text": "1 golden beet cut into thin wedges" },
+                { "t": "li", "text": "Olive oil" },
+                { "t": "li", "text": "Sea salt" },
+                { "t": "p", "text": "For the meatballs:" },
+                { "t": "li", "text": "1 pound ground beef" },
+                { "t": "li", "text": "1/2 pound ground pork" },
+                { "t": "li", "text": "1 large egg" },
+                { "t": "li", "text": "1/2 cup almond flour" },
+                { "t": "li", "text": "1 tablespoon chia seeds" },
+                { "t": "li", "text": "1 teaspoon sea salt" },
+                { "t": "li", "text": "1/2 teaspoon smoked paprika" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Preheat the oven to 425 degrees F." },
+                { "t": "step", "n": 2, "text": "Make the salsa verde: In a blender or small food processor, combine the kale, herbs, garlic (if using), olive oil, lemon juice, capers, sea salt and red pepper. Taste for seasoning and set aside." },
+                { "t": "step", "n": 3, "text": "On a parchment-lined sheet pan, arrange the carrots, sweet potato, delicata and beets. Drizzle with a scant amount of olive oil and season with salt. Toss to combine and arrange in an even layer." },
+                { "t": "step", "n": 4, "text": "In a large bowl, combine the ground beef and pork, egg, almond flour, chia seeds, sea salt, and smoked paprika. Add 1/4 cup of the salsa verde to the meatballs." },
+                { "t": "step", "n": 5, "text": "With clean hands, mix the meat with the other ingredients until loosely combined. You don't want to overly break up the meat. Form the mixture into 2-inch balls (1/4 cup measure or an ice cream scoop works well for portioning) and roll in your hands until round and smooth. You should have a dozen balls." },
+                { "t": "step", "n": 6, "text": "Arrange the balls on top of the vegetables and bake in the oven until cooked through and beginning to brown on the top, about 25-30 minutes." },
+                { "t": "step", "n": 7, "text": "When the vegetables are caramelized and the meatballs have browned, remove from the oven and drizzle with the salsa verde. Enjoy!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 48,
+          "id": "sheet-pan-sausage-with-brussels-sprouts-squash",
+          "title": "Sheet Pan Sausage with Brussels Sprouts & Squash",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 pack Aidell's chicken apple sausage, or sausage of choice, cut into 1-inch rounds" },
+                { "t": "li", "text": "1 pack sugar free bacon, cut into 1 inch pieces" },
+                { "t": "li", "text": "1 lb brussels sprouts, bottoms cut, halved" },
+                { "t": "li", "text": "1 lb cubed butternut squash" },
+                { "t": "li", "text": "1 honeycrisp apple, peeled and diced" },
+                { "t": "p", "text": "Marinade" },
+                { "t": "li", "text": "1/4 cup olive oil" },
+                { "t": "li", "text": "1/4 cup coconut aminos" },
+                { "t": "li", "text": "1 tbsp dijon mustard" },
+                { "t": "li", "text": "1 tsp onion powder" },
+                { "t": "li", "text": "1/2 tsp garlic powder" },
+                { "t": "li", "text": "1/2 tsp paprika" },
+                { "t": "li", "text": "1/2 tsp sea salt" },
+                { "t": "p", "text": "Garlic Aioli (optional)" },
+                { "t": "li", "text": "1/4 cup mayo" },
+                { "t": "li", "text": "1 clove minced garlic" },
+                { "t": "li", "text": "2 tsp hot sauce" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Preheat your oven to 425. Line a large baking sheet with parchment paper. Cut your bacon into one inch pieces and spread them out evenly on the baking sheet. Bake for 8 minutes." },
+                { "t": "p", "text": "Meanwhile, chop the rest of your ingredients and add them to a large bowl. Whisk the marinade ingredients together, and pour it over everything in the bowl. Use your hands to mix and coat everything well." },
+                { "t": "li", "text": "When the bacon comes out of the oven, add the remaining ingredients to the pan. Toss everything with the bacon pieces / bacon fat. Return the pan to the oven for 20 minutes." },
+                { "t": "li", "text": "At this point, check to see if everything is browned to your liking. If you prefer things a little more crispy, toss everything again and return the pan to the oven for an additional 5 minutes." },
+                { "t": "p", "text": "Serve with the garlic aioli and enjoy!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 49,
+          "id": "spiced-pork-tenderloin-with-chimichurri",
+          "title": "Spiced Pork Tenderloin with Chimichurri",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "For the Pork:" },
+                { "t": "li", "text": "2.5 lb pork tenderloin only 2.5 g fat for a 4 oz portion" },
+                { "t": "li", "text": "6 cloves garlic" },
+                { "t": "li", "text": "1 tbs balsamic vinegar" },
+                { "t": "li", "text": "1 tbs olive oil" },
+                { "t": "li", "text": "1 tsp chili powder" },
+                { "t": "li", "text": "1 tsp cumin" },
+                { "t": "li", "text": "1 tsp kosher salt" },
+                { "t": "p", "text": "For the Light Cilantro Basil Chimichurri:" },
+                { "t": "li", "text": "1 cup fresh cilantro" },
+                { "t": "li", "text": "1/3 cup fresh basil leaves" },
+                { "t": "li", "text": "1/4 cup white balsamic vinegar" },
+                { "t": "li", "text": "juice from half a lemon" },
+                { "t": "li", "text": "2 cloves garlic" },
+                { "t": "li", "text": "1/2 tbs olive oil" },
+                { "t": "li", "text": "1/2 tsp salt" },
+                { "t": "li", "text": "1/4 tsp pepper" },
+                { "t": "li", "text": "1/4-1/2 avocado - optional (makes it thicker)" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Trim fat off of pork tenderloins. I like to rinse mine, and pat dry." },
+                { "t": "step", "n": 2, "text": "Mix all of the other ingredients for the pork rub rub. It will make a thick marinade." },
+                { "t": "step", "n": 3, "text": "Using a spoon (or ziplock bags on your hands!) rub the marinade all over the two tenderloins. You can cover, and refrigerate for a few hours or overnight - OR just leave on the counter like I did for 15-30 minutes before grilling. Always best to let it come to room temp before grilling." },
+                { "t": "step", "n": 4, "text": "Heat grill to pretty high heat." },
+                { "t": "step", "n": 5, "text": "Spray grill carefully with cooking spray." },
+                { "t": "step", "n": 6, "text": "Sprinkle tenderloins with additional kosher salt and pepper (not listed) and place on grill. Sear for about 2-3 minutes per side over the high heat, and then turn down to medium, and cover. Cook for about 15-17 minutes TOTAL, including searing time, rotating every 5 minutes or so. If you have a meat thermometer, internal temp should be about 140." },
+                { "t": "step", "n": 7, "text": "Let rest for 10 minutes, tented with foil before slicing in!" },
+                { "t": "step", "n": 8, "text": "Pulse all chimichurri ingredients in a mini food processor or blender." },
+                { "t": "p", "text": "Link to original recipe: https://lillieeatsandtells.com/brown-sugar-spiced-pork-tenderloin-with-chimichurri/#wprm-recipe-container-2480" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 50,
+          "id": "sweet-potato-bun-burgers",
+          "title": "Sweet potato bun burgers",
+          "tags": ["WHOLE30"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Sweet Potato Buns" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 sweet potatoes cooked and mashed" },
+                { "t": "li", "text": "2 eggs" },
+                { "t": "li", "text": "Salt and pepper" },
+                { "t": "p", "text": "Mix together and add mixture to a mini waffle iron." },
+                { "t": "p", "text": "Burgers" },
+                { "t": "li", "text": "1 lb extra lean ground meat (turkey/beef/venison/elk)" },
+                { "t": "li", "text": "2 tbsp burger seasoning that falls in the Whole30" },
+                { "t": "p", "text": "Form into 4 burgers and cook to desired temp." },
+                { "t": "p", "text": "Fixings Add whatever you want! I like:" },
+                { "t": "li", "text": "Lettuce" },
+                { "t": "li", "text": "Tomato" },
+                { "t": "li", "text": "Pickles" },
+                { "t": "li", "text": "Red onion" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 51,
+          "id": "vegan-insta-pot-nepali-chickpea-dinner",
+          "title": "Vegan Insta Pot Nepali Chickpea Dinner",
+          "tags": ["PLANT BASED"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 tbls avocado oil (or butter or ghee)" },
+                { "t": "li", "text": "1 Can chickpeas or overnight soaked 1 cup dry chickpeas." },
+                { "t": "li", "text": "Half red onion diced" },
+                { "t": "li", "text": "2 Roma Tomatoes Diced" },
+                { "t": "li", "text": "1 Garlic Diced" },
+                { "t": "p", "text": "Spices mix" },
+                { "t": "li", "text": "1 tablespoon curry powder" },
+                { "t": "li", "text": "1/2 tablespoon paprika" },
+                { "t": "li", "text": "1/2 ginger powder" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Put Insta Pot in sauté mode and oil and heat this for a min." },
+                { "t": "p", "text": "Add diced onion, cook for 2-3 min until lightly brown." },
+                { "t": "p", "text": "Add garlic stir for another 1min or so" },
+                { "t": "p", "text": "Add Spices mix and stir around, 30 sec or so" },
+                { "t": "p", "text": "Add diced tomatoes and sauté for 3-4 min" },
+                { "t": "p", "text": "Add salt and pepper to for your taste" },
+                { "t": "p", "text": "Add chickpeas and stir for a min." },
+                { "t": "p", "text": "Add 3 cup hot water" },
+                { "t": "p", "text": "Close the lid on instapot, change from sauté mode to pressure cook mode. Pressure cook for ~ 20 min, if can chickpeas was used or 30 min if overnight soaked chickpea was used." },
+                { "t": "p", "text": "When done, mash some chickpeas as this will thicken the sauce." },
+                { "t": "p", "text": "Garnish with cilantro or green onions(if desired)" },
+                { "t": "p", "text": "Server with rice." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 52,
+          "id": "whole30-shepherds-pie",
+          "title": "Whole30 Shepherd's Pie",
+          "tags": ["WHOLE30", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Serves 3-4 | Total prep: 1 hour 20 minutes" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 medium sweet potatoes, peeled and cut into large chunks" },
+                { "t": "li", "text": "2 TB ghee" },
+                { "t": "li", "text": "1/2 cup full-fat canned coconut milk" },
+                { "t": "li", "text": "1.5 tsp salt" },
+                { "t": "li", "text": "3/4 tsp black pepper" },
+                { "t": "li", "text": "1 TB olive oil" },
+                { "t": "li", "text": "2 shallots, sliced" },
+                { "t": "li", "text": "2 celery stalks, finely chopped" },
+                { "t": "li", "text": "1 medium carrot, peeled and finely chopped" },
+                { "t": "li", "text": "1 lb ground beef, lamb or bison" },
+                { "t": "li", "text": "2 garlic cloves, minced" },
+                { "t": "li", "text": "2 tsp chopped fresh thyme, or 1/2 tsp dried thyme" },
+                { "t": "li", "text": "1 TB tomato paste" },
+                { "t": "li", "text": "1 cup beef broth" },
+                { "t": "li", "text": "1 TB potato starch (can sub 2 TB tapioca starch or 1/2 TB arrowroot powder)" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Preheat the oven to 375 degrees F. Place the sweet potatoes in a large saucepan and cover with cold water." },
+                { "t": "p", "text": "Bring to a boil over high heat, then reduce the heat and cook until the potatoes are fork-tender, 10 to 15 minutes." },
+                { "t": "p", "text": "Drain the potatoes and return them to the pan. Add the ghee, coconut milk, 1/2 tsp of the salt, and 1/4 tsp of the pepper. Mash with a potato masher or blend with an immersion blender until creamy; set aside." },
+                { "t": "p", "text": "In a large skillet, heat the olive oil over medium heat. Add the shallots, celery, and carrot and cook, stirring frequently, until the vegetables are softened, about 5 minutes. Add the ground meat of choice and the garlic. Cook, stirring often, until meat is browned, 7 to 10 minutes. Season with the remaining 1 tsp salt, 1/2 tsp pepper, and the thyme. Add the tomato paste and cook, stirring constantly, until the tomato paste begins to darken, about 1 minute." },
+                { "t": "p", "text": "In a small bowl or measuring cup, stir together the beef broth and potato starch until smooth. Add to the meat mixture and cook, stirring constantly, until slightly thickened, 1 to 2 minutes." },
+                { "t": "p", "text": "Spoon the meat mixture evenly into a 2-quart casserole or 8-inch square glass baking dish. Carefully spread the mashed sweet potatoes over the top. Bake until bubbling, about 25 minutes. Let stand 10 minutes before serving." },
+                { "t": "li", "text": "*Highly recommend doubling this recipe for leftovers. I usually use 1 lb bison and 1 lb ground turkey in an 9 x 13 pan." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "soups-chili",
+      "title": "SOUPS & CHILI",
+      "intro": "Performance-focused meals from the Koda community.",
+      "count": 5,
+      "recipes": [
+        {
+          "n": 53,
+          "id": "high-protein-dinner-chili",
+          "title": "High Protein Dinner Chili",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "CHILI:" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1/4 cup plus 2 tablespoons avocado oil" },
+                { "t": "li", "text": "2.5 pounds ground venison/ground meat of choice" },
+                { "t": "li", "text": "Kosher salt and freshly ground black pepper" },
+                { "t": "li", "text": "3 large poblano chiles, stemmed and diced" },
+                { "t": "li", "text": "1 large white onion, chopped" },
+                { "t": "li", "text": "6 cloves garlic, thinly sliced" },
+                { "t": "li", "text": "2 tablespoons ancho chile powder, or to taste" },
+                { "t": "li", "text": "1 1/2 tablespoons ground cumin" },
+                { "t": "li", "text": "1 teaspoon dried oregano" },
+                { "t": "li", "text": "3 (14.5-ounce) cans crushed tomatoes" },
+                { "t": "li", "text": "3 tablespoons (or to taste) minced chipotle chiles in adobo" },
+                { "t": "li", "text": "4 cups chicken bone broth" },
+                { "t": "p", "text": "How To" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Heat a large Dutch oven or other wide, heavy saucepan over medium-high heat." },
+                { "t": "p", "text": "Add 2 tablespoons of the oil. Sprinkle the venison generously with salt and pepper." },
+                { "t": "p", "text": "Working in batches, crumble the venison/meat of choice into the pot in large chunks and sear until browned, 6 to 8 minutes per batch, transferring to a large bowl as each batch is done and adding more oil as needed." },
+                { "t": "p", "text": "Reduce the heat to medium. Add the remaining 2 tablespoons oil, the poblanos, and the onion, scraping up the browned bits at the bottom of the pot. Raise the heat to medium-high heat and cook, stirring often, until softened, 8 to 10 minutes." },
+                { "t": "p", "text": "Stir in the garlic, ancho chile powder, cumin, and oregano and cook, stirring constantly, for 1 minute." },
+                { "t": "p", "text": "Add the tomatoes, Add the chipotles, the stock, and the venison with any juices that have accumulated in the bowl." },
+                { "t": "p", "text": "Stir to combine, then bring to a simmer. Cook, partially covered, stirring occasionally, until the venison is tender, about 2 hours." },
+                { "t": "p", "text": "Taste and adjust the seasonings." },
+                { "t": "p", "text": "Macros With ground elk (mixed w beef fat to be ~90% lean)" },
+                { "t": "p", "text": "Serving count is in grams (500g is a big bowl)" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 54,
+          "id": "paleo-dinner-chili",
+          "title": "Paleo Dinner Chili",
+          "tags": ["PALEO", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Primal Chili" },
+                { "t": "p", "text": "Beef, Pre-cook" },
+                { "t": "p", "text": "Prep Time: 20 min Cook Time: 30 min Difficulty: Medium Servings: 4 servings Source: Primal Blueprint Cookbook, Mark Sisson" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "2-3 slices of uncooked bacon, chopped or 24 ounces of finely chopped pancetta (Italian bacon)" },
+                { "t": "li", "text": "1 onion, chopped" },
+                { "t": "li", "text": "4 cloves garlic, coarsely chopped" },
+                { "t": "li", "text": "2 pounds ground bison (grass-fed beef may be substituted)" },
+                { "t": "li", "text": "2 tablespoons chili powder" },
+                { "t": "li", "text": "1 teaspoon dried oregano or 1 tablespoon fresh minced oregano" },
+                { "t": "li", "text": "1 teaspoon paprika" },
+                { "t": "li", "text": "1 1/2-2 cups water (or beef broth)" },
+                { "t": "p", "text": "1 14.5-ounce can finely chopped tomatoes with liquid (28 ounce can may be used also) or 3-4 medium size tomatoes, seeded and diced" },
+                { "t": "li", "text": "1 tablespoon unsweetened cocoa powder" },
+                { "t": "li", "text": "1 tablespoon apple cider vinegar" },
+                { "t": "p", "text": "1-2 peeled carrots, cut into 1/2 inch dice or smaller (optional)" },
+                { "t": "li", "text": "Hot pepper cause (to taste)" },
+                { "t": "li", "text": "Optional garnishes:" },
+                { "t": "li", "text": "Avocado, chopped" },
+                { "t": "li", "text": "Cilantro, chopped" },
+                { "t": "li", "text": "Cheddar cheese, grated" },
+                { "t": "li", "text": "Sour cream or crème fraîche" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "In a large saucepan (at least 4 quart size) or Dutch oven, over medium-low heat, cook bacon or pancetta a few minutes until slightly brown and some fat is rendered out." },
+                { "t": "p", "text": "Add chopped onion to the pan and stir into bacon. When the onions are semi-translucent, add garlic and stir." },
+                { "t": "p", "text": "Cook a few minutes longer. Add ground meat to pan and cook over medium-low heat until brown (cooked) throughout and no pink remains. If fat seems insufficient, add some saved bacon drippings, lard, or olive oil to keep bison meat from sticking to the pan and drying out. If higher fat ground beef is used, it might be necessary to collect some fat in a large spoon and remove it." },
+                { "t": "p", "text": "Add spices, water or broth, tomatoes and carrots and stir well to combine. Cover and simmer over low heat for one hour, stirring every 20 minutes or so to prevent sticking (adjust temperature up or down a bit as necessary to keep chili simmering, but not sticking to the bottom of the pan)." },
+                { "t": "p", "text": "Add vinegar and cocoa powder and stir well, adding additional water if necessary, then simmer uncovered another 20 minutes. Taste and season with sea salt and black pepper, to taste." },
+                { "t": "p", "text": "If more spicy \"heat\" is desired, add hot pepper sauce to the pot or to individual servings at the table." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 55,
+          "id": "vitamix-mushroom-and-thyme-cashew-cream-soup",
+          "title": "VitaMix Mushroom and Thyme Cashew Cream Soup",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "(Full recipe page here: https://www.vitamix.com/us/en_us/recipes/wild-mushroom-and-thyme-cream-soup Wild Mushroom and Thyme Cream Soup Recipe)" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 Tablespoon extra virgin olive oil" },
+                { "t": "li", "text": "3/4 pound mushrooms, sliced" },
+                { "t": "li", "text": "2 Tablespoons fresh thyme leaves" },
+                { "t": "li", "text": "1 medium shallot, peeled, sliced" },
+                { "t": "li", "text": "1 cup raw cashews" },
+                { "t": "li", "text": "4 cups vegetable stock" },
+                { "t": "li", "text": "1/2 teaspoon sea salt, optional" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "In a large skillet over medium-high heat, add the olive oil, mushrooms, fresh thyme leaves, and shallot and sauté until softened, about 10 minutes." },
+                { "t": "p", "text": "Place vegetable stock, cashews, and sautéed mixture into the Vitamix container in the order listed and secure the lid." },
+                { "t": "p", "text": "Run the Hot Soup Program or start the blender on its lowest speed, then quickly increase to its highest speed." },
+                { "t": "p", "text": "Blend for 5 minutes 45 seconds." },
+                { "t": "p", "text": "We like to add some bacon and/or chicken thighs for extra richness and protein!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 56,
+          "id": "whole30-instant-pot-chicken-tortilla-less-soup",
+          "title": "Whole30 Instant Pot Chicken Tortilla-Less Soup",
+          "tags": ["WHOLE30", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "PREP 15 MINUTES" },
+                { "t": "p", "text": "COOK 45 MINUTES" },
+                { "t": "p", "text": "TOTAL 1HOUR" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 large boneless, skinless chicken breasts, 8-10 ounces each salt to taste" },
+                { "t": "li", "text": "2 10-ounce cans diced tomatoes with green chiles" },
+                { "t": "li", "text": "1 14.5-ounce can low-sodium chicken broth" },
+                { "t": "li", "text": "1 cup chopped onion" },
+                { "t": "li", "text": "2 teaspoons garlic powder" },
+                { "t": "li", "text": "1 teaspoon onion powder" },
+                { "t": "li", "text": "1-3 teaspoons chipotle pepper powder" },
+                { "t": "li", "text": "1 teaspoon cumin" },
+                { "t": "li", "text": "2 teaspoons chili powder" },
+                { "t": "li", "text": "1 teaspoon dried oregano" },
+                { "t": "li", "text": "1 teaspoon smoked paprika" },
+                { "t": "li", "text": "2 medium zucchini chopped or cut into 1/2-inch half moons" },
+                { "t": "li", "text": "1 14-ounce can unsweetened, full-fat coconut milk whisked until smooth, see Notes" },
+                { "t": "li", "text": "Serving Suggestions (All Optional)" },
+                { "t": "li", "text": "fresh avocado slices" },
+                { "t": "li", "text": "thinly sliced red onions" },
+                { "t": "li", "text": "chopped fresh cilantro" },
+                { "t": "li", "text": "fresh lime juice" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Place 2 large boneless, skinless chicken breasts on large plate. Sprinkle salt over both sides of each chicken breast, then place chicken breasts in Instant Pot insert." },
+                { "t": "p", "text": "Add 2 10-ounce cans diced tomatoes with green chiles, 1 14.5-ounce can low-sodium chicken broth, 1 cup chopped onion, 2 teaspoons garlic powder, 1 teaspoon onion powder, 1-3 teaspoons chipotle pepper powder, 1 teaspoon cumin, 2 teaspoons chili powder, 1 teaspoons dried oregano, 1 teaspoon smoked paprika, and 2 medium zucchini to Instant Pot and gently stir to incorporate ingredients." },
+                { "t": "p", "text": "Secure lid on Instant Pot with valve in Sealing position. Set Instant Pot to Manual High Pressure for 18 minutes." },
+                { "t": "p", "text": "Instant Pot will pressurize, then cook time will begin." },
+                { "t": "p", "text": "When cook time ends, Natural Release pressure for 10 minutes. After 10 minutes, immediately and carefully Quick Release remaining pressure and remove lid from Instant Pot." },
+                { "t": "p", "text": "Transfer chicken breasts to cutting board and set aside." },
+                { "t": "p", "text": "Set Instant Pot to Sauté mode. Add 1 14-ounce can unsweetened, full-fat coconut milk to Instant Pot and stir to incorporate." },
+                { "t": "p", "text": "Dice chicken breasts into bite-sized pieces, or shred chicken breasts to small pieces. Once all chicken has been diced or shredded, return chicken to Instant Pot and stir to incorporate." },
+                { "t": "p", "text": "Portion soup into serving bowls. If desired, top each serving with fresh avocado slices, thinly sliced red onions, chopped fresh cilantro, and fresh lime juice, then serve hot." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 57,
+          "id": "whole30-sweet-potato-kale-soup",
+          "title": "Whole30 Sweet Potato Kale Soup",
+          "tags": ["WHOLE30"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Serves 4 | Prep: 10 min | Cook: 30 min" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 pound ground Italian sausage" },
+                { "t": "li", "text": "2 teaspoons Italian seasoning" },
+                { "t": "li", "text": "1/2 teaspoon salt, plus more as needed" },
+                { "t": "li", "text": "1/2 teaspoon smoked paprika" },
+                { "t": "li", "text": "1/4 teaspoon fennel seeds" },
+                { "t": "li", "text": "1/4 teaspoon black pepper, plus more as needed" },
+                { "t": "li", "text": "1/8 teaspoon red pepper flakes" },
+                { "t": "li", "text": "1 tablespoon extra-virgin olive oil" },
+                { "t": "li", "text": "1/2 cup chopped onion" },
+                { "t": "li", "text": "3 cloves garlic, minced" },
+                { "t": "li", "text": "4 cups Whole30-compliant chicken broth" },
+                { "t": "li", "text": "1 can (14.5 ounces) diced tomatoes, undrained" },
+                { "t": "li", "text": "1 pound red potatoes, cut into 3/4-inch chunks" },
+                { "t": "li", "text": "4 cups chopped fresh kale or Swiss chard leaves" },
+                { "t": "li", "text": "2 teaspoons chopped fresh thyme leaves" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "In a large bowl, combine the ground pork, Italian seasoning, salt, paprika, fennel seeds, black pepper, and red pepper flakes; mix well." },
+                { "t": "p", "text": "Heat the olive oil in a large pot over medium heat. Add the pork mixture, the onion, and the garlic, stirring frequently, until the meat is browned." },
+                { "t": "p", "text": "Stir in the broth, tomatoes with their juices, and potatoes. Bring to a boil." },
+                { "t": "p", "text": "Reduce the heat to low, cover, and simmer, stirring occasionally, until the potatoes are just tender, 15 to 20 minutes." },
+                { "t": "p", "text": "Add the kale and thyme and cook, uncovered, until the kale is tender, 5 minutes more." },
+                { "t": "p", "text": "Season with additional salt and black pepper and serve." },
+                { "t": "p", "text": "Macros include homemade elk Italian sausage." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "snacks",
+      "title": "SNACKS",
+      "intro": "Performance-focused meals from the Koda community.",
+      "count": 6,
+      "recipes": [
+        {
+          "n": 58,
+          "id": "bacon-wrapped-date-variations",
+          "title": "Bacon Wrapped Date Variations",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Enjoy!" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Bacon-Wrapped Dates Stuffed with Nuts" },
+                { "t": "p", "text": "A simple textural twist with no dairy, inspired by traditional stuffed date dishes." },
+                { "t": "p", "text": "Idea" },
+                { "t": "li", "text": "Pit Medjool dates" },
+                { "t": "li", "text": "Stuff each with an almond, pecan, or walnut" },
+                { "t": "li", "text": "Wrap with a half slice of sugar-free, nitrate-free bacon" },
+                { "t": "li", "text": "Secure with a toothpick" },
+                { "t": "li", "text": "Bake until bacon is crispy (about 12-15 minutes)" },
+                { "t": "p", "text": "This gives:" },
+                { "t": "li", "text": "Sweet + salty + crunchy" },
+                { "t": "li", "text": "No cheese or added sugar" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "Dates, nuts, bacon" },
+                { "t": "p", "text": "Nuts like almonds or pecans provide healthy fats and crunch and pair beautifully with sweet dates and smoky bacon." }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 2, "text": "Herb + Citrus Zest Bacon-Wrapped Dates" },
+                { "t": "p", "text": "A \"gourmet\" flavor upgrade that stays compliant." },
+                { "t": "p", "text": "Idea" },
+                { "t": "li", "text": "Pit dates" },
+                { "t": "li", "text": "Rub a tiny amount of citrus zest (lemon or orange) and fresh thyme inside each date" },
+                { "t": "li", "text": "Wrap with compliant bacon" },
+                { "t": "li", "text": "Bake 12-15 minutes" },
+                { "t": "p", "text": "The citrus brightens the sweetness without adding sugar and gives an elegant twist." },
+                { "t": "p", "text": "No cheese, no sweeteners - just bright, aromatic flavor." },
+                { "t": "step", "n": 3, "text": "\"Devils on Horseback\" Inspired (Nut + Mustard Seed)" },
+                { "t": "p", "text": "A nod to a classic hors d'oeuvre variant (dates historically stuffed with things like almonds or chutney)." },
+                { "t": "p", "text": "Idea" },
+                { "t": "li", "text": "Pit dates" },
+                { "t": "li", "text": "Stuff with a pecan or standing nut" },
+                { "t": "li", "text": "Add a tiny dab of grain-free mustard (mustard seeds + vinegar, compliant - no sugar)" },
+                { "t": "li", "text": "Wrap with bacon and bake" },
+                { "t": "p", "text": "This gives a savory pop without any dairy." },
+                { "t": "step", "n": 4, "text": "Date + Coconut \"Cream\" (AIP / Dairy-Free) If you want creamy without dairy:" },
+                { "t": "li", "text": "Mix a small amount of unsweetened coconut cream with vanilla or cinnamon" },
+                { "t": "li", "text": "Stuff pitted dates" },
+                { "t": "li", "text": "Wrap with bacon" },
+                { "t": "li", "text": "Bake 12-15 minutes" },
+                { "t": "p", "text": "You get a soft, coconut-rich filling instead of cheese." },
+                { "t": "p", "text": "(Just be sure the coconut cream contains no added sugar or vegetable oils.)" },
+                { "t": "step", "n": 5, "text": "Spiced Bacon-Wrapped Dates" },
+                { "t": "p", "text": "Add aromatic, warm spices for complexity." },
+                { "t": "p", "text": "Idea" },
+                { "t": "li", "text": "Pit dates" },
+                { "t": "li", "text": "Sprinkle a dash of cinnamon + smoked paprika inside or over the dates" },
+                { "t": "li", "text": "Wrap with bacon" },
+                { "t": "li", "text": "Bake until golden" },
+                { "t": "p", "text": "The spice elevates the flavor without sugar or dairy." },
+                { "t": "p", "text": "General Instructions (common to all variations)" },
+                { "t": "step", "n": 1, "text": "Preheat oven to 375-400 deg F" },
+                { "t": "step", "n": 2, "text": "Pit dates carefully" },
+                { "t": "step", "n": 3, "text": "Add your chosen stuffing (nut, citrus zest, coconut cream, etc.)" },
+                { "t": "step", "n": 4, "text": "Wrap each date with 1/2-1 slice sugar-free bacon (cut bacon slices in half if dates are small)" },
+                { "t": "step", "n": 5, "text": "Secure with a toothpick" },
+                { "t": "step", "n": 6, "text": "Place on a foil-lined baking sheet" },
+                { "t": "step", "n": 7, "text": "Bake 12-15 minutes or until bacon is crispy" },
+                { "t": "step", "n": 8, "text": "Cool slightly before serving" },
+                { "t": "p", "text": "Compliance Notes By the sheet:" },
+                { "t": "li", "text": "Dates are approved as fruit" },
+                { "t": "li", "text": "Bacon is allowed if sugar-free/nitrate-free" },
+                { "t": "li", "text": "Nuts are allowed (including almonds, pecans)" },
+                { "t": "li", "text": "Mustard seed, citrus zest, spices are compliant" },
+                { "t": "li", "text": "Avoid:" },
+                { "t": "li", "text": "Honey, maple syrup, or glaze" },
+                { "t": "li", "text": "Cheese (dairy)" },
+                { "t": "p", "text": "So all variation ideas above stay compliant without added sugar or dairy." },
+                { "t": "p", "text": "Serving / Presentation Tips" },
+                { "t": "p", "text": "These make a great submission recipe because they:" },
+                { "t": "li", "text": "Look elegant and party-worthy" },
+                { "t": "li", "text": "Are unexpected but super tasty" },
+                { "t": "li", "text": "Showcase creativity within the rules" },
+                { "t": "p", "text": "Serving ideas:" },
+                { "t": "li", "text": "On a platter with fresh herbs" },
+                { "t": "li", "text": "With a citrus wedge garnish" },
+                { "t": "li", "text": "With a grain-free mustard dip" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 59,
+          "id": "chia-pudding",
+          "title": "Chia Pudding",
+          "tags": ["HIGH PROTEIN"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "4 tbsp chia seeds" },
+                { "t": "li", "text": "8 oz almond milk or other compliant non-dairy milk" },
+                { "t": "li", "text": "Scoop protein powder" },
+                { "t": "li", "text": "Dash cinnamon/vanilla" },
+                { "t": "li", "text": "Small handful almonds/walnuts" },
+                { "t": "li", "text": "Fruit of choice" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Shake in mason jar and put in fridge overnight." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 60,
+          "id": "chicken-sweet-potato-poppers",
+          "title": "Chicken sweet potato poppers",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1 lb ground chicken" },
+                { "t": "li", "text": "2 cups sweet potato, finely shredded" },
+                { "t": "li", "text": "2 tbsp coconut oil, softened" },
+                { "t": "li", "text": "2 tbsp coconut flour" },
+                { "t": "li", "text": "2 sprigs green onion, finely chopped" },
+                { "t": "li", "text": "2 tsp garlic powder" },
+                { "t": "li", "text": "2 tsp onion powder" },
+                { "t": "li", "text": "1 tsp sea salt" },
+                { "t": "li", "text": "1/2 tsp black pepper, omit for AIP" },
+                { "t": "li", "text": "Optional: 1 tsp paprika, omit for AIP" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "p", "text": "Preheat the oven to 400 F and line a baking sheet with parchment paper lightly greased with oil" },
+                { "t": "p", "text": "Combine all of the ingredients in a large mixing bowl and gently mix with your hands or with a silicone spatula to combine." },
+                { "t": "p", "text": "Use a cookie scoop or your hand to scoop the mixture into small, round, poppers and evenly space them on the baking sheet. Slightly flatten them with your hand. They should be about one inch in diameter. You should have 20-25 poppers." },
+                { "t": "p", "text": "Bake in the preheated oven for 28-30 minutes, flipping halfway through, until baked through to 165 F. If you want more of a crisp, place them under the broiler for 1-2 minutes. Remove from the oven." },
+                { "t": "p", "text": "Allow to cool and serve with your favorite sauce! These are made for dipping, so pair them with guacamole, ketchup, mustard, etc!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 61,
+          "id": "perfect-easy-peel-hard-boiled-eggs",
+          "title": "Perfect Easy Peel Hard-Boiled Eggs",
+          "tags": ["QUICK"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "2 quarts water" },
+                { "t": "li", "text": "1 to 6 large eggs" },
+                { "t": "li", "text": "12 ice cubes" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "p", "text": "Pour the water into a lidded 3-quart saucepan and bring to a boil over high heat." },
+                { "t": "p", "text": "Carefully lower the egg(s) into the water and cook for 30 seconds." },
+                { "t": "p", "text": "Add the ice cubes and allow the water to return to a boil, then reduce to a subsimmer, about 190 deg F." },
+                { "t": "p", "text": "Cook for 11 minutes." },
+                { "t": "p", "text": "Drain the egg(s) and peel under cool running water." }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 62,
+          "id": "pizza-potato-skins",
+          "title": "Pizza Potato Skins",
+          "tags": ["WHOLE30"],
+          "blocks": [
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "6 large Russet potatoes" },
+                { "t": "li", "text": "2 tbsp ghee, or grass fed butter" },
+                { "t": "li", "text": "1/2 - 1 pound ground mild Italian sausage" },
+                { "t": "li", "text": "1/4 cup diced onion" },
+                { "t": "li", "text": "1 tbsp minced garlic" },
+                { "t": "li", "text": "12 pepperoni, quartered" },
+                { "t": "li", "text": "1/4 cup - 1/2 cup pizza sauce" },
+                { "t": "li", "text": "basil, for garnish" },
+                { "t": "li", "text": "Whole30 ranch, for garnish (or skip)" },
+                { "t": "li", "text": "green onion, for garnish" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Preheat oven to 400 degrees Fahrenheit. Line a baking sheet with parchment paper." },
+                { "t": "step", "n": 2, "text": "On a microwave safe dish, microwave potatoes for 7 to 8 minutes or until fork tender. Remove potatoes from microwave with an oven mitt. They are very hot!" },
+                { "t": "step", "n": 3, "text": "While potatoes are microwaving, make pizza filling. Add sausage to a skillet over medium heat. Cook until brown and crumbly, breaking up with a spatula." },
+                { "t": "step", "n": 4, "text": "Once cooked, drain off excess grease. Add in diced onion, minced garlic, pepperoni and pizza sauce." },
+                { "t": "p", "text": "Stir. Cook for 4 to 5 minutes or until onions are tender." },
+                { "t": "step", "n": 5, "text": "Carefully slice each potato in half lengthwise. Scoop out insides of potato, leaving about 1/2 inch of filling around the edges." },
+                { "t": "step", "n": 6, "text": "In a small microwave dish, melt ghee. Brush melted ghee on the inside and edges of each potato." },
+                { "t": "step", "n": 7, "text": "Scoop pizza filling into each potato. Place potatoes on parchment lined pan." },
+                { "t": "step", "n": 8, "text": "Bake for 7 to 8 minutes or until potato skins are crispy." },
+                { "t": "step", "n": 9, "text": "Finally, remove from oven and garnish with desired toppings *" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 63,
+          "id": "taylors-paleo-energy-bars",
+          "title": "Taylor's Paleo Energy Bars",
+          "tags": ["HIGH PROTEIN", "PALEO", "QUICK"],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Taylor's Paleo Key Lime Energy Bars" },
+                { "t": "p", "text": "Taylor's Paleo Key Lime Clean Energy Bars" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "12 oz raw cashews" },
+                { "t": "li", "text": "12 oz pitted dates" },
+                { "t": "li", "text": "Juice of 1 lime" },
+                { "t": "li", "text": "1 scoop vanilla protein powder" },
+                { "t": "li", "text": "Unsweetened coconut flakes (for mixing in)" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Add cashews, dates, protein powder, and coconut flakes to a food processor." },
+                { "t": "step", "n": 2, "text": "Begin blending and slowly add the lime juice while blending until the mixture comes together." },
+                { "t": "step", "n": 3, "text": "Process until the texture is sticky and well combined." },
+                { "t": "step", "n": 4, "text": "Form the mixture into small patties or balls using your hands." },
+                { "t": "step", "n": 5, "text": "Store in the refrigerator for easy grab-and-go fuel." },
+                { "t": "p", "text": "Serving Tip These are perfect for a quick snack, pre-workout fuel, or clean energy on busy days." },
+                { "t": "p", "text": "Keep them on hand for when you need something fast but nourishing." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sides",
+      "title": "SIDES",
+      "intro": "Performance-focused meals from the Koda community.",
+      "count": 2,
+      "recipes": [
+        {
+          "n": 64,
+          "id": "creamy-mashed-potatoes",
+          "title": "Creamy mashed potatoes",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Creamy Whole 30 Mashed Potatoes" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "li", "text": "1.5 pounds of yellow potatoes" },
+                { "t": "li", "text": "2 cups of chicken broth" },
+                { "t": "li", "text": "2 tablespoons of butter" },
+                { "t": "li", "text": "1 teaspoon of salt" },
+                { "t": "li", "text": "1/4 cup of canned full-fat unsweetened coconut milk" }
+              ]
+            },
+            {
+              "heading": "DIRECTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Chop potatoes into 2 inch chunks, skin on or off" },
+                { "t": "step", "n": 2, "text": "Boil potatoes in chicken broth for 10 minutes or until tender with lid on" },
+                { "t": "step", "n": 3, "text": "Strain potatoes, but SAVE BROTH" },
+                { "t": "step", "n": 4, "text": "Place potatoes back into the pot, smash potatoes" },
+                { "t": "step", "n": 5, "text": "Add butter, coconut milk, and salt, continue to smash/stir" },
+                { "t": "step", "n": 6, "text": "Add 3/4 cup to 1 cup of chicken broth, continue to smash/stir until you get the consistency you'd like." },
+                { "t": "step", "n": 7, "text": "Enjoy!!!!" }
+              ]
+            }
+          ]
+        },
+        {
+          "n": 65,
+          "id": "onigiri-balls-tuna-but-can-be-any-type-of-fish-or-chicken",
+          "title": "Onigiri Balls - Tuna (but can be any type of fish or chicken)",
+          "tags": [],
+          "blocks": [
+            {
+              "heading": "",
+              "lines": [
+                { "t": "p", "text": "Submitted by Benton Rochester" },
+                { "t": "p", "text": "Onigiri Balls (Tuna Version with Salmon Option)" },
+                { "t": "p", "text": "This recipe uses tuna as the main filling, but you can easily swap it for salmon for variety!" }
+              ]
+            },
+            {
+              "heading": "INGREDIENTS",
+              "lines": [
+                { "t": "p", "text": "(Makes ~6 onigiri balls)" },
+                { "t": "li", "text": "2 cups cooked white rice (408 kcal, 88g carbs, 8g protein, 0.8g fat)" },
+                { "t": "li", "text": "1 can tuna in water, drained (120 kcal, 0g carbs, 26g protein, 1g fat)" },
+                { "t": "li", "text": "1 tbsp avocado oil (120 kcal, 0g carbs, 0g protein, 14g fat)" },
+                { "t": "li", "text": "2 tbsp chopped green onions (10 kcal, 2g carbs, 0.2g protein, 0g fat)" },
+                { "t": "li", "text": "1/2 tsp sea salt (negligible calories)" },
+                { "t": "li", "text": "1 sheet of nori (seaweed), cut into 6 strips (10 kcal, 1g carbs, 1g protein, 0g fat)" }
+              ]
+            },
+            {
+              "heading": "INSTRUCTIONS",
+              "lines": [
+                { "t": "step", "n": 1, "text": "Cook the Rice: Prepare 2 cups of white rice according to the package instructions. Allow it to cool slightly for easier handling." },
+                { "t": "step", "n": 1, "text": "You can make basic white rice or sushi rice. The important part is to make sure the rice is sticky. I do this by adding a bit of rice vinegar to the water." },
+                { "t": "step", "n": 2, "text": "Prepare the Filling:" },
+                { "t": "step", "n": 1, "text": "In a small bowl, mix drained tuna with avocado oil, green onions, and a pinch of salt." },
+                { "t": "step", "n": 2, "text": "If desired, substitute tuna with 1/4 cup cooked salmon, flaked. Or albacore or shredded chicken. I prefer tuna." },
+                { "t": "step", "n": 3, "text": "Form the Onigiri:" },
+                { "t": "step", "n": 1, "text": "Wet your hands slightly with water and sprinkle a little salt on them to prevent sticking." },
+                { "t": "step", "n": 2, "text": "Scoop about 1/3 cup of rice into your hands and form a small ball or triangle shape." },
+                { "t": "step", "n": 3, "text": "Make an indentation in the center and add about 1 teaspoon of the tuna mixture (or salmon, if using)." },
+                { "t": "step", "n": 4, "text": "Cover the filling with more rice and shape firmly into a ball or triangle." },
+                { "t": "step", "n": 4, "text": "Wrap with Nori: Place a strip of nori on the bottom of each onigiri, wrapping it partially around the rice ball. Nutrition (Per Onigiri Ball):" },
+                { "t": "li", "text": "Calories: ~105 kcal" },
+                { "t": "li", "text": "Carbs: ~15g" },
+                { "t": "li", "text": "Protein: ~5.5g (tuna) or ~4.5g (salmon)" },
+                { "t": "li", "text": "Fat: ~3g" },
+                { "t": "p", "text": "These tuna or salmon onigiri are perfect for sharing with teammates and are customizable to suit everyone's taste." },
+                { "t": "p", "text": "They are also awesome Japanese \"sandwiches\" for being on the go!" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

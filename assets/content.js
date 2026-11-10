@@ -183,7 +183,7 @@ window.RES27_CONTENT = {
     { icon: 'check', title: 'Your own checklist', text: 'Built from your goal and the habits you chose.' },
     { icon: 'plate', title: 'Nutrition guides', text: 'Clear food lists for your plan, plus the Koda Cookbook.' },
     { icon: 'users', title: 'Support and guidance', text: 'Get matched up with a coach for support and guidance throughout the challenge.' },
-    { icon: 'chart', title: 'Track your progress', text: 'A daily score out of 10, streaks and a calendar of your six weeks.' },
+    { icon: 'trophy', title: 'Track your progress', text: 'A daily score out of 10, your streak, and live team standings.' },
     { icon: 'shirt', title: 'Challenge shirt or tank', text: 'Your Resolutions 2027 tee or ladies tank.' },
   ],
 

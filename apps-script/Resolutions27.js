@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.3.0 (2026-11-10)';
+var RES27_VERSION = '1.4.0 (2026-11-10)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -212,6 +212,7 @@ function res27Route_(d) {
     setup: res27UpdateSetup_,
     password: res27ChangePassword_,
     signoutAll: res27SignOutAll_,
+    leaderboard: res27Leaderboard_,
   };
   var admin = {
     adminSetup: res27AdminSetup_,
@@ -1873,6 +1874,88 @@ function res27SignOutAll_(d, auth) {
   res27AssertRow_('accounts', auth.acct._row, 'ID', auth.id);
   res27UpdateRow_('accounts', auth.acct._row, { 'Token Version': version });
   return { ok: true };
+}
+
+/* ================================================================ leaderboard ==== */
+
+var RES27_BOARD_SECONDS = 120;
+// A team's average is only shown once it has this many people: with 1 or 2, it would give away
+// someone's own score (Kevin's rule: nobody sees anyone else's).
+var RES27_BOARD_MIN_PEOPLE = 3;
+
+/** A team as typed on Participants (Team column). */
+function res27TeamName_(team) {
+  return res27CleanText_(team, 40);
+}
+
+/** The key that makes "Iron", "iron " and "Team Iron" one team. */
+function res27TeamKey_(team) {
+  return res27TeamName_(team).replace(/^team\s+/i, '').toLowerCase();
+}
+
+/**
+ * Team standings (Kevin, 11/10/2026): every team's average points per person, for the whole
+ * challenge and for this challenge week, so team size doesn't matter. Only team numbers leave the
+ * server: no one sees anyone else's own score. Beta testers see the beta testers' teams, everyone
+ * else the real teams. Cached two minutes per group and day, so a change on the Team column shows
+ * within a couple of minutes.
+ */
+function res27Leaderboard_(d, auth) {
+  var cfg = res27Settings_();
+  var program = res27Program_(cfg, auth.person, d.today);
+  var test = auth.person.type === 'Test';
+  var key = 'res27:board:' + (test ? 'test' : 'real') + ':' + program.start + ':' + program.length + ':' + program.today;
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get(key);
+  var board = hit ? JSON.parse(hit) : res27BuildBoard_(test, program);
+  if (!hit) {
+    try {
+      cache.put(key, JSON.stringify(board), RES27_BOARD_SECONDS);
+    } catch (e) {
+      /* too big to cache: fine, it's built each time */
+    }
+  }
+  return { ok: true, board: board, myTeam: res27TeamKey_(auth.person.team) };
+}
+
+function res27BuildBoard_(test, program) {
+  // Days that count: from Day 1 through today (the last day once it's over). "This week" is the
+  // challenge week today falls in.
+  var last = program.today < program.end ? program.today : program.end;
+  var index = res27DiffDays_(program.start, last);
+  var week = index < 0 ? 0 : Math.floor(index / 7) + 1;
+  var weekFrom = week ? res27AddDays_(program.start, (week - 1) * 7) : '';
+  var weekTo = week ? res27AddDays_(weekFrom, 6) : '';
+  if (weekTo > program.end) weekTo = program.end;
+  var teams = {};
+  res27AllPeople_().forEach(function (p) {
+    if (!p || !p.id || /removed/i.test(p.status) || (p.type === 'Test') !== test) return;
+    var name = res27TeamName_(p.team);
+    var k = res27TeamKey_(p.team);
+    if (!k) return;
+    var t = teams[k] || (teams[k] = { key: k, name: name.replace(/^team\s+/i, ''), people: 0, points: 0, week: 0 });
+    t.people += 1;
+    Object.keys(p.history || {}).forEach(function (date) {
+      if (!res27IsDayKey_(date) || date < program.start || date > last) return;
+      var e = p.history[date];
+      if (!e || !e.a || !Object.keys(e.a).length) return;
+      var pts = Number(e.p) || 0;
+      t.points += pts;
+      if (week && date >= weekFrom && date <= weekTo) t.week += pts;
+    });
+  });
+  var list = Object.keys(teams).map(function (k) {
+    var t = teams[k];
+    var shown = t.people >= RES27_BOARD_MIN_PEOPLE;
+    return {
+      key: t.key,
+      name: t.name,
+      people: t.people,
+      overall: shown ? Math.round((t.points / t.people) * 10) / 10 : null,
+      week: shown ? Math.round((t.week / t.people) * 10) / 10 : null,
+    };
+  });
+  return { teams: list, week: week, weeks: Math.ceil(program.length / 7), weekFrom: weekFrom, weekTo: weekTo, minPeople: RES27_BOARD_MIN_PEOPLE, updated: res27Now_() };
 }
 
 /* ================================================================ email ==== */

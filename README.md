@@ -53,6 +53,35 @@ Changes to Settings and Days show in the app within about a minute.
 - **Forgot password:** people reset it themselves with an emailed 6-digit code. If email fails
   they're told to email the contact address.
 
+### Leaderboard (team standings)
+
+The second tab (it was Progress until 11/10). It shows each person their own four numbers (points,
+daily average out of 10, days logged, streak) and the **team standings**: every team ranked by its
+average points per person, for the whole challenge or this week, so team size doesn't matter.
+Teams come from the `Team` column on Participants ("Iron", "iron" and "Team Iron" are the same team;
+the app shows "Team Iron"). Only team averages ever leave the server: nobody sees anyone else's own
+score (Kevin's choice), so a team with fewer than **3 people** is listed without a score (its
+average would be someone's own). Removed people and people with no team don't count; beta testers
+only see the beta testers' teams. The standings refresh about every two minutes. Nothing is ranked
+before Day 1.
+
+**Set teams before Day 1.** Mid-challenge, moving one person to another team, removing them or
+clearing their Team cell lets anyone who compares the standings before and after work out that
+person's total. If a change is needed, make several at once.
+
+### Koda Cookbook
+
+Nutrition › **Koda Cookbook** is the 2026 Koda Resolutions Cookbook (the PDF in the gym's Drive):
+its six sections (Breakfast, Lunch, Dinner, Soups & Chili, Snacks, Sides) open to their recipes,
+each recipe to its ingredients, directions, notes and credit, with a search box. The data is
+`content/cookbook.json`, built from the PDF's text by `node dev/build-cookbook.js` (it reads the
+git-ignored `content/private/cookbook-2026-pdf.txt`). For a new edition, save the new PDF's text
+there and run the script again.
+
+### FAQs
+
+Profile › Help › **FAQs** opens the questions on their own page (`assets/content.js`, `faq`).
+
 ### Missed days (Overdue)
 
 A day that hasn't been filled in (some habit still has no Yes or No) stays open for
@@ -120,7 +149,7 @@ page. The last page has no consent checkbox (Kevin, 11/10).
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test "tests/*.test.js" # backend tests (43)
+node --test "tests/*.test.js" # backend tests (49)
 node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
 ```
 
