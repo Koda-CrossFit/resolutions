@@ -26,10 +26,11 @@ function world(at) {
 
 const SETUP = {
   goal: 'muscle',
-  track: { nutrition: true, workout: true, sleep: true, finishers: true, hydration: true, skill: true, mobility: true, other: true },
+  track: { nutrition: true, workout: true, sleep: true, protein: true, hydration: true, finishers: true, skill: true, mobility: true, recovery: true, other: true },
   plan: 'macros',
   macros: { protein: 180, carbs: 250, fat: 70, calories: 2400, wantHelp: true },
   sleepHours: 8,
+  proteinG: 180,
   hydrationOz: 100,
   finishersPerWeek: 2,
   skill: 'Muscle-ups',
@@ -185,19 +186,29 @@ test('daily check-ins: scoring, edit window, the sheet log', () => {
   assert.equal(saved.ok, true, saved.error);
   assert.equal(saved.entry.a.bogus, undefined);
   const items = list.filter((i) => !i.units.every((u) => u[2]));
-  assert.equal(saved.entry.n, items.length);
+  assert.equal(saved.entry.n, items.length, 'the finisher and the bonus are not everyday items');
   assert.equal(saved.entry.d, items.length - 1, 'nutrition is not complete with a missed snack');
-  // video 3 + meals 3 + workout 2 + sleep 1 + water 1 + finisher 2 + skill 1 + mobility 1 + 2 other + bonus 4
-  assert.equal(saved.entry.p, 3 + 3 + 2 + 1 + 1 + 2 + 1 + 1 + 2 + 4);
-  assert.equal(saved.entry.m, 3 + 4 + 2 + 1 + 1 + 1 + 1 + 2 + 4, 'finisher is extra credit');
-  assert.equal(saved.totals.points, saved.entry.p);
+  // On the list: video 1 + meals 4 + workout 2 + sleep 2 + protein, water, skill, mobility, recovery 1 each
+  // + 2 other = 16, plus today's finisher (done) = 17. Everything but the snack = 16 → 9.4 of 10; bonus +1.
+  assert.equal(saved.entry.m, 17);
+  assert.equal(saved.entry.e, 16);
+  assert.equal(saved.entry.s, 9.4);
+  assert.equal(saved.entry.b, 1);
+  assert.equal(saved.entry.p, 10.4);
+  assert.equal(saved.totals.points, 10.4);
   // edit again: one row, not two
   answers['nutrition:snack'] = 1;
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-20', answers }).entry.d, items.length);
+  const full = post({ action: 'save', token: r.token, date: '2027-01-20', answers }).entry;
+  assert.equal(full.d, items.length);
+  assert.equal(full.s, 10);
+  assert.equal(full.p, 11, 'a perfect day plus the bonus');
   const log = gas.rows('Check-ins');
   assert.equal(log.length, 1);
   assert.match(log[0]['Answers'], /Meals 4\/4/);
   assert.equal(log[0]['Day'], 3);
+  assert.equal(log[0]['Score'], 10);
+  assert.equal(log[0]['Bonus'], 1);
+  assert.equal(log[0]['Points'], 11);
   // window: two days back is fine, three is not, tomorrow is not
   assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } }).ok, true);
   gas.setNow('2027-01-21T08:00:00-07:00');
@@ -208,6 +219,184 @@ test('daily check-ins: scoring, edit window, the sheet log', () => {
   assert.equal(me.totals.days, 2);
   const people = gas.rows('Participants');
   assert.equal(people[0]['Days Logged'], 2);
+});
+
+test('every day is out of 10 however many habits someone tracks', () => {
+  const { gas, post } = world();
+  const few = register(post, { email: 'few@b.co', setup: { goal: 'health', track: { workout: true }, coaches: [] } });
+  const all = register(post, { email: 'all@b.co' });
+  gas.setNow('2027-01-19T19:00:00-07:00'); // Day 2
+  const yesToAll = (token) => {
+    const list = post({ action: 'me', token }).me.checklists['2027-01-19'];
+    const a = {};
+    list.forEach((item) => item.units.forEach((u) => (a[u[0]] = u[2] === 2 ? 0 : 1))); // skip the bonus
+    return post({ action: 'save', token, date: '2027-01-19', answers: a }).entry;
+  };
+  assert.equal(yesToAll(few.token).s, 10, 'video + workout, both done');
+  assert.equal(yesToAll(all.token).s, 10, 'every habit done');
+  // The score is the share of the day's weight done: 1 of 3 here, 8 of 16 below.
+  assert.equal(post({ action: 'save', token: few.token, date: '2027-01-19', answers: { video: 1, workout: 0 } }).entry.s, 3.3);
+  const half = post({ action: 'save', token: all.token, date: '2027-01-19', answers: { 'nutrition:m1': 1, 'nutrition:m2': 1, 'nutrition:m3': 1, 'nutrition:snack': 1, workout: 1, sleep: 1, video: 0, protein: 0 } }).entry;
+  assert.equal(half.e, 8);
+  assert.equal(half.m, 16, 'a finisher not done this day is not on the list');
+  assert.equal(half.s, 5);
+});
+
+test('finishers: missed ones count against the last day of the week, and catch up when fixed', () => {
+  const { gas, post } = world();
+  const r = register(post, { email: 'fin@b.co', setup: { goal: 'performance', track: { workout: true, finishers: true }, finishersPerWeek: 2, coaches: [] } });
+  assert.equal(r.ok, true, r.error);
+  gas.setNow('2027-01-18T19:00:00-07:00'); // Mon, Day 1
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1, workout: 1, finisher: 1 } }).entry.s, 10);
+  gas.setNow('2027-01-21T19:00:00-07:00'); // Thu: no finisher, no penalty mid-week
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-21', answers: { video: 1, workout: 1, finisher: 0 } }).entry.s, 10);
+  gas.setNow('2027-01-24T19:00:00-07:00'); // Sun, Day 7: 1 of 2 finishers
+  const sun = post({ action: 'save', token: r.token, date: '2027-01-24', answers: { video: 1, workout: 1 } }).entry;
+  assert.equal(sun.f, 1, 'one missed finisher');
+  assert.equal(sun.m, 4);
+  assert.equal(sun.s, 7.5);
+  // Saturday's finisher was logged late (still inside the edit window): Sunday catches up.
+  const sat = post({ action: 'save', token: r.token, date: '2027-01-23', answers: { video: 1, workout: 1, finisher: 1 } });
+  assert.equal(sat.ok, true, sat.error);
+  const me = post({ action: 'me', token: r.token }).me;
+  assert.equal(me.history['2027-01-24'].f, 0);
+  assert.equal(me.history['2027-01-24'].s, 10);
+  const sunRow = gas.rows('Check-ins').find((x) => x.Date === '2027-01-24');
+  assert.equal(sunRow.Score, 10, 'the Check-ins row follows');
+  assert.equal(me.totals.points, 40);
+  assert.equal(gas.rows('Participants')[0].Points, 40);
+  // Mid-week days never carry the penalty.
+  assert.equal(me.history['2027-01-21'].f, 0);
+});
+
+test('setup rules: protein goal required, finishers 1-3 a week, sleep from 7 hours', () => {
+  const { post } = world();
+  const bad = register(post, { email: 'p1@b.co', setup: Object.assign({}, SETUP, { proteinG: '' }) });
+  assert.equal(bad.ok, false);
+  assert.match(bad.error, /protein/i);
+  const ok = register(post, { email: 'p2@b.co', setup: Object.assign({}, SETUP, { proteinG: 150, finishersPerWeek: 5, sleepHours: 6 }) });
+  assert.equal(ok.ok, true, ok.error);
+  assert.equal(ok.me.person.setup.proteinG, 150);
+  assert.equal(ok.me.person.setup.finishersPerWeek, 2, '5 a week is not a choice');
+  assert.equal(ok.me.person.setup.sleepHours, 7, 'under 7 hours is not a choice');
+  const cfg = post({ action: 'config' }).config;
+  assert.deepEqual(cfg.sleepChoices, [7, 7.5, 8, 8.5, 9]);
+  assert.deepEqual(cfg.finisherChoices, [1, 2, 3]);
+  const ids = ok.me.preview.map((i) => i.id);
+  assert.ok(ids.includes('protein') && ids.includes('recovery'));
+  assert.match(ok.me.preview.find((i) => i.id === 'protein').label, /150 g/);
+});
+
+test('an empty Check-ins tab drops Max Points for the new columns; other tabs keep columns Kevin adds', () => {
+  const { gas, post } = world();
+  const sheet = gas.sheet('Check-ins');
+  const old = ['Key', 'ID', 'Name', 'Team', 'Date', 'Day', 'Done', 'Of', 'Points', 'Max Points', 'Answers', 'Updated', 'Coach Notes'];
+  sheet.getRange(1, 1, 1, sheet.getLastColumn()).clearContent();
+  sheet.getRange(1, 1, 1, old.length).setValues([old]);
+  const people = gas.sheet('Participants');
+  people.getRange(1, people.getLastColumn() + 1).setValue('Phone'); // no participants yet
+  assert.equal(post({ action: 'adminSetup', key: ADMIN }).ok, true);
+  const now = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].filter(Boolean);
+  assert.deepEqual(now, ['Key', 'ID', 'Name', 'Team', 'Date', 'Day', 'Done', 'Of', 'Score', 'Bonus', 'Points', 'Answers', 'Updated', 'Coach Notes']);
+  const head = people.getRange(1, 1, 1, people.getLastColumn()).getValues()[0].filter(Boolean);
+  assert.ok(head.includes('Phone'), 'an added column on an empty tab survives setup');
+  register(post);
+  assert.equal(post({ action: 'adminSetup', key: ADMIN }).ok, true);
+  assert.deepEqual(people.getRange(1, 1, 1, people.getLastColumn()).getValues()[0].filter(Boolean), head, 'a tab with rows keeps its columns');
+});
+
+test('saves keep working on a Check-ins tab that setup has not updated yet', () => {
+  const { gas, post } = world();
+  const r = register(post);
+  const sheet = gas.sheet('Check-ins');
+  const old = ['Key', 'ID', 'Name', 'Team', 'Date', 'Day', 'Done', 'Of', 'Points', 'Max Points', 'Answers', 'Updated'];
+  sheet.getRange(1, 1, 1, sheet.getLastColumn()).clearContent();
+  sheet.getRange(1, 1, 1, old.length).setValues([old]);
+  gas.setNow('2027-01-19T19:00:00-07:00');
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-19', answers: { video: 1 } }).ok, true);
+  const again = post({ action: 'save', token: r.token, date: '2027-01-19', answers: { video: 1, workout: 1 } });
+  assert.equal(again.ok, true, again.error);
+  const rows = gas.rows('Check-ins');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].Points, again.entry.p);
+  // With a row on it, setup only adds the new columns.
+  assert.equal(post({ action: 'adminSetup', key: ADMIN }).ok, true);
+  const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].filter(Boolean);
+  assert.ok(head.includes('Score') && head.includes('Bonus'));
+});
+
+test('a week keeps its own finisher goal: later setup changes and Sunday switches cannot move the penalty', () => {
+  const { gas, post } = world();
+  const base = { goal: 'performance', track: { workout: true }, coaches: [] };
+  const withFin = (goal) => ({ goal: 'performance', track: { workout: true, finishers: true }, finishersPerWeek: goal, coaches: [] });
+  const a = register(post, { email: 'a@b.co', setup: base });
+  const b = register(post, { email: 'b2@b.co', setup: withFin(1) });
+  const c = register(post, { email: 'c@b.co', setup: withFin(2) });
+  const d = register(post, { email: 'd@b.co', setup: withFin(3) });
+  gas.setNow('2027-01-20T19:00:00-07:00'); // Wed: b meets a goal of 1
+  post({ action: 'save', token: b.token, date: '2027-01-20', answers: { video: 1, workout: 1, finisher: 1 } });
+  gas.setNow('2027-01-23T19:00:00-07:00'); // Sat
+  post({ action: 'save', token: a.token, date: '2027-01-23', answers: { video: 1, workout: 1 } });
+  post({ action: 'save', token: c.token, date: '2027-01-23', answers: { video: 1, workout: 1, finisher: 0 } });
+  gas.setNow('2027-01-24T18:00:00-07:00'); // Sun: d logs, then switches finishers off the same day
+  assert.equal(post({ action: 'save', token: d.token, date: '2027-01-24', answers: { video: 1, workout: 1 } }).entry.s, 5);
+  const off = post({ action: 'setup', token: d.token, setup: base });
+  assert.equal(off.ok, true, off.error);
+  assert.equal(off.me.history['2027-01-24'].s, 5, "switching off on Sunday doesn't erase that week's missed finishers");
+  gas.setNow('2027-01-25T08:00:00-07:00'); // Mon of week 2: setup changes, then last Sunday is filled in
+  assert.equal(post({ action: 'setup', token: a.token, setup: withFin(2) }).ok, true);
+  assert.equal(post({ action: 'setup', token: b.token, setup: withFin(3) }).ok, true);
+  assert.equal(post({ action: 'setup', token: c.token, setup: base }).ok, true);
+  const meA = post({ action: 'me', token: a.token }).me;
+  assert.ok(!meA.checklists['2027-01-24'].some((i) => i.id === 'finisher'), 'finishers turned on Monday stay out of last Sunday');
+  assert.ok(meA.checklists['2027-01-25'].some((i) => i.id === 'finisher'), 'and are on from Monday');
+  const sunA = post({ action: 'save', token: a.token, date: '2027-01-24', answers: { video: 1, workout: 1 } }).entry;
+  assert.deepEqual([sunA.s, sunA.f], [10, 0]);
+  const sunB = post({ action: 'save', token: b.token, date: '2027-01-24', answers: { video: 1, workout: 1 } }).entry;
+  assert.deepEqual([sunB.s, sunB.f], [10, 0], "a goal raised on Monday doesn't apply to last week");
+  const meC = post({ action: 'me', token: c.token }).me;
+  assert.ok(meC.checklists['2027-01-24'].some((i) => i.id === 'finisher'), 'last week still shows its finisher');
+  const sunC = post({ action: 'save', token: c.token, date: '2027-01-24', answers: { video: 1, workout: 1 } }).entry;
+  assert.deepEqual([sunC.s, sunC.f], [6, 2], "turning finishers off on Monday doesn't erase last week's missed ones");
+  const meD = post({ action: 'me', token: d.token }).me;
+  assert.ok(!meD.checklists['2027-01-25'].some((i) => i.id === 'finisher'));
+});
+
+test('setup turns the old 4-point bonus tasks into 1 point, once', () => {
+  const { gas, post } = world();
+  const days = gas.sheet('Days');
+  const head = days.getRange(1, 1, 1, days.getLastColumn()).getValues()[0];
+  const taskCol = head.indexOf('Bonus Task') + 1;
+  const ptsCol = head.indexOf('Bonus Points') + 1;
+  const n = days.getLastRow() - 1;
+  const tasks = days.getRange(2, taskCol, n, 1).getValues().map((t) => String(t[0]).trim());
+  days.getRange(2, ptsCol, n, 1).setValues(tasks.map((t) => [t ? 4 : '']));
+  gas.state.properties.delete('RES27_BONUS_IS_1'); // as on the live sheet, seeded on 11/9
+  const out = post({ action: 'adminSetup', key: ADMIN });
+  assert.equal(out.ok, true, out.error);
+  assert.equal(out.bonusFixed, tasks.filter(Boolean).length);
+  assert.ok(days.getRange(2, ptsCol, n, 1).getValues().every((v, i) => (tasks[i] ? v[0] === 1 : v[0] === '')));
+  days.getRange(2, ptsCol).setValue(4); // later, Kevin makes Day 1's bonus worth 4 on purpose
+  assert.equal(post({ action: 'adminSetup', key: ADMIN }).bonusFixed, 0);
+  assert.equal(days.getRange(2, ptsCol).getValue(), 4);
+});
+
+test('re-seeding Days keeps pasted video links with their video, even when days move', () => {
+  const { gas, post } = world();
+  const days = gas.sheet('Days');
+  const head = days.getRange(1, 1, 1, days.getLastColumn()).getValues()[0];
+  const videoCol = head.indexOf('Video URL') + 1;
+  const titleCol = head.indexOf('Title') + 1;
+  days.getRange(4, videoCol).setValue('https://youtu.be/abcdefghijk'); // Day 3
+  const title3 = days.getRange(4, titleCol).getValue();
+  const moved = DAYS.map((x) => Object.assign({}, x));
+  [moved[2].title, moved[4].title] = [moved[4].title, moved[2].title]; // Day 3's video now runs on Day 5
+  const out = post({ action: 'adminSeedDays', key: ADMIN, days: moved, overwrite: true });
+  assert.equal(out.ok, true, out.error);
+  assert.equal(out.keptVideos, 1);
+  assert.equal(days.getRange(6, titleCol).getValue(), title3);
+  assert.equal(days.getRange(6, videoCol).getValue(), 'https://youtu.be/abcdefghijk');
+  assert.equal(days.getRange(4, videoCol).getValue(), '');
 });
 
 test('the client date is trusted within a day, not further', () => {

@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.0.0';
+  var APP_VERSION = '1.1.0';
 
   /* ============================================================ small helpers */
 
@@ -90,6 +90,8 @@
     book: '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5v-15Z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H20v-3"/>',
     scale: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 9a4.5 4.5 0 0 1 7 0l-2 2.5h-3Z"/>',
     home: '<path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/>',
+    protein: '<path d="M8 8h8l-.9 12.2a1.6 1.6 0 0 1-1.6 1.3h-3a1.6 1.6 0 0 1-1.6-1.3L8 8Z"/><path d="M8.6 8 9 4.4a1 1 0 0 1 1-.9h4a1 1 0 0 1 1 .9L15.4 8M8.7 12.5h6.6"/>',
+    recovery: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="m9.6 4.6 2.4 1.9 2.4-1.9M9.6 19.4l2.4-1.9 2.4 1.9"/>',
   };
   function icon(name, cls) {
     if (name === 'play') return '<svg class="' + (cls || 'ico') + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + I.play + '</svg>';
@@ -102,14 +104,14 @@
     programName: 'Koda Resolutions 2027', startDate: '2027-01-18', endDate: '2027-02-28', lengthDays: 42, registrationOpen: true,
     remotePrice: 99, venmo: '@kevin-schuetz-5', venmoUrl: 'https://venmo.com/u/kevin-schuetz-5', zelle: 'kodaironview@gmail.com', cardUrl: '',
     coaches: ['Kevin', 'Riley', 'Jamie', 'Maggie'], contactEmail: 'kodaironview@gmail.com', siteUrl: '', cookbookUrl: '', editDaysBack: 2,
-    sizes: { tee: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], tank: ['XS', 'S', 'M', 'L', 'XL', '2XL'] }, sleepChoices: [6, 6.5, 7, 7.5, 8, 8.5, 9],
+    sizes: { tee: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], tank: ['XS', 'S', 'M', 'L', 'XL', '2XL'] }, sleepChoices: [7, 7.5, 8, 8.5, 9], finisherChoices: [1, 2, 3],
   };
 
   var S = {
     token: store.get('res27.token', ''),
     me: null,
     config: store.get('res27.config', null) || DEFAULT_CONFIG,
-    draft: store.get('res27.draft', null) || newDraft(),
+    draft: normalizeDraft(store.get('res27.draft', null)),
     password: '',
     edit: null,
     pending: store.get('res27.pending', {}) || {},
@@ -147,11 +149,34 @@
   function newDraft() {
     return {
       memberType: '', payment: '', first: '', last: '', email: '', shirt: '', size: '',
-      goal: '', track: { nutrition: true, workout: true, sleep: true, finishers: false, hydration: false, skill: false, mobility: false, other: false },
+      // Recommended habits start on Yes; the rest need a Yes or No before Continue.
+      goal: '', track: { nutrition: true, workout: true, sleep: true, protein: null, hydration: null, finishers: null, skill: null, mobility: null, recovery: null, other: null },
       plan: '', planOther: '', macros: { protein: '', carbs: '', fat: '', calories: '', wantHelp: false },
-      sleepHours: 7, bodyweight: '', hydrationOz: '', hydrationMode: 'weight', finishersPerWeek: 2,
-      skill: '', mobility: '', other: [''], coaches: [], agree: false,
+      sleepHours: 7, proteinG: '', bodyweight: '', hydrationOz: '', hydrationMode: 'weight', finishersPerWeek: 2,
+      skill: '', mobility: '', other: [''], coaches: [],
     };
+  }
+  /**
+   * A sign-up in progress, restored from this phone. Drafts from the first version had every
+   * optional habit set to No by default, so those come back unanswered; goals come back inside
+   * today's choices, so Review shows exactly what gets saved.
+   */
+  function normalizeDraft(saved) {
+    var d = Object.assign(newDraft(), saved && typeof saved === 'object' ? saved : {});
+    var t = (saved && saved.track) || {};
+    var old = !Object.prototype.hasOwnProperty.call(t, 'protein');
+    d.track = {};
+    C.tracking.forEach(function (x) {
+      var v = t[x.id];
+      if (v === true) d.track[x.id] = true;
+      else if (v === false && (!old || x.recommended)) d.track[x.id] = false;
+      else d.track[x.id] = x.recommended && v === undefined ? true : null;
+    });
+    d.sleepHours = sleepValue(d);
+    d.finishersPerWeek = finisherValue(d);
+    d.other = [String((Array.isArray(d.other) && d.other[0]) || '')];
+    delete d.agree;
+    return d;
   }
   function saveDraft() { store.set('res27.draft', S.draft); }
   function cacheMe() { if (S.me && S.token) store.set('res27.me', { token: S.token, me: S.me, loadedDay: S.loadedDay }); }
@@ -391,20 +416,48 @@
     return out;
   }
   function unitsOf(items) { var u = []; items.forEach(function (it) { it.units.forEach(function (x) { u.push(x); }); }); return u; }
-  function score(units, a) {
-    var items = {}, points = 0, max = 0, answered = 0;
+  /**
+   * A day's score out of 10, the same math as the backend. Units are [key, weight, kind, label or goal]:
+   * kind 0 counts every day, 1 (finisher) only on days it's done, 2 (bonus task) goes on top of the 10.
+   * shortfall is the missed finishers (times their weight) on the last day of a week.
+   */
+  function score(units, a, shortfall) {
+    var items = {}, earned = 0, max = 0, bonus = 0, answered = 0;
     units.forEach(function (u) {
-      var id = String(u[0]).split(':')[0];
-      if (!items[id]) items[id] = { all: true, extra: !!u[2], any: false };
-      var v = a[u[0]];
+      var id = String(u[0]).split(':')[0], w = Number(u[1]) || 0, kind = Number(u[2]) || 0, v = a[u[0]];
+      if (!items[id]) items[id] = { all: true, kind: kind, any: false };
       if (v !== 1) items[id].all = false;
       if (v === 1 || v === 0) items[id].any = true;
-      if (v === 1) points += Number(u[1]) || 0;
-      if (!u[2]) max += Number(u[1]) || 0;
+      if (kind === 2) { if (v === 1) bonus += w; return; }
+      if (kind === 1) { if (v === 1) { earned += w; max += w; } return; }
+      max += w;
+      if (v === 1) earned += w;
     });
+    max += Math.max(0, Number(shortfall) || 0);
     var done = 0, of = 0;
-    Object.keys(items).forEach(function (id) { if (items[id].extra) return; of++; if (items[id].all) done++; if (items[id].any) answered++; });
-    return { done: done, of: of, points: points, max: max, answered: answered, pct: max ? Math.min(100, Math.round((points / max) * 100)) : 0 };
+    Object.keys(items).forEach(function (id) { var it = items[id]; if (it.kind) return; of++; if (it.all) done++; if (it.any) answered++; });
+    var s = max ? Math.round(earned / max * 100) / 10 : 0;
+    return { done: done, of: of, earned: earned, max: max, score: s, bonus: bonus, points: Math.round((s + bonus) * 10) / 10, answered: answered, pct: Math.round(s * 10) };
+  }
+  /** 8.6, 10 or 0 for a day's score. */
+  function fmtScore(x) { x = Number(x) || 0; return x >= 10 ? '10' : x <= 0 ? '0' : (Math.round(x * 10) / 10).toFixed(1); }
+  /** Point totals: 86.4, or 120 with no trailing .0. */
+  function fmtPts(x) { var r = Math.round((Number(x) || 0) * 10) / 10; return r % 1 ? r.toFixed(1) : String(r); }
+  /** The last day of the challenge week date is in ('' if the final week is cut short). */
+  function weekEndOf(date) {
+    var p = S.me.program, n = diffDays(p.start, date) + 1;
+    if (n < 1) return '';
+    var last = Math.ceil(n / 7) * 7;
+    return last <= p.length ? addDays(p.start, last - 1) : '';
+  }
+  function finisherUnit(units) { return units.filter(function (u) { return u[0] === 'finisher'; })[0] || null; }
+  function finishersDone(endDate) { var n = 0; for (var i = 0; i < 7; i++) if (answersFor(addDays(endDate, -i)).finisher === 1) n++; return n; }
+  /** Missed finishers count against the last day of each week, at the goal saved with that day. */
+  function shortfallFor(date, units) {
+    if (weekEndOf(date) !== date) return 0;
+    var f = finisherUnit(units), goal = f ? Number(f[3]) || 0 : 0;
+    if (!goal) return 0;
+    return Math.max(0, goal - finishersDone(date)) * (Number(f[1]) || 0);
   }
   function itemsForDate(date) {
     if (S.me.checklists && S.me.checklists[date]) return S.me.checklists[date];
@@ -418,8 +471,8 @@
     var ref = today || S.me.preview || [];
     var byKey = {};
     ref.forEach(function (it) { it.units.forEach(function (u) { byKey[u[0]] = { item: it, unit: u }; }); });
-    var names = { video: 'Watched the video', nutrition: 'Followed my nutrition plan', workout: 'Daily workout', sleep: 'Sleep', hydration: 'Hydration', finisher: 'Finisher workout', skill: 'Skill work', mobility: 'Mobility', bonus: 'Bonus task' };
-    var meals = { 'nutrition:m1': 'Breakfast', 'nutrition:m2': 'Lunch', 'nutrition:m3': 'Dinner', 'nutrition:snack': 'Snacks' };
+    var names = { video: 'Watched the video', nutrition: 'Followed my nutrition plan', workout: 'Daily workout', sleep: 'Sleep', protein: 'Protein goal', hydration: 'Hydration', finisher: 'Finisher workout', skill: 'Skill work', mobility: 'Mobility', recovery: 'Recovery session', bonus: 'Bonus task' };
+    var meals = { 'nutrition:m1': 'Breakfast', 'nutrition:m2': 'Lunch', 'nutrition:m3': 'Dinner', 'nutrition:snack': 'Snacks or none' };
     var out = [], seen = {};
     units.forEach(function (u) {
       var id = String(u[0]).split(':')[0];
@@ -430,36 +483,40 @@
       out.push({
         id: id,
         label: id === 'bonus' ? (thatDay.bonus || names.bonus) : m ? m.item.label : (names[id] || 'Habit'),
-        sub: m && id !== 'video' ? m.item.sub : '',
-        icon: m ? m.item.icon : (id === 'nutrition' ? 'plate' : 'star'),
+        // The finisher shows the weekly goal it was saved with, like its score does.
+        sub: id === 'finisher' && own[0] && own[0][3] ? 'Goal: ' + own[0][3] + ' a week · counts on the days you do one' : m && id !== 'video' ? m.item.sub : '',
+        icon: m ? m.item.icon : ({ video: 'play', nutrition: 'plate', workout: 'dumbbell', sleep: 'moon', protein: 'protein', hydration: 'drop', finisher: 'bolt', skill: 'target', mobility: 'stretch', recovery: 'recovery', bonus: 'spark' })[id] || 'star',
         kind: id === 'nutrition' ? 'meals' : undefined,
         bonus: id === 'bonus',
-        units: own.map(function (v) { return [v[0], v[1], v[2], meals[v[0]]]; }),
+        // slot 4: the meal name, or the weekly goal the finisher was saved with
+        units: own.map(function (v) { return [v[0], v[1], v[2], v[0] === 'finisher' ? v[3] : meals[v[0]]]; }),
       });
     });
     return out;
   }
   function dayScore(date) {
     var items = itemsForDate(date);
-    if (!items) { var e = S.me.history[date]; return e ? { done: e.d, of: e.n, points: e.p, max: e.m, pct: e.m ? Math.round(e.p / e.m * 100) : 0, answered: 0 } : null; }
-    return score(unitsOf(items), answersFor(date));
+    if (!items) { var e = S.me.history[date]; return e ? { done: e.d, of: e.n, score: e.s || 0, bonus: e.b || 0, points: e.p || 0, pct: Math.round((e.s || 0) * 10), answered: 0 } : null; }
+    var u = unitsOf(items);
+    return score(u, answersFor(date), shortfallFor(date, u));
   }
   function logged(date) { return Object.keys(answersFor(date)).length > 0; }
   function allDates() { var p = S.me.program, out = []; for (var i = 0; i < p.length; i++) out.push(addDays(p.start, i)); return out; }
+  /** Points = daily scores plus bonuses. Average = the daily score over every day so far (today once it's logged). */
   function totals() {
-    var p = S.me.program, pts = 0, days = 0, pctSum = 0, counted = 0;
+    var p = S.me.program, pts = 0, days = 0, scoreSum = 0, counted = 0;
     var last = p.phase === 'after' ? p.end : p.today;
     allDates().forEach(function (d) {
       if (d > last) return;
-      var sc = dayScore(d);
       var isLogged = logged(d);
-      if (sc) pts += sc.points;
+      var sc = isLogged ? dayScore(d) : null;
       if (isLogged) days++;
+      if (sc) pts += sc.points;
       if (d === p.today && !isLogged) return;
       counted++;
-      pctSum += sc && isLogged ? sc.pct : 0;
+      scoreSum += sc ? sc.score : 0;
     });
-    return { points: pts, days: days, completion: counted ? Math.round(pctSum / counted) : 0, streak: streak() };
+    return { points: Math.round(pts * 10) / 10, days: days, average: counted ? Math.round(scoreSum / counted * 10) / 10 : 0, streak: streak() };
   }
   function streak() {
     var p = S.me.program;
@@ -483,7 +540,8 @@
 
   function viewLanding() {
     var c = S.config;
-    var dates = fmt(c.startDate, { month: 'short', day: 'numeric' }) + ' – ' + fmt(c.endDate, { month: 'short', day: 'numeric', year: 'numeric' });
+    // Two halves that each stay whole, so a very narrow phone wraps the line instead of cutting the year off.
+    var dateHtml = '<span class="nw">' + icon('calendar') + esc(fmt(c.startDate, { month: 'short', day: 'numeric' }) + ' –') + '</span> <span class="nw">' + esc(fmt(c.endDate, { month: 'short', day: 'numeric', year: 'numeric' })) + '</span>';
     var weeks = Math.round(c.lengthDays / 7);
     var choices = c.registrationOpen
       ? '<button class="choice" data-act="choose-type" data-type="member"><span class="c-icon">' + kx() .replace('class="kx"', 'class="kx" style="width:30px;height:17px;fill:#fff"') + '</span><span><span class="c-title">Current Koda Member</span><span class="c-sub">I train at Koda CrossFit Iron View</span></span><span class="chev">' + icon('chevR') + '</span></button>' +
@@ -494,18 +552,18 @@
         '<div class="l-inner">' +
           '<div class="l-top"><a class="l-logo" href="#/">' + kx() + '<span>Koda CrossFit Iron View</span></a><a class="btn btn-sm btn-secondary l-signin" href="#/signin">Sign in</a></div>' +
           '<div class="l-copy">' +
-            '<span class="l-eyebrow">' + icon('calendar', 'ico-sm') + esc(dates) + ' · ' + weeks + ' weeks</span>' +
+            '<div class="l-when"><span class="l-date">' + dateHtml + '</span><span class="l-weeks">' + weeks + ' weeks</span></div>' +
             '<h1 class="l-title">Koda<br><span class="silver">Resolutions 2027</span></h1>' +
             '<p class="l-sub">Six weeks. Your goal, your nutrition plan and your own daily checklist — with the whole Koda community in your corner.</p>' +
           '</div>' +
         '</div>' +
       '</section>' +
       '<div class="l-choices">' + choices + '</div>' +
-      '<p class="center muted" style="margin:18px 16px 0;font-size:14.5px">Already signed up? <a href="#/signin" style="font-weight:600">Sign in</a></p>' +
-      '<section class="l-section"><div class="kicker">How it works</div><h2>Simple, every single day</h2>' +
+      '<p class="l-signin-line">Already signed up? <a href="#/signin">Sign in</a></p>' +
+      '<section class="l-section"><h2 class="l-callout">How it works</h2><p class="l-callsub">Simple, every single day</p>' +
         '<div class="steps4">' + C.steps.map(function (s, i) { return '<div class="card step4"><div class="n">0' + (i + 1) + '</div><h3>' + esc(s.title) + '</h3><p>' + esc(s.text) + '</p></div>'; }).join('') + '</div>' +
       '</section>' +
-      '<section class="l-section"><div class="kicker">What you get</div><h2>Everything in one place</h2>' +
+      '<section class="l-section"><h2 class="l-callout">What you get</h2><p class="l-callsub">Everything in one place</p>' +
         '<div class="perks">' + C.perks.map(function (p) { return '<div class="card perk"><span class="p-icon">' + icon(p.icon) + '</span><span><b>' + esc(p.title) + '</b><span>' + esc(p.text) + '</span></span></div>'; }).join('') + '</div>' +
       '</section>' +
       '<footer class="l-foot"><span>Koda CrossFit Iron View · 740 S Pierce Ave #5, Louisville, CO</span><span>Questions? <a href="mailto:' + esc(c.contactEmail) + '">' + esc(c.contactEmail) + '</a></span></footer>' +
@@ -522,7 +580,8 @@
     steps.push('coaches', 'review');
     return steps;
   }
-  function needsDetails(d) { var t = d.track; return t.nutrition || t.sleep || t.hydration || t.finishers || t.skill || t.mobility || t.other; }
+  function needsDetails(d) { var t = d.track; return !!(t.nutrition || t.sleep || t.protein || t.hydration || t.finishers || t.skill || t.mobility); }
+  function trackAnswered(d) { return C.tracking.every(function (t) { return d.track[t.id] === true || d.track[t.id] === false; }); }
 
   function flowFrame(opts) {
     var steps = opts.steps || [];
@@ -599,7 +658,7 @@
   }
 
   function stepAbout(d) {
-    return '<h1>About you</h1><p class="lead">You’ll sign in with your email and a simple password. We’ll keep you signed in on this phone.</p>' +
+    return '<h1>About you</h1><p class="lead">You’ll sign in with your email and a simple password. We’ll keep you signed in on this device.</p>' +
       '<div class="row-2">' +
         '<label class="field"><span class="label">First name</span><input class="input' + (S.errors.first ? ' is-invalid' : '') + '" data-field="first" value="' + esc(d.first) + '" autocomplete="given-name" autocapitalize="words" data-autofocus>' + fieldErr('first') + '</label>' +
         '<label class="field"><span class="label">Last name</span><input class="input' + (S.errors.last ? ' is-invalid' : '') + '" data-field="last" value="' + esc(d.last) + '" autocomplete="family-name" autocapitalize="words">' + fieldErr('last') + '</label>' +
@@ -626,13 +685,22 @@
   }
 
   function stepTrack(d, editing) {
+    var flag = !!S.errors.track;
     return '<h1>' + (editing ? 'Your daily checklist' : 'What do you want to track each day?') + '</h1>' +
-      '<p class="lead">Tap Yes for each habit you want on your daily checklist. We recommend the first three.</p>' +
+      '<p class="lead">Choose Yes or No for each habit. The recommended ones start on Yes.</p>' +
       '<div class="note" style="margin-bottom:14px">' + icon('play', 'ico-sm') + ' <b>Everyone</b> also gets a short daily video — it’s always on your list.</div>' +
+      (flag ? '<div class="form-error" role="alert">' + esc(S.errors.track) + '</div>' : '') +
       '<div class="track-list">' + C.tracking.map(function (t) {
-        var v = d.track[t.id] === true;
-        return '<div class="track' + (v ? ' is-yes' : '') + '"><span class="t-icon">' + icon(t.icon) + '</span><span><span class="t-title">' + esc(t.label) + (t.recommended ? ' <span class="badge badge-silver">Recommended</span>' : '') + '</span><span class="t-sub">' + esc(t.sub) + '</span></span>' +
-          ynHtml('track', 'data-id="' + t.id + '"', d.track[t.id] === true ? true : d.track[t.id] === false ? false : null, t.label) + '</div>';
+        var v = d.track[t.id] === true ? true : d.track[t.id] === false ? false : null;
+        var html = '<div class="track' + (v === true ? ' is-yes' : '') + (flag && v === null ? ' is-missing' : '') + '" data-track="' + t.id + '"><span class="t-icon">' + icon(t.icon) + '</span><span><span class="t-title">' + esc(t.label) + (t.recommended ? ' <span class="badge badge-silver">Recommended</span>' : '') + '</span><span class="t-sub">' + esc(t.sub) + '</span>' +
+          (flag && v === null ? '<span class="t-need">Choose Yes or No</span>' : '') + '</span>' +
+          ynHtml('track', 'data-id="' + t.id + '"', v, t.label);
+        // Other: the habit is typed right here.
+        if (t.id === 'other' && v === true) {
+          html += '<div class="track-more"><label class="field" style="margin:0"><span class="label">Your habit</span><input class="input' + (S.errors.other ? ' is-invalid' : '') + '" data-field="other.0" value="' + esc(d.other[0] || '') + '" placeholder="e.g. No alcohol" maxlength="60" autocapitalize="sentences">' + fieldErr('other') + '</label>' +
+            ideaChips('other', C.otherIdeas, String(d.other[0] || '').trim()) + '</div>';
+        }
+        return html + '</div>';
       }).join('') + '</div>';
   }
 
@@ -659,8 +727,13 @@
         }).join('') + '</div>' + fieldErr('plan') + macros + other + '</section>');
     }
     if (t.sleep) {
-      parts.push('<section class="card detail-card"><h3>' + icon('moon') + 'Sleep goal</h3><p class="lead-sm">How many hours a night are you aiming for?</p><div class="chips">' +
-        S.config.sleepChoices.map(function (h) { return '<button class="chip' + (Number(d.sleepHours) === h ? ' is-on' : '') + '" data-act="sleep" data-val="' + h + '">' + h + (h === 9 ? '+' : '') + ' hrs</button>'; }).join('') + '</div></section>');
+      parts.push('<section class="card detail-card"><h3>' + icon('moon') + 'Sleep goal</h3><p class="lead-sm">How many hours a night are you aiming for? Seven is the minimum.</p><div class="chips">' +
+        sleepChoices().map(function (h) { return '<button class="chip' + (Number(d.sleepHours) === h ? ' is-on' : '') + '" data-act="sleep" data-val="' + h + '">' + h + (h === 9 ? '+' : '') + ' hrs</button>'; }).join('') + '</div></section>');
+    }
+    if (t.protein) {
+      parts.push('<section class="card detail-card"><h3>' + icon('protein') + 'Protein goal</h3><p class="lead-sm">Your daily minimum, in grams. A good target for most people who train is about 0.7–1 g per pound of your goal bodyweight.</p>' +
+        '<label class="field" style="margin:0"><span class="label">Grams of protein a day</span><input class="input' + (S.errors.proteinG ? ' is-invalid' : '') + '" inputmode="numeric" data-field="proteinG" value="' + esc(d.proteinG || '') + '" placeholder="e.g. 140" maxlength="3">' +
+        (S.errors.proteinG ? fieldErr('proteinG') : '<span class="hint">Example: a 180-lb goal works out to about 125–180 g a day.</span>') + '</label></section>');
     }
     if (t.hydration) {
       var calc = d.bodyweight && Number(d.bodyweight) > 50 ? Math.round(Number(d.bodyweight) / 2) : 0;
@@ -672,24 +745,23 @@
         '</section>');
     }
     if (t.finishers) {
-      parts.push('<section class="card detail-card"><h3>' + icon('bolt') + 'Finishers</h3><p class="lead-sm">How many finisher workouts will you aim for each week?</p><div class="chips">' +
-        [1, 2, 3, 4, 5].map(function (n) { return '<button class="chip' + (Number(d.finishersPerWeek) === n ? ' is-on' : '') + '" data-act="fin" data-val="' + n + '">' + n + ' / week</button>'; }).join('') + '</div></section>');
+      parts.push('<section class="card detail-card"><h3>' + icon('bolt') + 'Finishers</h3><p class="lead-sm">How many finisher workouts will you aim for each week? Each one counts on the day you do it, and any you miss count against Sunday’s score.</p><div class="chips">' +
+        finisherChoices().map(function (n) { return '<button class="chip' + (Number(d.finishersPerWeek) === n ? ' is-on' : '') + '" data-act="fin" data-val="' + n + '">' + n + ' / week</button>'; }).join('') + '</div></section>');
     }
     if (t.skill) {
-      parts.push('<section class="card detail-card"><h3>' + icon('target') + 'CF skill work</h3><p class="lead-sm">Which skill do you want to work on?</p><input class="input' + (S.errors.skill ? ' is-invalid' : '') + '" data-field="skill" value="' + esc(d.skill) + '" placeholder="e.g. Double-unders" maxlength="60">' + fieldErr('skill') + ideaChips('skill', C.skillIdeas, d.skill) + '</section>');
+      parts.push('<section class="card detail-card"><h3>' + icon('target') + 'Skill work</h3><p class="lead-sm">Which skill do you want to work on?</p><input class="input' + (S.errors.skill ? ' is-invalid' : '') + '" data-field="skill" value="' + esc(d.skill) + '" placeholder="e.g. Double-unders" maxlength="60">' + fieldErr('skill') + ideaChips('skill', C.skillIdeas, d.skill) + '</section>');
     }
     if (t.mobility) {
       parts.push('<section class="card detail-card"><h3>' + icon('stretch') + 'Mobility</h3><p class="lead-sm">What mobility do you want to work on?</p><input class="input' + (S.errors.mobility ? ' is-invalid' : '') + '" data-field="mobility" value="' + esc(d.mobility) + '" placeholder="e.g. Hips and ankles" maxlength="60">' + fieldErr('mobility') + ideaChips('mobility', C.mobilityIdeas, d.mobility) + '</section>');
     }
-    if (t.other) {
-      var rows = (d.other.length ? d.other : ['']).map(function (h, i) {
-        return '<div style="display:flex;gap:8px;margin-bottom:8px"><input class="input' + (S.errors.other && !String(h).trim() ? ' is-invalid' : '') + '" data-field="other.' + i + '" value="' + esc(h) + '" placeholder="e.g. No alcohol" maxlength="60">' + (d.other.length > 1 ? '<button class="icon-btn" data-act="other-remove" data-i="' + i + '" aria-label="Remove">' + icon('x') + '</button>' : '') + '</div>';
-      }).join('');
-      parts.push('<section class="card detail-card"><h3>' + icon('star') + 'Your other habits</h3><p class="lead-sm">Up to three. Each one becomes its own yes-or-no.</p>' + rows + fieldErr('other') +
-        (d.other.length < 3 ? '<button class="btn btn-ghost btn-sm" data-act="other-add">' + icon('plus', 'ico-sm') + 'Add another</button>' : '') + ideaChips('other', C.otherIdeas, d.other) + '</section>');
-    }
     return (editing ? '' : '<h1>A few details</h1><p class="lead">These fill in your daily checklist.</p>') + parts.join('');
   }
+  // Choices from the backend, kept inside Kevin's rules even if an old config is cached on this phone.
+  function sleepChoices() { var c = ((S && S.config && S.config.sleepChoices) || []).filter(function (h) { return h >= 7; }); return c.length ? c : [7, 7.5, 8, 8.5, 9]; }
+  function finisherChoices() { var c = ((S && S.config && S.config.finisherChoices) || []).filter(function (n) { return n >= 1 && n <= 3; }); return c.length ? c : [1, 2, 3]; }
+  /** The sleep goal and finishers a week that will be saved (the same on Review). */
+  function sleepValue(d) { return sleepChoices().indexOf(Number(d.sleepHours)) >= 0 ? Number(d.sleepHours) : 7; }
+  function finisherValue(d) { return finisherChoices().indexOf(Number(d.finishersPerWeek)) >= 0 ? Number(d.finishersPerWeek) : 2; }
 
   function stepCoaches(d, editing) {
     var coaches = S.config.coaches;
@@ -703,19 +775,21 @@
   }
 
   function setupFromDraft(d) {
-    var t = d.track;
-    var s = { goal: d.goal, track: clone(t) };
+    var t = {};
+    C.tracking.forEach(function (x) { t[x.id] = d.track[x.id] === true; });
+    var s = { goal: d.goal, track: t };
     if (t.nutrition) {
       s.plan = d.plan;
       if (d.plan === 'other') s.planOther = d.planOther;
       if (d.plan === 'macros') s.macros = { protein: d.macros.protein, carbs: d.macros.carbs, fat: d.macros.fat, calories: d.macros.calories, wantHelp: !!d.macros.wantHelp };
     }
-    if (t.sleep) s.sleepHours = Number(d.sleepHours) || 7;
+    if (t.sleep) s.sleepHours = sleepValue(d);
+    if (t.protein) s.proteinG = Math.round(Number(d.proteinG) || 0);
     if (t.hydration) s.hydrationOz = hydrationOz(d);
-    if (t.finishers) s.finishersPerWeek = Number(d.finishersPerWeek) || 2;
+    if (t.finishers) s.finishersPerWeek = finisherValue(d);
     if (t.skill) s.skill = d.skill;
     if (t.mobility) s.mobility = d.mobility;
-    if (t.other) s.other = d.other.map(function (h) { return String(h).trim(); }).filter(Boolean);
+    if (t.other) s.other = [String(d.other[0] || '').trim()].filter(Boolean);
     s.coaches = d.coaches.slice();
     return s;
   }
@@ -728,12 +802,14 @@
     var t = d.track, out = ['Daily video'];
     if (t.nutrition) out.push(d.plan === 'other' ? 'Nutrition: ' + (d.planOther || 'your plan') : 'Nutrition: ' + ((planInfo(d.plan) || {}).label || 'pick a plan'));
     if (t.workout) out.push('Daily workout');
-    if (t.sleep) out.push('Sleep ' + d.sleepHours + '+ hrs');
+    if (t.sleep) out.push('Sleep ' + sleepValue(d) + '+ hrs');
+    if (t.protein) out.push('Protein ' + (Number(d.proteinG) || '?') + ' g');
     if (t.hydration) out.push('Water ' + (hydrationOz(d) || '?') + ' oz');
-    if (t.finishers) out.push('Finishers ' + d.finishersPerWeek + '/week');
+    if (t.finishers) out.push('Finishers ' + finisherValue(d) + '/week');
     if (t.skill) out.push('Skill: ' + (d.skill || '?'));
     if (t.mobility) out.push('Mobility: ' + (d.mobility || '?'));
-    if (t.other) d.other.filter(function (h) { return String(h).trim(); }).forEach(function (h) { out.push(h); });
+    if (t.recovery) out.push('Recovery');
+    if (t.other && String(d.other[0] || '').trim()) out.push(String(d.other[0]).trim());
     return out;
   }
 
@@ -752,8 +828,7 @@
         return '<div class="review-row"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span>' + (r[2] ? '<button class="btn-link" style="font-size:14px" data-act="jump" data-step="' + r[2] + '">Edit</button>' : '') + '</div>';
       }).join('') + '</div>' +
       (!S.password || S.askPassword ? (S.askPassword = true, '<label class="field" style="margin-top:18px"><span class="label">Your password</span><span class="input-wrap"><input class="input' + (S.errors.password ? ' is-invalid' : '') + '" type="password" data-field="password" value="' + esc(S.password) + '" autocomplete="new-password" minlength="6"><button class="icon-btn reveal" type="button" data-act="reveal" aria-label="Show password">' + icon('eye') + '</button></span>' +
-        (S.errors.password ? fieldErr('password') : '<span class="hint">Type it once more — we don’t keep it on this phone while you sign up.</span>') + '</label>') : '') +
-      '<label class="check-line" style="margin-top:18px"><input type="checkbox" data-field="agree"' + (d.agree ? ' checked' : '') + '><span>I understand this is a fitness and nutrition challenge, and I’ll check with my doctor first if I have any health concerns.</span></label>' + fieldErr('agree');
+        (S.errors.password ? fieldErr('password') : '<span class="hint">Type it once more — we don’t keep it on this device while you sign up.</span>') + '</label>') : '');
   }
 
   function validateStep(step, d, editing) {
@@ -772,17 +847,21 @@
       else if (!d.size) e.size = 'Choose your size.';
     }
     if (step === 'goal' && !d.goal) e.goal = 'Pick one to continue.';
+    if (step === 'track') {
+      if (!trackAnswered(d)) e.track = 'Choose Yes or No for each habit.';
+      if (d.track.other === true && !String(d.other[0] || '').trim()) e.other = 'Type the habit you want to track, or choose No.';
+    }
     if (step === 'details' || (editing && step === 'track')) {
       var t = d.track;
+      var grams = Number(d.proteinG);
       if (t.nutrition && !d.plan) e.plan = 'Choose your nutrition plan.';
       if (t.nutrition && d.plan === 'other' && !String(d.planOther).trim()) e.planOther = 'Tell us a little about your plan.';
+      if (t.protein && !(grams >= 30 && grams <= 400)) e.proteinG = 'Enter your daily protein goal in grams (30 to 400).';
       if (t.hydration && hydrationOz(d) < 24) e.hydrationOz = d.hydrationMode === 'custom' ? 'Enter your daily goal in ounces.' : 'Enter your bodyweight to set your goal.';
       if (t.skill && !String(d.skill).trim()) e.skill = 'Name the skill you’ll work on.';
       if (t.mobility && !String(d.mobility).trim()) e.mobility = 'Name the area you’ll work on.';
-      if (t.other && !d.other.some(function (h) { return String(h).trim(); })) e.other = 'Add a habit, or turn Other off.';
     }
     if (step === 'review' && String(S.password).length < 6) e.password = 'Use at least 6 characters.';
-    if (step === 'review' && !d.agree) e.agree = 'Please check the box to continue.';
     return e;
   }
 
@@ -793,7 +872,7 @@
     if (step === 'about' && S.emailTaken) S.errors.email = S.errors.email || ' ';
     if (Object.keys(S.errors).length) {
       render();
-      var first = app.querySelector('.is-invalid, .error');
+      var first = app.querySelector('.track.is-missing, .is-invalid, .error');
       if (first && first.scrollIntoView) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
@@ -856,7 +935,7 @@
   function viewSignIn() {
     return '<div class="auth"><form class="card auth-card" data-form="signin" novalidate>' +
       '<a class="brand" href="#/"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a>' +
-      '<h1>Welcome back</h1><p class="lead">Sign in with the email you signed up with.</p>' +
+      '<h1>Welcome back</h1><p class="lead">Sign in with the email you signed up with. We’ll keep you signed in on this device.</p>' +
       (S.formError ? '<div class="form-error" role="alert">' + esc(S.formError) + '</div>' : '') +
       '<label class="field"><span class="label">Email</span><input class="input" type="email" inputmode="email" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(S.resetEmail || '') + '" required data-autofocus></label>' +
       '<label class="field"><span class="label">Password</span><span class="input-wrap"><input class="input" type="password" name="password" autocomplete="current-password" required><button class="icon-btn reveal" type="button" data-act="reveal" aria-label="Show password">' + icon('eye') + '</button></span></label>' +
@@ -981,7 +1060,7 @@
   }
 
   function dayHero(date, day) {
-    var p = S.me.program, sc = dayScore(date) || { pct: 0, done: 0, of: 0, points: 0 };
+    var p = S.me.program, sc = dayScore(date) || { pct: 0, done: 0, of: 0, score: 0, bonus: 0, points: 0 };
     var n = diffDays(p.start, date) + 1;
     var t = totals();
     var theme = day.theme ? '<span class="theme"><span class="wk">WK ' + day.week + '</span>' + esc(day.theme) + '</span>' : '<span class="theme"><span class="wk">WK ' + day.week + '</span>Week ' + day.week + '</span>';
@@ -990,8 +1069,10 @@
         '<div class="kick">' + esc(date === p.today ? (p.preview ? 'Preview · ' : '') + 'Today · ' + fmt(date, { weekday: 'short', month: 'short', day: 'numeric' }) : fmt(date, { weekday: 'short', month: 'short', day: 'numeric' })) + '</div>' +
         '<div class="day">Day ' + n + '<small>/ ' + p.length + '</small></div>' + theme +
       '</div>' +
-      '<div class="ring" role="img" aria-label="' + sc.pct + '% of today done">' + ringSvg(sc.pct) + '<div class="label"><div><span class="pct">' + sc.pct + '%</span><span class="of">' + sc.done + ' of ' + sc.of + ' done</span></div></div></div></div>' +
-      '<div class="hero-stats"><span class="hero-stat">' + icon('star', 'ico-sm') + '<span><b>' + sc.points + '</b> pts' + (date === p.today ? ' today' : '') + '</span></span><span class="hero-stat">' + icon('flame', 'ico-sm') + '<span><b>' + t.streak + '</b>-day streak</span></span><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<span><b>' + t.points + '</b> total</span></span></div>' +
+      '<div class="ring" role="img" aria-label="Score ' + fmtScore(sc.score) + ' out of 10">' + ringSvg(sc.pct) + '<div class="label"><div><span class="pct">' + fmtScore(sc.score) + '</span><span class="of">out of 10</span></div></div></div></div>' +
+      '<div class="hero-stats"><span class="hero-stat">' + icon('check', 'ico-sm') + '<span><b>' + sc.done + ' of ' + sc.of + '</b> done</span></span>' +
+        (sc.bonus ? '<span class="hero-stat">' + icon('spark', 'ico-sm') + '<span><b>+' + fmtPts(sc.bonus) + '</b> bonus</span></span>' : '') +
+        '<span class="hero-stat">' + icon('flame', 'ico-sm') + '<span><b>' + t.streak + '</b>-day streak</span></span><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<span><b>' + fmtPts(t.points) + '</b> total</span></span></div>' +
     '</div>';
   }
 
@@ -1018,7 +1099,7 @@
     var a = answersFor(date);
     var watched = a.video === 1;
     return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + (day.category ? '<span class="badge">' + esc(day.category) + '</span>' : '') +
-      '<span class="badge ' + (watched ? 'badge-good' : '') + '">' + (watched ? icon('check', 'ico-sm') + 'Watched' : '+3 pts when you watch') + '</span></div>' +
+      '<span class="badge ' + (watched ? 'badge-good' : '') + '">' + (watched ? icon('check', 'ico-sm') + 'Watched' : 'Counts toward today’s score') + '</span></div>' +
       '<h2>' + esc(day.title || 'Day ' + day.n) + '</h2>' + (day.about ? '<p>' + esc(day.about) + '</p>' : '') +
       (day.action ? '<div class="action-box">' + icon('target') + '<span><b>Today’s action</b>' + esc(day.action) + '</span></div>' : '');
   }
@@ -1051,13 +1132,20 @@
         (stale() ? 'Updating to today…' : date < S.me.program.editFrom ? 'You didn’t check in this day, and it’s locked now.' : 'Nothing here yet.') + '</p></div></section>';
     }
     var a = answersFor(date);
-    var sc = score(unitsOf(items), a);
+    var units = unitsOf(items);
+    var short = shortfallFor(date, units);
+    var sc = score(units, a, short);
     var rows = items.map(function (it) { return checkRow(date, it, a, can); }).join('');
-    var perfect = sc.of && sc.done === sc.of ? '<div class="perfect">' + icon('medal') + '<span>Perfect day! Everything on your list is done.</span></div>' : '';
+    var perfect = sc.of && sc.score >= 10 ? '<div class="perfect">' + icon('medal') + '<span>Perfect day! 10 out of 10.</span></div>' : '';
+    // Last day of the week: say why missed finishers lower the score.
+    if (short > 0) {
+      var goal = Number(finisherUnit(units)[3]) || 0, doneF = finishersDone(date), miss = Math.max(0, goal - doneF);
+      perfect += '<div class="note locked-note">' + icon('bolt', 'ico-sm') + ' Finishers this week: ' + doneF + ' of ' + goal + '. ' + (miss === 1 ? 'The one you missed counts' : 'The ' + miss + ' you missed count') + ' against ' + (date === S.me.program.today ? 'today’s' : 'this day’s') + ' score.</div>';
+    }
     var lockNote = can ? '' : stale()
       ? '<div class="note locked-note">' + icon('clock', 'ico-sm') + ' Updating to today…</div>'
       : '<div class="note locked-note">' + icon('lock', 'ico-sm') + ' This day is locked. You can change today and the ' + (S.config.editDaysBack ? plural(S.config.editDaysBack, 'day') + ' before it' : 'that’s it') + '.</div>';
-    return '<section class="card" id="checklistCard" data-date="' + date + '" style="margin-top:16px"><div class="card-head"><h3>Your checklist</h3>' + (can ? saveStateHtml() : '<span class="badge">' + sc.done + ' of ' + sc.of + ' done</span>') + '</div>' +
+    return '<section class="card" id="checklistCard" data-date="' + date + '" style="margin-top:16px"><div class="card-head"><h3>Your checklist</h3>' + (can ? saveStateHtml() : '<span class="badge">' + fmtScore(sc.score) + ' / 10</span>') + '</div>' +
       '<ul class="checklist">' + rows + '</ul>' + perfect + lockNote + '</section>';
   }
 
@@ -1111,7 +1199,7 @@
       '<div class="list-row"><span class="grow"><span class="meta">Nutrition plan</span><span class="title" style="display:block">' + esc(plan || '') + '</span></span></div>' +
       '<div class="list-row"><span class="grow"><span class="meta">Coach</span><span class="title" style="display:block">' + esc(p.coach || 'Assigned soon') + '</span></span></div>' +
       '<div class="list-row"><span class="grow"><span class="meta">Team</span><span class="title" style="display:block">' + esc(p.team || 'Announced soon') + '</span></span></div></div>' +
-      '<div class="card card-pad"><div class="kicker">So far</div><div style="display:flex;justify-content:space-between;margin-top:10px"><span><b style="font-size:22px">' + t.points + '</b><br><span class="subtle" style="font-size:12.5px">points</span></span><span><b style="font-size:22px">' + t.days + '</b><br><span class="subtle" style="font-size:12.5px">days logged</span></span><span><b style="font-size:22px">' + t.streak + '</b><br><span class="subtle" style="font-size:12.5px">streak</span></span></div></div>';
+      '<div class="card card-pad"><div class="kicker">So far</div><div style="display:flex;justify-content:space-between;margin-top:10px"><span><b style="font-size:22px">' + fmtPts(t.points) + '</b><br><span class="subtle" style="font-size:12.5px">points</span></span><span><b style="font-size:22px">' + t.days + '</b><br><span class="subtle" style="font-size:12.5px">days logged</span></span><span><b style="font-size:22px">' + t.streak + '</b><br><span class="subtle" style="font-size:12.5px">streak</span></span></div></div>';
   }
 
   function refreshDayParts() {
@@ -1185,7 +1273,7 @@
     var preview = '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your daily checklist</h3><a class="btn-link" style="font-size:14px" href="#/edit/track">Edit</a></div>' +
       '<div class="card-body" style="padding-bottom:6px"><p class="muted" style="margin:0">Starting Day 1, you’ll check these off every day.</p></div>' +
       '<ul class="checklist">' + list.map(function (it) {
-        return '<li class="ci"><span class="ci-icon">' + icon(it.icon || 'star') + '</span><div><div class="ci-label">' + esc(it.label) + '</div>' + (it.sub ? '<div class="ci-sub">' + esc(it.sub) + '</div>' : '') + '</div><span class="badge">' + (it.kind === 'meals' ? '4 meals' : it.units[0][2] ? 'bonus' : 'yes / no') + '</span></li>';
+        return '<li class="ci"><span class="ci-icon">' + icon(it.icon || 'star') + '</span><div><div class="ci-label">' + esc(it.label) + '</div>' + (it.sub ? '<div class="ci-sub">' + esc(it.sub) + '</div>' : '') + '</div><span class="badge">' + (it.kind === 'meals' ? '4 meals' : it.units[0][2] === 1 ? 'weekly goal' : it.units[0][2] === 2 ? 'bonus' : 'yes / no') + '</span></li>';
       }).join('') + '</ul></section>';
     var getReady = '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Get ready for Day 1</h3><span class="badge">' + C.getReady.filter(function (x, i) { return ready[i]; }).length + ' of ' + C.getReady.length + '</span></div><ul class="checklist">' +
       C.getReady.map(function (g, i) {
@@ -1210,7 +1298,7 @@
   function viewAfter() {
     var t = totals(), p = S.me.program;
     return '<section class="hero">' + kx('watermark') + '<div class="kick">' + esc(S.config.programName) + '</div><div class="day" style="font-size:54px;margin-top:10px">You finished!</div><div class="date">' + Math.round(p.length / 7) + ' weeks, ' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
-      '<div class="hero-stats"><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<b>' + t.points + '</b> points</span><span class="hero-stat">' + icon('calendar', 'ico-sm') + '<b>' + t.days + '</b> days logged</span><span class="hero-stat">' + icon('chart', 'ico-sm') + '<b>' + t.completion + '%</b> completion</span></div></section>' +
+      '<div class="hero-stats"><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<b>' + fmtPts(t.points) + '</b> points</span><span class="hero-stat">' + icon('calendar', 'ico-sm') + '<b>' + t.days + '</b> days logged</span><span class="hero-stat">' + icon('chart', 'ico-sm') + '<b>' + fmtScore(t.average) + '</b> average out of 10</span></div></section>' +
       '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">What’s next?</h3><p class="muted" style="margin:0 0 14px">Keep the habits that worked. Your videos and nutrition guides stay here for you.</p><a class="btn btn-secondary" href="#/progress">See your six weeks</a></section>';
   }
 
@@ -1280,7 +1368,7 @@
   function markWatched(date) {
     if (!editable(date) || answersFor(date).video === 1) return;
     setAnswer(date, 'video', 1);
-    toast('Nice — video checked off. +3 points');
+    toast('Nice — video checked off.');
   }
 
   /* ============================================================ saving answers */
@@ -1365,10 +1453,10 @@
   function viewProgress() {
     var p = S.me.program, t = totals();
     if (p.phase === 'before') {
-      return '<h1 class="page-title">Progress</h1><p class="page-sub">Your points, streak and calendar fill in starting ' + esc(fmtLong(p.start)) + '.</p>' + calendarCard() + teamCard();
+      return '<h1 class="page-title">Progress</h1><p class="page-sub">Your daily scores, streak and calendar fill in starting ' + esc(fmtLong(p.start)) + '.</p>' + calendarCard() + teamCard();
     }
     var stats = '<div class="stats">' +
-      statCard('trophy', 'Points', t.points, '') + statCard('chart', 'Completion', t.completion, '%') + statCard('flame', 'Streak', t.streak, t.streak === 1 ? ' day' : ' days') + statCard('calendar', 'Days logged', t.days, '/' + Math.min(p.length, Math.max(1, p.dayNumber))) +
+      statCard('trophy', 'Points', fmtPts(t.points), '') + statCard('chart', 'Daily average', fmtScore(t.average), '/10') + statCard('flame', 'Streak', t.streak, t.streak === 1 ? ' day' : ' days') + statCard('calendar', 'Days logged', t.days, '/' + Math.min(p.length, Math.max(1, p.dayNumber))) +
       '</div>';
     return '<h1 class="page-title">Progress</h1><p class="page-sub">Week ' + Math.min(Math.ceil(p.dayNumber / 7), Math.ceil(p.length / 7)) + ' of ' + Math.ceil(p.length / 7) + '. Tap any day to see it.</p>' + stats + calendarCard() + habitsCard() + teamCard();
   }
@@ -1382,9 +1470,9 @@
     for (var n = 0; n < p.length; n++) {
       if (n % 7 === 0) cells.push('<div class="cal-week"><span>Week ' + (n / 7 + 1) + '</span><span class="subtle" style="font-weight:600">' + esc((dayInfo(addDays(p.start, n)) || {}).theme || '') + '</span></div>');
       var d = addDays(p.start, n), future = d > p.today, sc = future ? null : dayScore(d), isLogged = !future && logged(d);
-      var cls = 'cal-d' + (future ? ' future' : '') + (d === p.today ? ' today' : '') + (sc && isLogged && sc.of && sc.done === sc.of ? ' full' : '');
+      var cls = 'cal-d' + (future ? ' future' : '') + (d === p.today ? ' today' : '') + (sc && isLogged && sc.score >= 10 ? ' full' : '');
       var inner = '<span>' + (n + 1) + '</span>' + (isLogged && sc ? '<span class="fillbar"><span style="width:' + sc.pct + '%"></span></span>' : '');
-      cells.push(future ? '<div class="' + cls + '" aria-label="Day ' + (n + 1) + ', upcoming">' + inner + '</div>' : '<a class="' + cls + '" href="#/day/' + d + '" title="' + esc(fmt(d)) + '" aria-label="Day ' + (n + 1) + ', ' + esc(fmt(d)) + (sc && isLogged ? ', ' + sc.pct + '% done' : ', not logged') + '">' + inner + '</a>');
+      cells.push(future ? '<div class="' + cls + '" aria-label="Day ' + (n + 1) + ', upcoming">' + inner + '</div>' : '<a class="' + cls + '" href="#/day/' + d + '" title="' + esc(fmt(d)) + (sc && isLogged ? ' · ' + fmtScore(sc.score) + '/10' : '') + '" aria-label="Day ' + (n + 1) + ', ' + esc(fmt(d)) + (sc && isLogged ? ', score ' + fmtScore(sc.score) + ' out of 10' : ', not logged') + '">' + inner + '</a>');
     }
     return '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your ' + Math.round(p.length / 7) + ' weeks</h3><span class="subtle" style="font-size:13px">' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</span></div><div class="card-body"><div class="cal">' + heads.join('') + cells.join('') + '</div></div></section>';
   }
@@ -1401,7 +1489,7 @@
       var a = answersFor(d);
       if (!Object.keys(a).length) return;
       items.forEach(function (it) {
-        if (it.id === 'bonus') return;
+        if (it.id === 'bonus' || it.id === 'finisher') return; // one-off and weekly items don't have a daily yes rate
         if (!stats[it.id]) { stats[it.id] = { yes: 0, of: 0 }; order.push(it.id); if (!labels[it.id]) labels[it.id] = { label: it.kind === 'meals' ? 'Meals on plan' : it.label, icon: it.icon }; }
         it.units.forEach(function (u) { stats[it.id].of++; if (a[u[0]] === 1) stats[it.id].yes++; });
       });
@@ -1568,18 +1656,19 @@
     var p = S.me.person, s = p.setup || {};
     var d = newDraft();
     d.goal = s.goal || '';
-    d.track = Object.assign({}, d.track, s.track || {});
-    Object.keys(d.track).forEach(function (k) { d.track[k] = !!(s.track && s.track[k]); });
+    d.track = {};
+    C.tracking.forEach(function (x) { d.track[x.id] = !!(s.track && s.track[x.id]); });
     d.plan = s.plan || '';
     d.planOther = s.planOther || '';
     if (s.macros) d.macros = { protein: s.macros.protein || '', carbs: s.macros.carbs || '', fat: s.macros.fat || '', calories: s.macros.calories || '', wantHelp: !!s.macros.wantHelp };
-    d.sleepHours = s.sleepHours || 7;
+    d.sleepHours = Math.max(7, s.sleepHours || 7);
+    d.proteinG = s.proteinG || '';
     d.hydrationOz = s.hydrationOz || '';
     d.hydrationMode = s.hydrationOz ? 'custom' : 'weight';
-    d.finishersPerWeek = s.finishersPerWeek || 2;
+    d.finishersPerWeek = Math.min(3, s.finishersPerWeek || 2);
     d.skill = s.skill || '';
     d.mobility = s.mobility || '';
-    d.other = s.other && s.other.length ? s.other.slice() : [''];
+    d.other = s.other && s.other.length ? [s.other[0]] : [''];
     d.coaches = (s.coaches || []).slice();
     d.shirt = p.shirt;
     d.size = p.size;
@@ -1621,7 +1710,13 @@
     }
     S.errors = validateStep(section === 'track' ? 'track' : section, d, true);
     if (section === 'goal' && !d.goal) S.errors.goal = 'Pick one.';
-    if (Object.keys(S.errors).length) { render(); return; }
+    if (Object.keys(S.errors).length) {
+      render();
+      // The problem can be far down the page (e.g. a new protein goal): bring it into view.
+      var first = app.querySelector('.track.is-missing, .is-invalid, .error');
+      if (first && first.scrollIntoView) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return;
+    }
     var body = { setup: setupFromDraft(d) };
     if (section === 'shirt') { body.shirt = d.shirt; body.size = d.size; }
     S.busy = true; render();
@@ -1703,7 +1798,8 @@
       if (hErr) hErr.remove();
       el.classList.remove('is-invalid');
     }
-    if (S.errors[field]) { delete S.errors[field]; el.classList.remove('is-invalid'); var err = el.closest('.field') && el.closest('.field').querySelector('.error'); if (err) err.remove(); }
+    var errKey = field.indexOf('other.') === 0 ? 'other' : field;
+    if (S.errors[errKey]) { delete S.errors[errKey]; el.classList.remove('is-invalid'); var err = el.closest('.field') && el.closest('.field').querySelector('.error'); if (err) err.remove(); }
     if (field === 'bodyweight') {
       var hint = document.getElementById('hydroCalc');
       var n = Number(value);
@@ -1763,7 +1859,11 @@
       case 'shirt': if (d.shirt !== el.dataset.shirt) { d.shirt = el.dataset.shirt; if ((S.config.sizes[d.shirt] || []).indexOf(d.size) < 0) d.size = ''; } delete S.errors.shirt; rerender(); break;
       case 'size': d.size = el.dataset.size; delete S.errors.size; rerender(); break;
       case 'goal': d.goal = el.dataset.goal; delete S.errors.goal; rerender(); break;
-      case 'track': d.track[el.dataset.id] = el.dataset.val === '1'; rerender(); break;
+      case 'track':
+        d.track[el.dataset.id] = el.dataset.val === '1';
+        if (S.errors.track && trackAnswered(d)) delete S.errors.track;
+        if (el.dataset.id === 'other' && d.track.other !== true) delete S.errors.other;
+        rerender(); break;
       case 'plan': d.plan = el.dataset.plan; delete S.errors.plan; rerender(); break;
       case 'sleep': d.sleepHours = Number(el.dataset.val); rerender(); break;
       case 'fin': d.finishersPerWeek = Number(el.dataset.val); rerender(); break;
@@ -1773,15 +1873,11 @@
         rerender(); break;
       case 'idea':
         if (el.dataset.target === 'other') {
-          var v = el.dataset.val, list = d.other.filter(function (h) { return String(h).trim(); });
-          var at = list.indexOf(v);
-          if (at >= 0) list.splice(at, 1); else if (list.length < 3) list.push(v);
-          d.other = list.length ? list : [''];
+          // One Other habit: an idea fills it in, tapping it again clears it.
+          d.other = [String(d.other[0] || '').trim() === el.dataset.val ? '' : el.dataset.val];
           delete S.errors.other;
         } else { d[el.dataset.target] = el.dataset.val; delete S.errors[el.dataset.target]; }
         rerender(); break;
-      case 'other-add': if (d.other.length < 3) d.other.push(''); rerender(); break;
-      case 'other-remove': d.other.splice(Number(el.dataset.i), 1); if (!d.other.length) d.other = ['']; rerender(); break;
       case 'coach':
         var name = el.dataset.name, i = d.coaches.indexOf(name);
         if (i >= 0) d.coaches.splice(i, 1); else d.coaches.push(name);

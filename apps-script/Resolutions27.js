@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.1.1 (2026-11-09)';
+var RES27_VERSION = '1.2.0 (2026-11-10)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -46,13 +46,20 @@ var RES27_PLANS = {
   macros: 'Macros',
   other: 'Other',
 };
-var RES27_TRACK_KEYS = ['nutrition', 'workout', 'sleep', 'finishers', 'hydration', 'skill', 'mobility', 'other'];
+var RES27_TRACK_KEYS = ['nutrition', 'workout', 'sleep', 'protein', 'hydration', 'finishers', 'skill', 'mobility', 'recovery', 'other'];
 var RES27_SHIRTS = { tee: 'T-Shirt', tank: 'Ladies Tank' };
 var RES27_SIZES = { tee: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], tank: ['XS', 'S', 'M', 'L', 'XL', '2XL'] };
 var RES27_PAYMENTS = { venmo: 'Venmo', zelle: 'Zelle', card: 'Credit Card' };
-var RES27_SLEEP_CHOICES = [6, 6.5, 7, 7.5, 8, 8.5, 9];
-var RES27_POINTS = { video: 3, meal: 1, workout: 2, sleep: 1, hydration: 1, finisher: 2, skill: 1, mobility: 1, other: 1, bonus: 4 };
-var RES27_MEALS = [['m1', 'Breakfast'], ['m2', 'Lunch'], ['m3', 'Dinner'], ['snack', 'Snacks']];
+var RES27_SLEEP_CHOICES = [7, 7.5, 8, 8.5, 9];
+var RES27_FINISHER_CHOICES = [1, 2, 3];
+/**
+ * How much each yes counts toward the day's score out of 10 (Kevin, 11/10/2026): the four meals are
+ * 1 each, workout and sleep are half of nutrition, the video and every other habit a quarter.
+ * The day's score is 10 x (weight answered yes) / (weight on the list), so it's out of 10 however
+ * many habits someone tracks. Bonus tasks add their points on top of the 10.
+ */
+var RES27_POINTS = { video: 1, meal: 1, workout: 2, sleep: 2, protein: 1, hydration: 1, finisher: 1, skill: 1, mobility: 1, recovery: 1, other: 1, bonus: 1 };
+var RES27_MEALS = [['m1', 'Breakfast'], ['m2', 'Lunch'], ['m3', 'Dinner'], ['snack', 'Snacks or none']];
 
 var RES27_TABS = {
   participants: {
@@ -61,7 +68,8 @@ var RES27_TABS = {
       'Nutrition Plan', 'Plan Details', 'Daily Checklist', 'Coach Ranking', 'Coach', 'Team', 'Status', 'Points', 'Days Logged',
       'Last Seen', 'Welcome Email', 'Notes'],
     dates: ['Signed Up', 'Last Seen'],
-    numbers: ['Points', 'Days Logged'],
+    numbers: ['Days Logged'],
+    decimals: ['Points'],
     widths: { 'ID': 80, 'First Name': 110, 'Last Name': 120, 'Email': 210, 'Daily Checklist': 320, 'Plan Details': 200, 'Coach Ranking': 180, 'Welcome Email': 140, 'Notes': 200 },
     hidden: [],
   },
@@ -85,11 +93,13 @@ var RES27_TABS = {
   },
   checkins: {
     name: 'Check-ins',
-    headers: ['Key', 'ID', 'Name', 'Team', 'Date', 'Day', 'Done', 'Of', 'Points', 'Max Points', 'Answers', 'Updated'],
+    headers: ['Key', 'ID', 'Name', 'Team', 'Date', 'Day', 'Done', 'Of', 'Score', 'Bonus', 'Points', 'Answers', 'Updated'],
     dates: ['Updated'],
-    numbers: ['Day', 'Done', 'Of', 'Points', 'Max Points'],
+    numbers: ['Day', 'Done', 'Of', 'Bonus'],
+    decimals: ['Score', 'Points'],
     widths: { 'Key': 150, 'Name': 150, 'Answers': 420 },
     hidden: ['Key'],
+    retired: ['Max Points'], // v1.1, before the out-of-10 score
   },
   days: {
     name: 'Days',
@@ -616,6 +626,7 @@ function res27PublicConfig_(cfg) {
     shirtChangesUntil: res27ParseDateKey_(cfg.shirt_changes_until) || '',
     sizes: RES27_SIZES,
     sleepChoices: RES27_SLEEP_CHOICES,
+    finisherChoices: RES27_FINISHER_CHOICES,
     points: RES27_POINTS,
   };
 }
@@ -857,6 +868,7 @@ function res27PublicPerson_(p) {
       planOther: s.planOther || '',
       macros: s.macros || null,
       sleepHours: s.sleepHours || 7,
+      proteinG: s.proteinG || 0,
       hydrationOz: s.hydrationOz || 0,
       finishersPerWeek: s.finishersPerWeek || 2,
       skill: s.skill || '',
@@ -907,16 +919,22 @@ function res27CleanSetup_(raw, cfg) {
     var hours = Number(raw.sleepHours);
     s.sleepHours = RES27_SLEEP_CHOICES.indexOf(hours) >= 0 ? hours : 7;
   }
+  if (s.track.protein) {
+    var grams = Number(raw.proteinG);
+    if (!isFinite(grams) || grams < 30 || grams > 400) res27Fail_('Set a daily protein goal between 30 and 400 grams.');
+    s.proteinG = Math.round(grams);
+  }
   if (s.track.hydration) {
     s.hydrationOz = res27Num_(raw.hydrationOz, 0, 400);
     if (!s.hydrationOz || s.hydrationOz < 24) res27Fail_('Set a daily water goal (in ounces).');
   }
   if (s.track.finishers) {
-    s.finishersPerWeek = res27Num_(raw.finishersPerWeek, 1, 5) || 2;
+    var perWeek = Number(raw.finishersPerWeek);
+    s.finishersPerWeek = RES27_FINISHER_CHOICES.indexOf(perWeek) >= 0 ? perWeek : 2;
   }
   if (s.track.skill) {
     s.skill = res27CleanText_(raw.skill, 60);
-    if (!s.skill) res27Fail_('Tell us which CrossFit skill you want to work on.');
+    if (!s.skill) res27Fail_('Tell us which skill you want to work on.');
   }
   if (s.track.mobility) {
     s.mobility = res27CleanText_(raw.mobility, 60);
@@ -973,10 +991,12 @@ function res27ChecklistText_(s) {
   if (t.nutrition) parts.push('Nutrition (' + (RES27_PLANS[s.plan] || '') + ')');
   if (t.workout) parts.push('Workout');
   if (t.sleep) parts.push('Sleep ' + s.sleepHours + 'h');
+  if (t.protein) parts.push('Protein ' + s.proteinG + ' g');
   if (t.hydration) parts.push('Water ' + s.hydrationOz + ' oz');
   if (t.finishers) parts.push('Finishers ' + s.finishersPerWeek + '/wk');
   if (t.skill) parts.push('Skill: ' + s.skill);
   if (t.mobility) parts.push('Mobility: ' + s.mobility);
+  if (t.recovery) parts.push('Recovery');
   if (t.other) (s.other || []).forEach(function (h) {
     parts.push('Other: ' + h);
   });
@@ -999,9 +1019,11 @@ function res27SetupColumns_(s) {
 /* ================================================================ the checklist ==== */
 
 /**
- * The yes/no items for one person on one day. Each item has units: [key, points, extra].
- * A unit is one yes/no answer; "extra" units (finishers) add points but don't count against
- * the day's completion. Key "item:sub" groups sub-answers under one item (meals).
+ * The yes/no items for one person on one day. Each item has units: [key, weight, kind, label or goal].
+ * A unit is one yes/no answer; key "item:sub" groups sub-answers under one item (meals).
+ * kind 0 counts every day. kind 1 is the finisher: it counts on the days it's done, and missed
+ * ones (goal in slot 4) count against the last day of the week. kind 2 is the bonus task, added
+ * on top of the day's score out of 10.
  */
 function res27Checklist_(person, day) {
   var s = (person && person.setup) || {};
@@ -1020,28 +1042,37 @@ function res27Checklist_(person, day) {
       }),
     });
   }
-  if (t.workout) items.push({ id: 'workout', label: 'Daily workout', sub: 'Koda, run, bike, swim, walk, hike, sports…', icon: 'dumbbell', units: [['workout', RES27_POINTS.workout, 0]] });
+  if (t.workout) items.push({ id: 'workout', label: 'Daily workout', sub: 'Koda Workout, run, bike, swim, walk, hike, sports…', icon: 'dumbbell', units: [['workout', RES27_POINTS.workout, 0]] });
   if (t.sleep) items.push({ id: 'sleep', label: 'Slept ' + (s.sleepHours || 7) + '+ hours', sub: '', icon: 'moon', units: [['sleep', RES27_POINTS.sleep, 0]] });
+  if (t.protein) items.push({ id: 'protein', label: 'Hit ' + (s.proteinG || 0) + ' g of protein', sub: 'Your daily minimum', icon: 'protein', units: [['protein', RES27_POINTS.protein, 0]] });
   if (t.hydration) items.push({ id: 'hydration', label: 'Drank ' + (s.hydrationOz || 0) + ' oz of water', sub: '', icon: 'drop', units: [['hydration', RES27_POINTS.hydration, 0]] });
-  if (t.finishers) items.push({ id: 'finisher', label: 'Finisher workout', sub: 'Goal: ' + (s.finishersPerWeek || 2) + ' this week · bonus points', icon: 'bolt', units: [['finisher', RES27_POINTS.finisher, 1]] });
+  if (t.finishers) {
+    var goal = s.finishersPerWeek || 2;
+    items.push({ id: 'finisher', label: 'Finisher workout', sub: 'Goal: ' + goal + ' a week · counts on the days you do one', icon: 'bolt', units: [['finisher', RES27_POINTS.finisher, 1, goal]] });
+  }
   if (t.skill) items.push({ id: 'skill', label: 'Skill work', sub: s.skill || '', icon: 'target', units: [['skill', RES27_POINTS.skill, 0]] });
   if (t.mobility) items.push({ id: 'mobility', label: 'Mobility', sub: s.mobility || '', icon: 'stretch', units: [['mobility', RES27_POINTS.mobility, 0]] });
+  if (t.recovery) items.push({ id: 'recovery', label: 'Recovery session', sub: 'Cold plunge, sauna, massage or similar', icon: 'recovery', units: [['recovery', RES27_POINTS.recovery, 0]] });
   if (t.other) {
     (s.other || []).forEach(function (h, i) {
       items.push({ id: 'other' + (i + 1), label: h, sub: '', icon: 'star', units: [['other' + (i + 1), RES27_POINTS.other, 0]] });
     });
   }
   if (day && day.bonus) {
-    items.push({ id: 'bonus', label: day.bonus, sub: 'Today only · +' + (day.bonusPoints || RES27_POINTS.bonus) + ' points', icon: 'spark', bonus: true, units: [['bonus', day.bonusPoints || RES27_POINTS.bonus, 0]] });
+    var bp = day.bonusPoints || RES27_POINTS.bonus;
+    items.push({ id: 'bonus', label: day.bonus, sub: 'Today only · +' + bp + ' bonus point' + (bp === 1 ? '' : 's'), icon: 'spark', bonus: true, units: [['bonus', bp, 2]] });
   }
   return items;
 }
 
+/** What gets saved with a day: [key, weight, kind], plus the weekly goal on the finisher unit. */
 function res27UnitsOf_(items) {
   var units = [];
   items.forEach(function (item) {
     item.units.forEach(function (u) {
-      units.push([u[0], u[1], u[2] ? 1 : 0]);
+      var unit = [u[0], Number(u[1]) || 0, Number(u[2]) || 0];
+      if (u[0] === 'finisher') unit.push(Number(u[3]) || 0);
+      units.push(unit);
     });
   });
   return units;
@@ -1052,34 +1083,122 @@ function res27SyncBonus_(units, day) {
   var out = (units || []).filter(function (u) {
     return u[0] !== 'bonus';
   });
-  if (day && day.bonus) out.push(['bonus', day.bonusPoints || RES27_POINTS.bonus, 0]);
+  if (day && day.bonus) out.push(['bonus', day.bonusPoints || RES27_POINTS.bonus, 2]);
   return out;
 }
 
-/** Done = items with every unit answered yes; points include extras; max leaves extras out. */
-function res27Score_(units, answers) {
+/**
+ * A day's score out of 10: 10 x (weight answered yes) / (weight on the list), to one decimal.
+ * kind 0 units always count, kind 1 (finisher) only when done, kind 2 (bonus) goes on top.
+ * shortfall (missed finishers x their weight, last day of a week only) is added to the list.
+ * done/of count the everyday items, so "4 of 6 done" ignores the finisher and the bonus.
+ */
+function res27Score_(units, answers, shortfall) {
   var items = {};
-  var points = 0;
+  var earned = 0;
   var max = 0;
-  units.forEach(function (u) {
+  var bonus = 0;
+  (units || []).forEach(function (u) {
     var itemId = String(u[0]).split(':')[0];
-    if (!items[itemId]) items[itemId] = { all: true, extra: !!u[2] };
+    var weight = Number(u[1]) || 0;
+    var kind = Number(u[2]) || 0;
     var yes = answers[u[0]] === 1;
+    if (!items[itemId]) items[itemId] = { all: true, kind: kind };
     if (!yes) items[itemId].all = false;
-    if (yes) points += Number(u[1]) || 0;
-    if (!u[2]) max += Number(u[1]) || 0;
+    if (kind === 2) {
+      if (yes) bonus += weight;
+      return;
+    }
+    if (kind === 1) {
+      if (yes) {
+        earned += weight;
+        max += weight;
+      }
+      return;
+    }
+    max += weight;
+    if (yes) earned += weight;
   });
+  max += Math.max(0, Number(shortfall) || 0);
   var done = 0;
   var of = 0;
   Object.keys(items).forEach(function (id) {
-    if (items[id].extra) return;
+    if (items[id].kind) return;
     of += 1;
     if (items[id].all) done += 1;
   });
-  return { done: done, of: of, points: points, max: max };
+  var score = max ? Math.round((earned / max) * 100) / 10 : 0;
+  return { done: done, of: of, earned: earned, max: max, score: score, bonus: bonus, points: Math.round((score + bonus) * 10) / 10 };
 }
 
-/** Points and days logged, counting only real days inside the challenge. */
+/** The last day of the challenge week that date falls in ('' if the final week is cut short). */
+function res27WeekEnd_(program, date) {
+  var n = res27DiffDays_(program.start, date) + 1;
+  if (n < 1) return '';
+  var last = Math.ceil(n / 7) * 7;
+  return last <= program.length ? res27AddDays_(program.start, last - 1) : '';
+}
+
+/** On the last day of a week: finishers short of that day's weekly goal, times their weight. */
+function res27Shortfall_(history, program, date, units) {
+  if (res27WeekEnd_(program, date) !== date) return 0;
+  var f = (units || []).filter(function (u) {
+    return u[0] === 'finisher';
+  })[0];
+  var goal = f ? Number(f[3]) || 0 : 0;
+  if (!goal) return 0;
+  var done = 0;
+  for (var i = 0; i < 7; i++) {
+    var e = history[res27AddDays_(date, -i)];
+    if (e && e.a && e.a.finisher === 1) done += 1;
+  }
+  return Math.max(0, goal - done) * (Number(f[1]) || 0);
+}
+
+/** units with the finisher unit replaced by f (or removed when f is null), kept in checklist order. */
+function res27SetFinisher_(units, f) {
+  var out = (units || []).filter(function (u) {
+    return u[0] !== 'finisher';
+  });
+  if (!f) return out;
+  var at = out.length;
+  for (var i = 0; i < out.length; i++) {
+    var key = String(out[i][0]);
+    if (key === 'skill' || key === 'mobility' || key === 'recovery' || key === 'bonus' || /^other\d/.test(key)) {
+      at = i;
+      break;
+    }
+  }
+  out.splice(at, 0, f.slice());
+  return out;
+}
+
+/**
+ * A week's last day keeps the finisher goal that week really had. When it's first filled in after
+ * the week is over (Sunday caught up on Monday), its finisher comes from the latest logged day of
+ * that week, or is left off if that day had none, so a setup change made since can't add, drop or
+ * move the penalty. Today's own last day follows the setup as usual.
+ */
+function res27WeekEndUnits_(person, program, date, units) {
+  if (res27WeekEnd_(program, date) !== date || date >= program.today) return units;
+  for (var i = 1; i < 7; i++) {
+    var e = person.history[res27AddDays_(date, -i)];
+    if (e && e.u && e.u.length) {
+      return res27SetFinisher_(units, e.u.filter(function (u) {
+        return u[0] === 'finisher';
+      })[0] || null);
+    }
+  }
+  return units;
+}
+
+/** The saved form of a day. p (score + bonus) is what totals add up. */
+function res27Entry_(units, answers, shortfall, time) {
+  var sc = res27Score_(units, answers, shortfall);
+  return { a: answers, u: units, d: sc.done, n: sc.of, s: sc.score, b: sc.bonus, p: sc.points, e: sc.earned, m: sc.max, f: shortfall || 0, t: time || res27Now_() };
+}
+
+/** Points (daily scores plus bonuses) and days logged, counting only real days inside the challenge. */
 function res27Totals_(history, program) {
   var points = 0;
   var days = 0;
@@ -1087,11 +1206,11 @@ function res27Totals_(history, program) {
     if (!res27IsDayKey_(date)) return;
     if (program && (date < program.start || date > program.end)) return;
     var e = history[date];
-    if (!e) return;
+    if (!e || !e.a || !Object.keys(e.a).length) return;
     points += Number(e.p) || 0;
-    if (e.a && Object.keys(e.a).length) days += 1;
+    days += 1;
   });
-  return { points: points, days: days };
+  return { points: Math.round(points * 10) / 10, days: days };
 }
 
 function res27AnswersText_(items, answers) {
@@ -1133,20 +1252,23 @@ function res27ItemsForUnits_(person, day, units) {
     var own = units.filter(function (v) {
       return String(v[0]).split(':')[0] === itemId;
     });
+    // The finisher keeps the weekly goal it was saved with (slot 4), not today's.
+    var finisherSub = itemId === 'finisher' && own[0] && own[0][3] ? 'Goal: ' + own[0][3] + ' a week · counts on the days you do one' : '';
     if (match) {
-      items.push({ id: match.id, label: match.label, sub: match.sub, icon: match.icon, kind: match.kind, bonus: match.bonus, units: own.map(function (v) {
+      items.push({ id: match.id, label: match.label, sub: finisherSub || match.sub, icon: match.icon, kind: match.kind, bonus: match.bonus, units: own.map(function (v) {
         var sub = match.units.filter(function (w) {
           return w[0] === v[0];
         })[0];
-        return [v[0], v[1], v[2], sub && sub[3]];
+        return [v[0], v[1], v[2], v[0] === 'finisher' ? v[3] : sub && sub[3]];
       }) });
     } else {
-      var fallback = { video: 'Watched the daily video', nutrition: 'Followed my nutrition plan', workout: 'Daily workout', sleep: 'Sleep', hydration: 'Hydration', finisher: 'Finisher workout', skill: 'Skill work', mobility: 'Mobility', bonus: 'Bonus task' };
-      items.push({ id: itemId, label: fallback[itemId] || 'Habit', sub: '', icon: 'star', kind: itemId === 'nutrition' ? 'meals' : undefined, units: own.map(function (v) {
+      var fallback = { video: 'Watched the daily video', nutrition: 'Followed my nutrition plan', workout: 'Daily workout', sleep: 'Sleep', protein: 'Protein goal', hydration: 'Hydration', finisher: 'Finisher workout', skill: 'Skill work', mobility: 'Mobility', recovery: 'Recovery session', bonus: 'Bonus task' };
+      var icons = { video: 'play', nutrition: 'plate', workout: 'dumbbell', sleep: 'moon', protein: 'protein', hydration: 'drop', finisher: 'bolt', skill: 'target', mobility: 'stretch', recovery: 'recovery', bonus: 'spark' };
+      items.push({ id: itemId, label: fallback[itemId] || 'Habit', sub: finisherSub, icon: icons[itemId] || 'star', kind: itemId === 'nutrition' ? 'meals' : undefined, bonus: itemId === 'bonus' || undefined, units: own.map(function (v) {
         var meal = RES27_MEALS.filter(function (m) {
           return 'nutrition:' + m[0] === v[0];
         })[0];
-        return [v[0], v[1], v[2], meal ? meal[1] : undefined];
+        return [v[0], v[1], v[2], v[0] === 'finisher' ? v[3] : meal ? meal[1] : undefined];
       }) });
     }
   });
@@ -1162,7 +1284,9 @@ function res27EditableChecklists_(person, program, content, cfg) {
     if (n < 1 || n > program.length) continue;
     var day = res27DayPublic_(n, program, content, cfg);
     var saved = person.history[date];
-    out[date] = saved && saved.u && saved.u.length ? res27ItemsForUnits_(person, day, res27SyncBonus_(saved.u, day)) : res27Checklist_(person, day);
+    if (saved && saved.u && saved.u.length) out[date] = res27ItemsForUnits_(person, day, res27SyncBonus_(saved.u, day));
+    else if (res27WeekEnd_(program, date) === date && date < program.today) out[date] = res27ItemsForUnits_(person, day, res27WeekEndUnits_(person, program, date, res27UnitsOf_(res27Checklist_(person, day))));
+    else out[date] = res27Checklist_(person, day);
   }
   return out;
 }
@@ -1174,7 +1298,7 @@ function res27PublicHistory_(person, program) {
     if (program && (date < program.start || date > program.end)) return;
     var e = person.history[date];
     if (!e) return;
-    out[date] = { a: e.a || {}, u: e.u || [], d: e.d || 0, n: e.n || 0, p: e.p || 0, m: e.m || 0, t: e.t || 0 };
+    out[date] = { a: e.a || {}, u: e.u || [], d: e.d || 0, n: e.n || 0, s: e.s || 0, b: e.b || 0, p: e.p || 0, e: e.e || 0, m: e.m || 0, f: e.f || 0, t: e.t || 0 };
   });
   return out;
 }
@@ -1514,7 +1638,7 @@ function res27Save_(d, auth) {
     if (!person || !person.appRow) res27Fail_('Please sign in again.', 'auth');
     var day = res27DayPublic_(n, program, content, cfg);
     var prior = person.history[date];
-    var units = prior && prior.u && prior.u.length ? res27SyncBonus_(prior.u, day) : res27UnitsOf_(res27Checklist_(person, day));
+    var units = prior && prior.u && prior.u.length ? res27SyncBonus_(prior.u, day) : res27WeekEndUnits_(person, program, date, res27UnitsOf_(res27Checklist_(person, day)));
     var answers = {};
     if (patch && prior && prior.a) {
       Object.keys(prior.a).forEach(function (k) {
@@ -1535,43 +1659,66 @@ function res27Save_(d, auth) {
     Object.keys(answers).forEach(function (k) {
       if (!keep[k]) delete answers[k];
     });
-    var score = res27Score_(units, answers);
-    entry = { a: answers, u: units, d: score.done, n: score.of, p: score.points, m: score.max, t: res27Now_() };
+    // The new answers go in first so this day's own finisher counts toward its week.
+    person.history[date] = { a: answers, u: units };
+    entry = res27Entry_(units, answers, res27Shortfall_(person.history, program, date, units));
     person.history[date] = entry;
+    // A finisher changed earlier in a week moves that week's last day, if it's already logged.
+    // Its Check-ins row is always rewritten, so one that failed to write before gets repaired.
+    var end = res27WeekEnd_(program, date);
+    var endDay = null;
+    if (end && end !== date && person.history[end] && person.history[end].u && person.history[end].u.length) {
+      var was = person.history[end];
+      endDay = res27DayPublic_(res27DiffDays_(program.start, end) + 1, program, content, cfg);
+      var endUnits = res27SyncBonus_(was.u, endDay);
+      person.history[end] = res27Entry_(endUnits, was.a || {}, res27Shortfall_(person.history, program, end, endUnits), was.t);
+    }
     totals = res27Totals_(person.history, program);
     var stamp = new Date(res27Now_());
     res27AssertRow_('appdata', person.appRow, 'ID', person.id);
     res27UpdateRow_('appdata', person.appRow, { 'History': res27HistoryJson_(person.history, person.id), 'Updated': stamp });
     res27AssertRow_('participants', person.row, 'ID', person.id);
     res27UpdateRow_('participants', person.row, { 'Points': totals.points, 'Days Logged': totals.days, 'Last Seen': stamp });
-    var items = res27ItemsForUnits_(person, day, units);
-    var key = person.id + '|' + date;
-    var log = {
-      'Key': key,
-      'ID': person.id,
-      'Name': person.first + ' ' + person.last,
-      'Team': person.team,
-      'Date': date,
-      'Day': n,
-      'Done': score.done,
-      'Of': score.of,
-      'Points': score.points,
-      'Max Points': score.max,
-      'Answers': res27AnswersText_(items, answers),
-      'Updated': stamp,
-    };
-    var existing = res27FindRow_('checkins', 'Key', key);
-    if (existing && String(existing['ID']).trim() === person.id) {
-      res27AssertRow_('checkins', existing._row, 'Key', key);
-      res27UpdateRow_('checkins', existing._row, log);
-    } else {
-      res27AppendRow_('checkins', log);
-    }
+    res27WriteCheckin_(person, date, n, day, entry, stamp);
+    if (endDay) res27WriteCheckin_(person, end, endDay.n, endDay, person.history[end], stamp);
     SpreadsheetApp.flush();
   } finally {
     lock.releaseLock();
   }
   return { ok: true, date: date, entry: entry, totals: totals };
+}
+
+/** One person-day on the Check-ins tab: added the first time, updated after. */
+function res27WriteCheckin_(person, date, n, day, entry, stamp) {
+  var items = res27ItemsForUnits_(person, day, entry.u);
+  var key = person.id + '|' + date;
+  var log = {
+    'Key': key,
+    'ID': person.id,
+    'Name': person.first + ' ' + person.last,
+    'Team': person.team,
+    'Date': date,
+    'Day': n,
+    'Done': entry.d,
+    'Of': entry.n,
+    'Score': entry.s,
+    'Bonus': entry.b,
+    'Points': entry.p,
+    'Answers': res27AnswersText_(items, entry.a || {}),
+    'Updated': stamp,
+  };
+  // Only the columns the tab has: a tab not yet updated by setup can't make a save fail.
+  var have = res27Headers_('checkins');
+  Object.keys(log).forEach(function (h) {
+    if (have.indexOf(h) < 0) delete log[h];
+  });
+  var existing = res27FindRow_('checkins', 'Key', key);
+  if (existing && String(existing['ID']).trim() === person.id) {
+    res27AssertRow_('checkins', existing._row, 'Key', key);
+    res27UpdateRow_('checkins', existing._row, log);
+  } else {
+    res27AppendRow_('checkins', log);
+  }
 }
 
 function res27UpdateSetup_(d, auth) {
@@ -1605,17 +1752,24 @@ function res27UpdateSetup_(d, auth) {
     var appUpdate = { 'Setup': res27SetupJson_(setup, person.id), 'Updated': new Date(res27Now_()) };
     // Today's saved check-in follows the new checklist (keeping answers that still apply). Earlier days keep theirs.
     var today = program.today;
+    var todayDay = null;
     if (program.phase === 'during' && person.history[today]) {
-      var n = res27DiffDays_(program.start, today) + 1;
-      var day = res27DayPublic_(n, program, content, cfg);
-      var units = res27UnitsOf_(res27Checklist_(person, day));
+      todayDay = res27DayPublic_(res27DiffDays_(program.start, today) + 1, program, content, cfg);
+      var units = res27UnitsOf_(res27Checklist_(person, todayDay));
+      // On a week's last day the finisher stays as it was, so turning finishers off (or changing the
+      // goal) can't erase that week's missed ones. Finisher changes start with the next week.
+      if (res27WeekEnd_(program, today) === today) {
+        units = res27SetFinisher_(units, (person.history[today].u || []).filter(function (u) {
+          return u[0] === 'finisher';
+        })[0] || null);
+      }
       var oldAnswers = person.history[today].a || {};
       var answers = {};
       units.forEach(function (u) {
         if (oldAnswers[u[0]] === 1 || oldAnswers[u[0]] === 0) answers[u[0]] = oldAnswers[u[0]];
       });
-      var score = res27Score_(units, answers);
-      person.history[today] = { a: answers, u: units, d: score.done, n: score.of, p: score.points, m: score.max, t: res27Now_() };
+      person.history[today] = { a: answers, u: units };
+      person.history[today] = res27Entry_(units, answers, res27Shortfall_(person.history, program, today, units));
       var totals = res27Totals_(person.history, program);
       appUpdate['History'] = res27HistoryJson_(person.history, person.id);
       update['Points'] = totals.points;
@@ -1625,6 +1779,7 @@ function res27UpdateSetup_(d, auth) {
     res27UpdateRow_('appdata', person.appRow, appUpdate);
     res27AssertRow_('participants', person.row, 'ID', person.id);
     res27UpdateRow_('participants', person.row, update);
+    if (todayDay) res27WriteCheckin_(person, today, todayDay.n, todayDay, person.history[today], new Date(res27Now_()));
     SpreadsheetApp.flush();
   } finally {
     lock.releaseLock();
@@ -1765,6 +1920,19 @@ function res27EnsureTab_(book, tabKey) {
   var existing = lastColumn ? sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (h) {
     return String(h).trim();
   }) : [];
+  // A tab that still has a retired column (Check-ins' Max Points) and no rows yet takes the current
+  // layout, keeping any column Kevin added after it. Every other tab only ever gains columns.
+  var retired = def.retired || [];
+  if (lastColumn && sheet.getLastRow() <= 1 && existing.some(function (h) { return retired.indexOf(h) >= 0; })) {
+    var extra = existing.filter(function (h) {
+      return h && retired.indexOf(h) < 0 && def.headers.indexOf(h) < 0;
+    });
+    var layout = def.headers.concat(extra);
+    sheet.getRange(1, 1, 1, lastColumn).clearContent();
+    if (lastColumn > 1) sheet.showColumns(1, lastColumn);
+    sheet.getRange(1, 1, 1, layout.length).setValues([layout]);
+    existing = layout;
+  }
   var missing = def.headers.filter(function (h) {
     return existing.indexOf(h) < 0;
   });
@@ -1784,6 +1952,7 @@ function res27EnsureTab_(book, tabKey) {
     var col = i + 1;
     if (def.dates.indexOf(h) >= 0) sheet.getRange(2, col, maxRows - 1, 1).setNumberFormat('m/d/yyyy h:mm am/pm');
     else if (def.numbers.indexOf(h) >= 0) sheet.getRange(2, col, maxRows - 1, 1).setNumberFormat('0');
+    else if ((def.decimals || []).indexOf(h) >= 0) sheet.getRange(2, col, maxRows - 1, 1).setNumberFormat('0.0');
     else if (!(tabKey === 'settings' && h === 'Value') && !(tabKey === 'days' && h === 'Date')) sheet.getRange(2, col, maxRows - 1, 1).setNumberFormat('@');
     if (def.widths[h]) sheet.setColumnWidth(col, def.widths[h]);
   });
@@ -1890,23 +2059,77 @@ function res27AdminSetup_(d) {
 
     res27Secret_();
     if (d.adminKey && String(d.adminKey).length >= 12) props.setProperty(RES27_ADMIN_PROP, String(d.adminKey));
+    var bonusFixed = res27MigrateBonusPoints_(book, props);
     CacheService.getScriptCache().removeAll(['res27:settings', 'res27:days']);
     SpreadsheetApp.flush();
     var seeded = 0;
     if (Array.isArray(d.days) && d.days.length) {
       seeded = res27WriteDays_(book, d.days, d.overwriteDays === true);
     }
-    return { ok: true, created: created, sheetId: book.getId(), url: book.getUrl(), seededDays: seeded, migrated: migrated };
+    return { ok: true, created: created, sheetId: book.getId(), url: book.getUrl(), seededDays: seeded, migrated: migrated, bonusFixed: bonusFixed };
   } finally {
     lock.releaseLock();
   }
 }
 
-/** Writes the Days tab from a list of {day, week, theme, title, video, category, about, action, bonus, bonusPoints, presenter, notes, ref}. */
+/**
+ * 11/10/2026: a bonus task went from 4 points to 1 on top of the day's score out of 10. Days seeded
+ * before that say 4; this changes those cells to 1 once (a script property remembers it ran), so a
+ * bonus Kevin sets to 4 later is left alone. Only Bonus Points cells change.
+ */
+function res27MigrateBonusPoints_(book, props) {
+  if (props.getProperty('RES27_BONUS_IS_1')) return 0;
+  var sheet = book.getSheetByName(RES27_TABS.days.name);
+  var changed = 0;
+  if (sheet && sheet.getLastRow() > 1) {
+    var head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
+      return String(h).trim();
+    });
+    var taskCol = head.indexOf('Bonus Task') + 1;
+    var pointsCol = head.indexOf('Bonus Points') + 1;
+    if (taskCol && pointsCol) {
+      var count = sheet.getLastRow() - 1;
+      var tasks = sheet.getRange(2, taskCol, count, 1).getValues();
+      var points = sheet.getRange(2, pointsCol, count, 1);
+      var values = points.getValues();
+      values.forEach(function (r, i) {
+        if (String(tasks[i][0]).trim() && Number(r[0]) === 4) {
+          r[0] = 1;
+          changed += 1;
+        }
+      });
+      if (changed) points.setValues(values);
+    }
+  }
+  props.setProperty('RES27_BONUS_IS_1', '1');
+  return changed;
+}
+
+/**
+ * Writes the Days tab from a list of {day, week, theme, title, video, category, about, action, bonus,
+ * bonusPoints, presenter, notes, ref}. Rewriting a filled tab keeps the video links already pasted
+ * in, matched by title, so a link follows its video even when a day moves.
+ */
 function res27WriteDays_(book, days, overwrite) {
   var sheet = book.getSheetByName(RES27_TABS.days.name);
   if (sheet.getLastRow() > 1 && !overwrite) return 0;
-  if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  var keepVideo = {};
+  if (sheet.getLastRow() > 1) {
+    var head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
+      return String(h).trim();
+    });
+    var titleAt = head.indexOf('Title');
+    var videoAt = head.indexOf('Video URL');
+    if (titleAt >= 0 && videoAt >= 0) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, head.length).getValues().forEach(function (r) {
+        var title = String(r[titleAt]).trim();
+        var video = String(r[videoAt]).trim();
+        if (title && video) keepVideo[title] = video;
+      });
+    }
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  }
+  RES27_REQ_.keptVideos = 0;
   RES27_REQ_.headers = {};
   RES27_REQ_.sheets = {};
   var cfg = res27Settings_();
@@ -1914,13 +2137,15 @@ function res27WriteDays_(book, days, overwrite) {
   var headers = res27Headers_('days');
   var rows = days.slice(0, 120).map(function (x) {
     var n = parseInt(x.day, 10);
+    var kept = !x.video && keepVideo[String(x.title || '').trim()];
+    if (kept) RES27_REQ_.keptVideos += 1;
     var obj = {
       'Day': n,
       'Date': new Date(res27KeyToUtc_(res27AddDays_(start, n - 1)) + 12 * 3600000),
       'Week': parseInt(x.week, 10) || Math.ceil(n / 7),
       'Week Theme': x.theme || '',
       'Title': x.title || '',
-      'Video URL': x.video || '',
+      'Video URL': x.video || kept || '',
       'Category': x.category || '',
       'About': x.about || '',
       'Action Item': x.action || '',
@@ -1948,7 +2173,8 @@ function res27AdminSeedDays_(d) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    return { ok: true, seededDays: res27WriteDays_(res27Book_(), d.days, d.overwrite === true) };
+    var seeded = res27WriteDays_(res27Book_(), d.days, d.overwrite === true);
+    return { ok: true, seededDays: seeded, keptVideos: RES27_REQ_.keptVideos || 0 };
   } finally {
     lock.releaseLock();
   }

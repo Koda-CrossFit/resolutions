@@ -9,29 +9,32 @@ window.RES27_CONTENT = {
     { id: 'health', label: 'General Health', blurb: 'Feel better, sleep better, build habits that last.', icon: 'heart' },
   ],
 
+  // Every habit gets a Yes or No at sign-up; the recommended ones start on Yes.
   tracking: [
     { id: 'nutrition', label: 'Follow nutrition plan', sub: 'You’ll pick your plan next', recommended: true, icon: 'plate' },
-    { id: 'workout', label: 'Daily workout', sub: 'Koda, Run, Bike, Swim, Walk, Hike, Sports, etc.', recommended: true, icon: 'dumbbell' },
+    { id: 'workout', label: 'Daily workout', sub: 'Koda Workout, Run, Bike, Swim, Walk, Hike, Sports, etc.', recommended: true, icon: 'dumbbell' },
     { id: 'sleep', label: 'Sleep', sub: 'Hit your sleep goal each night', recommended: true, icon: 'moon' },
-    { id: 'finishers', label: 'Finisher workouts', sub: 'Short add-on workouts a few times a week', icon: 'bolt' },
+    { id: 'protein', label: 'Daily protein minimum', sub: 'Hit your protein goal every day', icon: 'protein' },
     { id: 'hydration', label: 'Hydration', sub: 'Drink your daily water goal', icon: 'drop' },
-    { id: 'skill', label: 'CF skill work', sub: 'Practice one CrossFit skill', icon: 'target' },
-    { id: 'mobility', label: 'Mobility', sub: 'A few minutes on one area', icon: 'stretch' },
+    { id: 'finishers', label: 'Finisher workouts', sub: 'Short add-on workouts, 1 to 3 a week', icon: 'bolt' },
+    { id: 'skill', label: 'Skill work', sub: 'Practice one skill, like double-unders or pull-ups', icon: 'target' },
+    { id: 'mobility', label: 'Mobility', sub: 'Focused improvement in one area', icon: 'stretch' },
+    { id: 'recovery', label: 'Recovery', sub: 'Cold plunge, sauna, massage or another recovery session', icon: 'recovery' },
     { id: 'other', label: 'Other', sub: 'A habit of your own', icon: 'star' },
   ],
 
   plans: [
     { id: 'recommended', label: 'Resolutions Recommended Plan', blurb: 'Our whole-food plan: quality protein, veggies, fruit, smart carbs and healthy fats.', recommended: true, icon: 'plate' },
+    { id: 'macros', label: 'Macros', blurb: 'Hit daily protein, carb and fat targets.', icon: 'chart' },
     { id: 'plant', label: 'Plant Based', blurb: 'Our plant-forward version, with its own food guide.', icon: 'leaf' },
     { id: 'whole30', label: 'Whole30', blurb: 'Remove common trigger foods for 30 days, then bring them back one at a time.', icon: 'reset' },
     { id: 'carnivore', label: 'Carnivore', blurb: 'Animal foods only, to remove plant foods that bother you.', icon: 'steak' },
-    { id: 'macros', label: 'Macros', blurb: 'Hit daily protein, carb and fat targets.', icon: 'chart' },
     { id: 'other', label: 'Other', blurb: 'A plan of your own — tell us about it.', icon: 'star' },
   ],
 
   skillIdeas: ['Double-unders', 'Pull-ups', 'Toes-to-bar', 'Handstand push-ups', 'Muscle-ups', 'Snatch technique', 'Handstand walk', 'Rope climbs'],
   mobilityIdeas: ['Hips', 'Ankles', 'Shoulders', 'Upper back', 'Hamstrings', 'Wrists', 'Overhead position', 'Squat depth'],
-  otherIdeas: ['No alcohol', '8,000+ steps', '10 min of reading', 'No phone in bed', '5 min breathwork', 'Get outside', 'Journal 3 lines', 'Protein at every meal'],
+  otherIdeas: ['No alcohol', '8,000+ steps', '10 min of reading', 'No phone in bed', '5 min breathwork', 'Get outside', 'Journal 3 lines', 'Gratitude: 3 things'],
 
   avoidAll: [
     { title: 'Alcohol', text: 'No alcohol of any kind during the challenge.' },
@@ -172,23 +175,23 @@ window.RES27_CONTENT = {
     { title: 'Tell us your goals', text: 'Pick your focus, your nutrition plan and the habits you want to track.' },
     { title: 'Get your daily checklist', text: 'Your own list of yes-or-no habits, built from your answers.' },
     { title: 'Watch a short video', text: 'A 3–5 minute lesson from our coaches every day.' },
-    { title: 'Win with your team', text: 'Join a team, earn points and climb the leaderboard together.' },
+    { title: 'Community', text: 'Use the Koda community for motivation and accountability.' },
   ],
 
   perks: [
     { icon: 'play', title: 'Daily coaching videos', text: 'Nutrition, sleep, recovery and mindset, one short lesson a day.' },
     { icon: 'check', title: 'Your own checklist', text: 'Built from your goal and the habits you chose.' },
     { icon: 'plate', title: 'Nutrition guides', text: 'Clear food lists for your plan, plus the Koda Cookbook.' },
-    { icon: 'users', title: 'A coach and a team', text: 'Rank the coaches you want and compete as a team.' },
-    { icon: 'chart', title: 'Track your progress', text: 'Points, streaks and a calendar of your six weeks.' },
+    { icon: 'users', title: 'Support and guidance', text: 'Get matched up with a coach for support and guidance throughout the challenge.' },
+    { icon: 'chart', title: 'Track your progress', text: 'A daily score out of 10, streaks and a calendar of your six weeks.' },
     { icon: 'shirt', title: 'Challenge shirt or tank', text: 'Your Resolutions 2027 tee or ladies tank.' },
   ],
 
   faq: [
     { q: 'What counts as a workout?', a: 'Anything on purpose: a Koda class, a run, bike, swim, walk, hike or sport.' },
     { q: 'I missed a day. Can I fix it?', a: 'Yes. You can change your answers for today and the past {editDays} days.' },
-    { q: 'Do I have to track everything?', a: 'No. Your checklist is only what you chose. Change it any time on the Profile tab.' },
-    { q: 'How do points work?', a: 'Watching the video is 3 points, each on-plan meal and snacks are 1 point each, a workout is 2, each other habit is 1, and finishers are 2 bonus points each. Some days add a one-time bonus task.' },
+    { q: 'Do I have to track everything?', a: 'No. Your checklist is only what you chose, and every day is still scored out of 10. Change it any time on the Profile tab.' },
+    { q: 'How do points work?', a: 'Every day is scored out of 10, however many habits you track. Nutrition counts the most: breakfast, lunch, dinner and snacks (or no snacks) each count. A workout and sleep each count half as much as nutrition, and the video and every other habit a quarter as much. Finishers count on the days you do them, and any you miss from your weekly goal count against that Sunday. A bonus task adds 1 extra point on top.' },
     { q: 'Can I have a drink at a party?', a: 'No alcohol on any plan during the challenge. The videos cover how to handle social events.' },
     { q: 'How do I put the app on my phone?', a: 'iPhone: open it in Safari, tap Share, then Add to Home Screen. Android: open it in Chrome, tap the menu, then Add to Home screen.' },
   ],

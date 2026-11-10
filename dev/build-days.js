@@ -131,7 +131,7 @@ const days = plan.days
       about: ABOUT[d.day] || forParticipant(d.objective),
       action: ACTION[d.day] || d.actionItem,
       bonus,
-      bonusPoints: bonus ? 4 : '',
+      bonusPoints: bonus ? 1 : '', // +1 on top of the day's 10 (Kevin, 11/10)
       presenter: Object.prototype.hasOwnProperty.call(PRESENTER, d.day) ? PRESENTER[d.day] : d.presenter,
       notes,
       ref: d.reuseFrom2026 || '',

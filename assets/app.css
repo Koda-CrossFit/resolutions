@@ -514,6 +514,10 @@ a.vrow:hover { background: var(--surface-2); }
 .track.is-yes .t-icon { background: var(--brand); color: var(--on-brand); }
 .track .t-title { font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .track .t-sub { font-size: 13.5px; color: var(--muted); margin-top: 1px; }
+.track.is-missing { border-color: var(--bad); box-shadow: 0 0 0 3px var(--bad-bg); }
+.track .t-need { display: block; margin-top: 3px; font-size: 13px; font-weight: 700; color: var(--bad); }
+.track-more { grid-column: 1 / -1; padding-top: 4px; }
+.track-more .chips { margin-top: 10px; }
 @media (max-width: 420px) { .track { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; padding: 12px; } .track .t-icon { width: 38px; height: 38px; border-radius: 11px; } .track .t-title { font-size: 15px; } .track .badge { height: 20px; font-size: 10.5px; } }
 @media (max-width: 350px) { .track { grid-template-columns: 38px minmax(0, 1fr); } .track .yn { grid-column: 2; } }
 .detail-card { padding: 18px; }
@@ -551,14 +555,19 @@ a.vrow:hover { background: var(--surface-2); }
 .l-hero .watermark { position: absolute; right: -90px; top: 40px; width: 520px; opacity: .05; fill: #fff; pointer-events: none; }
 .l-inner { position: relative; max-width: 1040px; margin: 0 auto; }
 .l-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.l-logo { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; }
-.l-logo svg { width: 38px; height: 22px; fill: #fff; }
-.l-logo span { font-size: 12.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #dfe5eb; white-space: nowrap; }
+.l-logo { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; min-width: 0; }
+.l-logo svg { width: 38px; height: 22px; fill: #fff; flex: none; }
+.l-logo span { font-size: 12.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #dfe5eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 420px) { .l-logo span { font-size: 11px; letter-spacing: .1em; } .l-logo { gap: 10px; } .l-logo svg { width: 32px; height: 18px; } }
 .l-signin { color: #fff; border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.06); white-space: nowrap; flex: none; }
 .l-signin:hover { background: rgba(255,255,255,.12); }
 .l-copy { margin-top: 56px; max-width: 720px; }
-.l-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); font-size: 13px; font-weight: 600; color: #e3e8ee; }
+/* The challenge dates: big, in the display face, above the title. */
+.l-when { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
+.l-date { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 9vw, 56px); line-height: 1.05; letter-spacing: .03em; color: #fff; }
+.l-date .nw { white-space: nowrap; }
+.l-date .ico { display: inline-block; width: .7em; height: .7em; color: #c4ccd5; vertical-align: -.06em; margin-right: .3em; }
+.l-weeks { display: inline-flex; align-items: center; height: 32px; padding: 0 13px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #e3e8ee; }
 .l-title { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 13vw, 112px); line-height: .88; letter-spacing: .015em; margin: 18px 0 0; }
 .l-title .silver { background: linear-gradient(180deg, #ffffff 0%, #c4ccd5 60%, #9aa5b1 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .l-sub { font-size: clamp(16px, 2.4vw, 19px); color: #d3dae2; max-width: 560px; margin: 18px 0 0; line-height: 1.5; }
@@ -574,8 +583,13 @@ a.vrow:hover { background: var(--surface-2); }
 .choice .c-title { font-size: 19px; font-weight: 800; letter-spacing: -0.015em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .choice .c-sub { color: var(--muted); font-size: 14.5px; margin-top: 3px; }
 .choice .chev { margin-left: auto; color: var(--subtle); }
-.l-section { max-width: 1040px; margin: 0 auto; padding: 44px 16px 0; }
+.l-signin-line { margin: 26px 16px 0; text-align: center; font-size: clamp(22px, 6vw, 29px); font-weight: 600; line-height: 1.25; letter-spacing: -0.015em; color: var(--muted); }
+.l-signin-line a { font-weight: 800; color: var(--text); text-decoration-thickness: 2px; text-underline-offset: 4px; white-space: nowrap; }
+.l-section { max-width: 1040px; margin: 0 auto; padding: 48px 16px 0; }
 .l-section h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 6px; }
+/* Section heads: the callout ("How it works") leads, the line under it is small. */
+.l-section .l-callout { font-family: var(--display); font-weight: 400; font-size: clamp(42px, 10.5vw, 60px); line-height: .95; letter-spacing: .02em; margin: 0; color: var(--text); }
+.l-callsub { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: var(--muted); }
 .steps4 { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 18px; }
 @media (min-width: 640px) { .steps4 { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 980px) { .steps4 { grid-template-columns: repeat(4, 1fr); } }

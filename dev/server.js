@@ -55,9 +55,10 @@ function post(body) {
 
 const DEMO_SETUP = {
   goal: 'fatloss',
-  track: { nutrition: true, workout: true, sleep: true, finishers: true, hydration: true, skill: true, mobility: false, other: true },
+  track: { nutrition: true, workout: true, sleep: true, protein: true, hydration: true, finishers: true, skill: true, mobility: false, recovery: true, other: true },
   plan: 'recommended',
   sleepHours: 7.5,
+  proteinG: 150,
   hydrationOz: 90,
   finishersPerWeek: 2,
   skill: 'Double-unders',

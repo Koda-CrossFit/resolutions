@@ -20,7 +20,7 @@ Columns are found by their header, so they can be moved. Don't rename headers.
 |---|---|---|
 | Participants | One row per person: intake answers in readable columns, points, days logged, whether the welcome email went out | Kevin edits **Paid**, **Coach**, **Team**, **Status**, **Type**, **Notes**. Sort and filter it freely |
 | App Data (hidden tab) | Each person's checklist setup and check-in history, keyed by ID, stamped with that ID | Nobody. If it's ever sorted on one column only, the app refuses to read the mismatched rows (and logs it) rather than mixing people up: undo the sort |
-| Check-ins | One row per person per day: done, points, every answer in words | The app |
+| Check-ins | One row per person per day: done, the day's score out of 10, bonus, points, every answer in words | The app |
 | Days | Day 1–42 from the 2027 video plan: title, video link, category, "About", action item, bonus task, presenter, plus filming notes and the 2026 video it can reuse (the last two columns aren't shown in the app) | Kevin and the coaches |
 | Finishers | Finisher workouts by week (shown to people tracking finishers) | Kevin |
 | Settings | Dates, price, Venmo/Zelle/card link, coaches, contact email, edit window | Kevin |
@@ -34,8 +34,8 @@ Changes to Settings and Days show in the app within about a minute.
 - **Add today's video:** paste the YouTube link into `Video URL` on that day's row. Unlisted is fine.
   Several versions (e.g. the hormone videos): one per line, like `Guys: https://youtu.be/…`.
   If a label contains the person's goal (e.g. `Fat Loss: …`), that version opens first for them.
-- **A one-day bonus:** fill `Bonus Task` (and `Bonus Points`, default 4) on that day. It shows up on
-  everyone's checklist that day only.
+- **A one-day bonus:** fill `Bonus Task` (and `Bonus Points`, default 1) on that day. It shows up on
+  everyone's checklist that day only and adds its points on top of the day's score out of 10.
 - **Mark a remote payment:** type `TRUE` in `Paid`. Their app stops showing "payment pending".
 - **Teams and coaches:** fill `Team` and `Coach` on Participants. They show on the person's profile.
 - **Remove someone:** set `Status` to `Removed`. They're signed out and can't sign back in.
@@ -60,19 +60,34 @@ Sign up with your own email, then set that row's `Type` to `Test` and put a date
 Test rows stay out of the summary. Clear every test account before launch with the
 `adminPurgeTests` request (below).
 
-## Points
+## Points: every day is out of 10
 
-Video 3 · each meal on plan 1 (Breakfast, Lunch, Dinner, Snacks) · workout 2 · sleep 1 ·
-water 1 · skill 1 · mobility 1 · each custom habit 1 · finisher 2 (extra credit, doesn't lower
-the day's %) · bonus task as set on the Days tab. The same scale as 2026's SugarWOD points, so a
-perfect "standard" day is 10. People choose different checklists, so the team leaderboard
-(coming later) should rank by **completion %**, not raw points.
+Kevin's rules (11/10/2026), so someone tracking two habits and someone tracking all of them
+compete fairly. Each habit has a weight:
+
+| On the checklist | Weight |
+|---|---|
+| Nutrition: Breakfast, Lunch, Dinner, Snacks (or none), each | 1 (4 in all) |
+| Daily workout · Sleep | 2 each (half of nutrition) |
+| Video · Protein minimum · Water · Skill work · Mobility · Recovery · Other | 1 each (a quarter of nutrition) |
+| Finisher (weekly goal of 1, 2 or 3) | 1, only on the days one is done |
+
+The day's score is 10 × (weight answered Yes) ÷ (weight on that day's list), to one decimal.
+On the last day of each challenge week (Sunday), every finisher short of that week's goal adds 1
+to the list, so missing them lowers Sunday's score; doing them keeps a perfect week perfect. A
+bonus task adds its `Bonus Points` (default 1) **on top** of the 10. A day's points are its
+score plus any bonus, and the Participants `Points` column adds them up (42 perfect days = 420,
+plus bonuses). The weights live in `RES27_POINTS` at the top of `Resolutions27.js`.
+
+Sign-up asks Yes or No for every habit (nutrition, workout and sleep start on Yes). The sleep goal
+starts at 7 hours. Finishers are 1, 2 or 3 a week. "Other" is one short habit typed on the habits
+page. The last page has no consent checkbox (Kevin, 11/10).
 
 ## Running it locally
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test tests/api.test.js tests/review.test.js   # backend tests (27)
+node --test tests/api.test.js tests/review.test.js   # backend tests (31)
 node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
 ```
 
@@ -93,6 +108,11 @@ clasp push
 clasp create-version "res27: <what changed>"
 clasp update-deployment AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw -V <n> -d "res27: <what changed>"
 ```
+
+Then, from this folder, run `node dev/live.js setup` **before** pushing the front end: it brings
+the sheet up to the new code (new columns, setting descriptions, one-time fixes such as the
+11/10 change of bonus tasks from 4 points to 1). Check the backend version with
+`…/exec?action=res27Health`.
 
 The deployment id above is the hyrox web app every Koda sign-up page calls, so check the
 other files in that folder match what's live before pushing (`clasp pull` into a scratch copy

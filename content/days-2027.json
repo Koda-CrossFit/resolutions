@@ -9,7 +9,7 @@
   "about": "Know the daily loop, what counts as a daily workout, and why today's baseline matters.",
   "action": "Do your baseline tester and take private before photos (front, side and back).",
   "bonus": "Baseline: tester workout + private before photos (members: book an InBody scan this week)",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
@@ -24,7 +24,7 @@
   "about": "Know exactly what earns a nutrition yes on your plan and the rules every plan shares.",
   "action": "Plan tomorrow's breakfast, lunch, dinner and one snack from your plan's food list.",
   "bonus": "Kitchen reset: box up the off-plan foods",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
@@ -39,7 +39,7 @@
   "about": "Understand that life and training stress fill one bucket, so food, alcohol, sleep and water decide whether training builds you up or breaks you down.",
   "action": "Tonight, turn screens off 30 minutes before bed and pick a lights-out time.",
   "bonus": "Send your coach your #1 goal and biggest obstacle",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
@@ -54,7 +54,7 @@
   "about": "Know your water target, why it matters, and how to get through the early-week dip.",
   "action": "Fill a measured bottle and finish half your target by lunch and the rest by 5 PM.",
   "bonus": "Introduce yourself to your team: name, goal and one fun fact",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "",
   "notes": "",
   "ref": ""
@@ -84,7 +84,7 @@
   "about": "Know what earns a yes on the daily workout and on each extra you chose, and how to scale around pain or no gym.",
   "action": "Put next week's workouts and extras on your calendar.",
   "bonus": "Film a 30-second starting clip of your skill or mobility test (re-filmed Days 29 and 41)",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Maggie & Riley",
   "notes": "",
   "ref": ""
@@ -99,7 +99,7 @@
   "about": "Know why sleep drives every goal, what counts as a Sleep yes, and the habits that matter most.",
   "action": "Set one wake time for the week and a phones-down alarm 45 minutes before bed.",
   "bonus": "Week 1 check-in: share one win with your team or coach",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Maggie",
   "notes": "",
   "ref": ""
@@ -174,7 +174,7 @@
   "about": "You can stay on plan at restaurants, parties and playoff watch parties without feeling like the odd one out.",
   "action": "Look up the menu for your next meal out and choose your order now.",
   "bonus": "Send a question for Sunday’s Ask the Coaches",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Jamie",
   "notes": "",
   "ref": ""
@@ -204,7 +204,7 @@
   "about": "Get quick answers to the group's top early questions and choose one thing to tighten for week 3.",
   "action": "Pick one thing to tighten up for week 3.",
   "bonus": "Week 2 check-in: share one win with your team or coach",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "The coaches",
   "notes": "",
   "ref": ""
@@ -219,7 +219,7 @@
   "about": "Expect the week-3 dip and have a minimum plan, sick days included, that keeps you consistent.",
   "action": "Write the “minimum version” of each item on your checklist for tough days.",
   "bonus": "Rewrite your Other habit (or most-missed item) as an if-then plan",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
@@ -294,7 +294,7 @@
   "about": "You can time and size food around training for your goal without stressing over the exact minute.",
   "action": "Plan the meal before and the meal after your next hard session.",
   "bonus": "Add a favorite plan-friendly recipe to the Koda Cookbook",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Riley",
   "notes": "",
   "ref": ""
@@ -309,7 +309,7 @@
   "about": "Judge your progress fairly and choose one adjustment for the second half with your coach.",
   "action": "Do your 10-minute halfway check-in with your coach (in person, video or phone).",
   "bonus": "Coach check-in + optional midpoint photos",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
@@ -354,7 +354,7 @@
   "about": "Celebrate halfway wins and keep the rivalry going into the long weekend.",
   "action": "Share one non-scale win with your team.",
   "bonus": "Suggest a topic for a future video",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "The Wig Wednesday crew",
   "notes": "",
   "ref": ""
@@ -384,7 +384,7 @@
   "about": "Have a plan for a big social, travel-heavy three-day weekend and bounce right back afterward.",
   "action": "Write down your weekend plan: what you’ll eat and drink, and your first on-plan meal afterward.",
   "bonus": "Share one on-plan game-day or date-night idea with your team",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Jamie",
   "notes": "",
   "ref": ""
@@ -414,7 +414,7 @@
   "about": "Clear up mid-challenge questions and set up week 5.",
   "action": "Complete your week 4 check-in and choose one upgrade for week 5.",
   "bonus": "Week 4 check-in: share one win with your team or coach",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "The coaches",
   "notes": "",
   "ref": ""
@@ -519,7 +519,7 @@
   "about": "Set up a strong, fair finish.",
   "action": "Set your 7-for-7 goal for the final week.",
   "bonus": "Book your retest (members: grab an InBody slot)",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Maggie",
   "notes": "",
   "ref": ""
@@ -549,7 +549,7 @@
   "about": "Know how to bring removed foods back one at a time to learn what your body tolerates.",
   "action": "Choose the first food you'll bring back and put its dates on your calendar.",
   "bonus": "Share the three habits you’ll keep with your team",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
@@ -609,7 +609,7 @@
   "about": "Retest fairly and read your results beyond the scale.",
   "action": "Do your retest and take your after photos.",
   "bonus": "Retest: tester, after photos (members: InBody) and a re-filmed skill or mobility clip",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Riley",
   "notes": "",
   "ref": ""
@@ -624,7 +624,7 @@
   "about": "Celebrate, choose your path forward, and set reminders that keep you going.",
   "action": "Set a phone reminder four weeks from now to check in on your habits.",
   "bonus": "Fill out the final survey",
-  "bonusPoints": 4,
+  "bonusPoints": 1,
   "presenter": "Kevin",
   "notes": "",
   "ref": ""
