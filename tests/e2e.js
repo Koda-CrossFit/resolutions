@@ -145,8 +145,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   // ---------------------------------------------------------------- gaps callout, stale day
   await page.goto(BASE + '/#/today');
   await wait(800);
-  const gap = await page.$('a.callout[href^="#/day/"]');
-  check('Today offers yesterday when it is not filled in', !!gap);
+  const gap = await page.$('#overdueCard a.od-row[href^="#/day/"]');
+  check('Today lists the earlier days that are still open and not filled in (Overdue)', !!gap && /Overdue/i.test(await page.textContent('#overdueCard')));
   await page.evaluate(() => {
     const c = JSON.parse(localStorage.getItem('res27.me'));
     c.loadedDay = '2027-01-08';
@@ -243,6 +243,179 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check('at 300px the date line wraps and keeps the year', narrow.right <= narrow.width && narrow.overflow <= 0 && /2027/.test(narrow.text), JSON.stringify(narrow));
   await p6.screenshot({ path: path.join(OUT, '01b-landing-300px.png') });
   await c6.close();
+
+  // ---------------------------------------------------------------- the beta test (11/10): started yesterday, 7 days
+  // Real clock (the phone and the server must agree on today), Mountain time like the server.
+  const dkey = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
+  const todayKey = dkey(new Date());
+  const shift = (key, n) => { const [y, m, d] = key.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1, d + n, 12)); return t.toISOString().slice(0, 10); };
+  const yesterday = shift(todayKey, -1);
+  const longDay = (key) => new Date(key + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+  await get('/dev/time?clear=1');
+  const ADMINKEY = 'test-admin-key-123';
+  const PLAN = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', 'days-2027.json'), 'utf8'))
+    .map((d, i) => Object.assign({}, d, { ref: ['nbg1s1gdjJk', 'As3Zpd7XEY8', 'KBOW32PKgfI', 'tscdhnnCIV4', '9C14vwKA9Cs', '_NLEqrDAl4Q', '_szhT8Sieq8'][i] || '' }));
+  check('dev world: Days with their 2026 references', (await api({ action: 'adminSeedDays', key: ADMINKEY, days: PLAN, overwrite: true })).ok);
+  check('dev world: a beta test that started yesterday', (await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: yesterday, beta_days: 7 } })).ok);
+  const c7 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const b7 = await c7.newPage();
+  b7.on('pageerror', (e) => errors.push(e.message));
+  b7.on('console', (m) => { if (m.type() === 'error' && !/favicon|fonts\.g|ytimg|youtube/.test(m.text())) errors.push(m.text()); });
+  await b7.goto(BASE + '/dev/blank?to=' + encodeURIComponent('?beta=1#/'));
+  await b7.waitForSelector('.l-beta');
+  await b7.evaluate(() => document.fonts.ready);
+  const bland = await b7.evaluate(() => ({ tag: !!document.querySelector('.l-beta-tag'), date: document.querySelector('.l-date').textContent, weeks: document.querySelector('.l-weeks').textContent, note: document.querySelector('.l-beta').textContent, overflow: document.documentElement.scrollWidth - window.innerWidth }));
+  const shortDay = (key) => new Date(key + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  check('beta link: the landing page shows the beta dates, 1 week, and says it is practice',
+    bland.tag && bland.date.indexOf(shortDay(yesterday)) >= 0 && bland.date.indexOf(shortDay(shift(yesterday, 6))) >= 0 && /1 week/i.test(bland.weeks) && /practice/.test(bland.note) && bland.overflow <= 0, JSON.stringify(bland));
+  await b7.screenshot({ path: path.join(OUT, 'beta-00-landing.png'), fullPage: true });
+  await b7.click('[data-type="remote"]');
+  await b7.click('[data-method="venmo"]');
+  const payText = await b7.textContent('.flow-body');
+  check('beta: the payment step says not to send money and has no Venmo button', /Beta test: don’t send any money/.test(payText) && (await b7.$('.pay-detail a')) === null);
+  await b7.click('[data-act="back"]');
+  await b7.waitForSelector('[data-type="member"]');
+  await b7.click('[data-type="member"]');
+  await b7.waitForSelector('[data-field="first"]');
+  await b7.fill('[data-field="first"]', 'Kevin');
+  await b7.fill('[data-field="last"]', 'Beta');
+  await b7.fill('[data-field="email"]', 'beta.e2e@example.com');
+  await b7.fill('[data-field="password"]', 'koda2027');
+  await b7.click('[data-shirt="tee"]');
+  await b7.click('[data-size="L"]');
+  await b7.click('[data-act="next"]');
+  await b7.click('[data-goal="performance"]');
+  await b7.click('[data-act="next"]');
+  await b7.waitForSelector('[data-act="track"]');
+  for (const id of ['protein', 'hydration', 'finishers', 'skill', 'mobility', 'recovery', 'other']) await b7.click(`[data-act="track"][data-id="${id}"][data-val="0"]`);
+  await b7.click('[data-act="next"]');
+  await b7.waitForSelector('[data-plan="recommended"]');
+  await b7.click('[data-plan="recommended"]');
+  await b7.click('[data-act="next"]');
+  await b7.waitForSelector('[data-act="coach-none"], [data-act="coach"]');
+  await b7.click('[data-act="next"]');
+  await b7.waitForSelector('.review-sec');
+  await b7.click('[data-act="next"]');
+  await b7.waitForSelector('#sheet', { timeout: 15000 });
+  const bsheet = await b7.textContent('#sheet');
+  check('beta: the welcome sheet says it is the beta and today is Day 2', /This is the beta test/.test(bsheet) && /today is Day 2/.test(bsheet), bsheet.slice(0, 200));
+  await b7.click('[data-act="close-sheet"]');
+  await b7.waitForSelector('#overdueCard');
+  const bt = await b7.evaluate(() => ({
+    pill: document.querySelector('.day-pill').textContent,
+    card: document.querySelector('#overdueCard').textContent,
+    href: (document.querySelector('#overdueCard a.od-row') || {}).getAttribute ? document.querySelector('#overdueCard a.od-row').getAttribute('href') : '',
+    strip: Array.from(document.querySelectorAll('#weekStrip .wk-d')).map((e) => e.className.replace('wk-d ', '')),
+    badge: (() => { const b = document.querySelector('.tab [data-od-badge]'); return b && !b.hidden ? b.textContent : ''; })(),
+    poster: (document.querySelector('#videoMount .poster') || { getAttribute: () => '' }).getAttribute('style') || '',
+    standIn: /Beta: 2026 stand-in video/.test(document.querySelector('#videoMeta').textContent),
+    overflow: document.documentElement.scrollWidth - window.innerWidth,
+  }));
+  check('beta Today: Day 2 of 7, the beta pill', /Beta · Day 2 of 7/.test(bt.pill), bt.pill);
+  // edit_days_back is 2, so yesterday stays open through tomorrow.
+  check('beta Today: yesterday (Day 1) is Overdue, not filled in, open through tomorrow',
+    /Yesterday · Day 1/.test(bt.card) && /Not filled in yet/.test(bt.card) && /You can fill it in through tomorrow/.test(bt.card) && bt.href === '#/day/' + yesterday, bt.card);
+  check('beta Today: the week strip marks Day 1 overdue and today, the rest coming up', bt.strip[0] === 'is-overdue' && /is-today/.test(bt.strip[1]) && /is-sel/.test(bt.strip[1]) && bt.strip.slice(2).every((c) => c === 'is-upcoming'), bt.strip.join(' | '));
+  check('beta Today: the Today tab shows 1 overdue', bt.badge === '1', bt.badge);
+  check('beta Today: Day 2 plays its 2026 stand-in video, marked as one', /As3Zpd7XEY8/.test(bt.poster) && bt.standIn, bt.poster);
+  check('beta Today: fits the phone', bt.overflow <= 0, 'overflow ' + bt.overflow);
+  await b7.screenshot({ path: path.join(OUT, 'beta-01-today-overdue.png'), fullPage: true });
+  // Today's own page (the Videos tab and the calendar link there) is the same Today screen, card included.
+  await b7.goto(BASE + '/#/videos');
+  await b7.waitForSelector('.vrow');
+  await b7.goto(BASE + '/#/day/' + todayKey);
+  await b7.waitForSelector('#dayHero');
+  await wait(300);
+  check('beta: today’s page opened from Videos still shows the Overdue card and no back link', !!(await b7.$('#overdueCard')) && !(await b7.$('a.btn-ghost[href="#/today"]')));
+  await b7.goto(BASE + '/#/today');
+  await b7.waitForSelector('#overdueCard');
+  check('beta: …and back on Today it is still there', !!(await b7.$('#overdueCard')));
+  await b7.goto(BASE + '/#/progress');
+  await b7.waitForSelector('.cal');
+  const bcal = await b7.evaluate(() => {
+    const cal = document.querySelector('.cal');
+    const widths = Array.from(cal.querySelectorAll('.cal-d')).map((e) => Math.round(e.getBoundingClientRect().width));
+    return {
+      overdue: document.querySelectorAll('.cal-d.overdue').length, cells: widths.length, legend: (document.querySelector('.cal-legend') || {}).textContent || '',
+      head: Array.from(document.querySelectorAll('.card-head h3')).map((h) => h.textContent).join('|'),
+      even: Math.max.apply(null, widths) - Math.min.apply(null, widths) <= 1, fits: cal.scrollWidth <= cal.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+  check('beta Progress: 7 days, Day 1 overdue in the calendar with a legend, "Your week"', bcal.cells === 7 && bcal.overdue === 1 && /Overdue/.test(bcal.legend) && /Your week/.test(bcal.head), JSON.stringify(bcal));
+  check('beta Progress: the calendar days are all the same size and fit the card', bcal.even && bcal.fits, JSON.stringify(bcal));
+  await b7.screenshot({ path: path.join(OUT, 'beta-02-progress.png'), fullPage: true });
+  await b7.goto(BASE + '/#/today');
+  await b7.waitForSelector('#overdueCard a.od-row');
+  await b7.click('#overdueCard a.od-row');
+  await b7.waitForSelector('#dayNote .od-note');
+  check('beta: tapping it opens Day 1 with an Overdue note', b7.url().endsWith('#/day/' + yesterday) && /Overdue\./.test(await b7.textContent('#dayNote')) && /Day 1/.test(await b7.textContent('#dayHero')));
+  await b7.screenshot({ path: path.join(OUT, 'beta-03-day1-overdue.png'), fullPage: true });
+  const keys = await b7.$$eval('#checklistCard [data-act="answer"][data-val="1"]', (els) => els.map((e) => e.dataset.key));
+  await b7.click('#checklistCard [data-act="meals-all"]');
+  await wait(150);
+  check('beta: halfway through, the note counts the habits still open', /still need/.test(await b7.textContent('#dayNote')), await b7.textContent('#dayNote'));
+  for (const k of keys) {
+    await b7.click(`#checklistCard [data-act="answer"][data-key="${k}"][data-val="1"]`);
+    await wait(60);
+  }
+  const caught = await b7.evaluate(() => ({
+    toast: (document.querySelector('#toastWrap') || {}).textContent || '',
+    note: document.querySelector('#dayNote').textContent,
+    chip: document.querySelector('#weekStrip .wk-d').className,
+    badge: (() => { const b = document.querySelector('.tab [data-od-badge]'); return b && !b.hidden ? b.textContent : ''; })(),
+  }));
+  check('beta: answering the last habit says Yesterday is caught up, clears the note, strip and badge', /Yesterday is all caught up/.test(caught.toast) && caught.note === '' && /is-done/.test(caught.chip) && caught.badge === '', JSON.stringify(caught));
+  await wait(1800);
+  const bRows = (await get('/dev/rows?tab=Check-ins')).filter((r) => r.Name === 'Kevin Beta');
+  const bPeople = (await get('/dev/rows?tab=Participants')).filter((r) => r.Email === 'beta.e2e@example.com');
+  check('beta: Day 1 saved to the sheet on its real date, as a Test account', bRows.length === 1 && bRows[0].Date === yesterday && Number(bRows[0].Day) === 1 && bPeople.length === 1 && bPeople[0].Type === 'Test' && /Beta test sign-up/.test(bPeople[0].Notes), JSON.stringify(bRows[0] || {}));
+  await b7.screenshot({ path: path.join(OUT, 'beta-04-day1-caught-up.png'), fullPage: true });
+  await b7.goto(BASE + '/#/today');
+  await b7.waitForSelector('#weekStrip');
+  check('beta: back on Today the Overdue card is gone', (await b7.$('#overdueCard')) === null);
+  await b7.screenshot({ path: path.join(OUT, 'beta-05-today-after.png'), fullPage: true });
+  // Dark mode and desktop, once each.
+  const c8 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver', colorScheme: 'dark' });
+  await api({ action: 'register', memberType: 'member', first: 'Dark', last: 'Mode', email: 'dark.beta@example.com', password: 'koda2027', shirt: 'tee', size: 'M', setup: { goal: 'health', track: { nutrition: true, workout: true, sleep: true }, plan: 'recommended', sleepHours: 7, coaches: [] }, beta: true });
+  const p8 = await c8.newPage();
+  p8.on('pageerror', (e) => errors.push(e.message));
+  await p8.goto(BASE + '/dev/as?email=dark.beta%40example.com&password=koda2027&to=' + encodeURIComponent('#/today'));
+  await p8.waitForSelector('#overdueCard');
+  await wait(400);
+  await p8.screenshot({ path: path.join(OUT, 'beta-06-today-dark.png'), fullPage: true });
+  await c8.close();
+  const c9 = await browser.newContext({ viewport: { width: 1366, height: 900 }, timezoneId: 'America/Denver' });
+  const p9 = await c9.newPage();
+  p9.on('pageerror', (e) => errors.push(e.message));
+  await p9.goto(BASE + '/dev/as?email=dark.beta%40example.com&password=koda2027&to=' + encodeURIComponent('#/today'));
+  await p9.waitForSelector('#overdueCard');
+  await wait(400);
+  check('beta desktop: the sidebar Today item shows the overdue count', (await p9.textContent('.nav-item.is-on [data-od-badge]')).trim() === '1');
+  await p9.screenshot({ path: path.join(OUT, 'beta-07-desktop.png'), fullPage: true });
+  await c9.close();
+  // A phone without the beta link (e.g. a home-screen app opened first) can still join the beta.
+  const c10 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p10 = await c10.newPage();
+  p10.on('pageerror', (e) => errors.push(e.message));
+  await p10.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  await p10.waitForSelector('[data-act="join-beta"]');
+  check('real landing during a beta: no beta tag, the real dates, and a "Join the beta" link', !(await p10.$('.l-beta-tag')) && /Jan 18/.test(await p10.textContent('.l-date')));
+  await p10.click('[data-act="join-beta"]');
+  await p10.waitForSelector('.l-beta-tag');
+  check('tapping "Join the beta" switches the landing page to the beta', /Nov/.test(await p10.textContent('.l-date')) && !(await p10.$('[data-act="join-beta"]')));
+  await c10.close();
+  await c7.close();
+  await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: '' } });
+  // Beta over and turned off: a beta tester's account now looks like a January sign-up, so it says it isn't one.
+  const c11 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p11 = await c11.newPage();
+  p11.on('pageerror', (e) => errors.push(e.message));
+  await p11.goto(BASE + '/dev/as?email=dark.beta%40example.com&password=koda2027&to=' + encodeURIComponent('#/today'));
+  await p11.waitForSelector('.hero');
+  await wait(300);
+  check('after the beta is turned off, a beta tester sees "This is a test account … sign up again"', /This is a test account/.test(await p11.textContent('#main')) && /sign up again/.test(await p11.textContent('#main')));
+  await c11.close();
+  await get('/dev/time?set=' + encodeURIComponent('2027-01-27T19:30:00-07:00'));
 
   // ---------------------------------------------------------------- screenshots: demo member, light + dark, phone + desktop
   for (const scheme of ['light', 'dark']) {

@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.1.0';
+  var APP_VERSION = '1.2.0';
 
   /* ============================================================ small helpers */
 
@@ -34,6 +34,20 @@
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
     del: function (k) { try { localStorage.removeItem(k); } catch (e) {} },
   };
+
+  // The beta test link (…/resolutions/?beta=1) is remembered on this phone; ?beta=0 forgets it.
+  (function () {
+    var m = /[?&]beta(?:=([^&#]*))?/.exec(location.search);
+    if (!m) return;
+    if (/^(0|off|false|no)$/i.test(m[1] || '')) store.del('res27.beta');
+    else store.set('res27.beta', true);
+  })();
+  /** The beta test's dates when this phone came in through the beta link and a beta is running (not one that has ended since). */
+  function betaInfo() {
+    var b = store.get('res27.beta', false) && S.config && S.config.beta ? S.config.beta : null;
+    return b && !(b.end < localToday()) ? b : null;
+  }
+  function weeksText(days) { return days % 7 ? plural(days, 'day') : plural(days / 7, 'week'); }
 
   /* ============================================================ icons */
 
@@ -105,6 +119,7 @@
     remotePrice: 99, venmo: '@kevin-schuetz-5', venmoUrl: 'https://venmo.com/u/kevin-schuetz-5', zelle: 'kodaironview@gmail.com', cardUrl: '',
     coaches: ['Kevin', 'Riley', 'Jamie', 'Maggie'], contactEmail: 'kodaironview@gmail.com', siteUrl: '', cookbookUrl: '', editDaysBack: 2,
     sizes: { tee: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], tank: ['XS', 'S', 'M', 'L', 'XL', '2XL'] }, sleepChoices: [7, 7.5, 8, 8.5, 9], finisherChoices: [1, 2, 3],
+    beta: null,
   };
 
   var S = {
@@ -142,6 +157,7 @@
     lastRouteKey: '',
     lastPaintHash: '',
     returnToReview: false,
+    configLoaded: false,
   };
   var cached = store.get('res27.me', null);
   if (S.token && cached && cached.token === S.token) { S.me = cached.me; S.loadedDay = cached.loadedDay || ''; }
@@ -219,8 +235,10 @@
     return api('config', { token: '' }).then(function (r) {
       S.config = Object.assign({}, DEFAULT_CONFIG, r.config);
       store.set('res27.config', S.config);
-      if (['', 'welcome', 'join'].indexOf(route().name) >= 0) render();
-    }).catch(function () {});
+      S.configLoaded = true;
+      if (!S.config.beta) store.del('res27.beta'); // the beta test is over: back to the real sign-up
+      if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); // the landing shows on any other route
+    }).catch(function () { S.configLoaded = true; if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); });
   }
 
   function loadMe(quiet) {
@@ -251,6 +269,7 @@
     S.loadedDay = localToday();
     S.config = Object.assign({}, DEFAULT_CONFIG, me.config);
     store.set('res27.config', S.config);
+    if (!S.config.beta) store.del('res27.beta');
     S.lastLoad = Date.now();
     S.loadError = '';
     cacheMe();
@@ -276,6 +295,9 @@
     store.del('res27.pending');
     S.pending = {};
     destroyPlayer();
+    // Back on the landing page: fresh dates (a beta may have ended while signed in).
+    S.configLoaded = false;
+    loadConfig();
   }
   function hasPending() {
     return Object.keys(S.pending || {}).some(function (d) { return S.pending[d] && Object.keys(S.pending[d]).length; });
@@ -386,21 +408,25 @@
     var person = S.me.person;
     var dayText = p.phase === 'during' ? 'Day ' + p.dayNumber + ' of ' + p.length : p.phase === 'before' ? 'Starts ' + fmt(p.start, { month: 'short', day: 'numeric' }) : 'Finished';
     var pct = p.phase === 'during' ? Math.round((p.dayNumber / p.length) * 100) : p.phase === 'after' ? 100 : 0;
+    // Days still open but not filled in: a count on the Today tab, kept current by refreshStatusParts.
+    var od = overdueDays().length;
+    var badge = '<span class="od-badge" data-od-badge' + (od ? '' : ' hidden') + ' aria-label="' + plural(od, 'day') + ' overdue">' + od + '</span>';
     var nav = navItems().map(function (n) {
-      return '<a class="nav-item' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '>' + icon(n[2]) + '<span>' + n[1] + '</span></a>';
+      return '<a class="nav-item' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '>' + icon(n[2]) + '<span>' + n[1] + '</span>' + (n[0] === 'today' ? badge : '') + '</a>';
     }).join('');
     var tabs = navItems().map(function (n) {
-      return '<a class="tab' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '><span class="tab-ico">' + icon(n[2]) + '</span>' + n[1] + '</a>';
+      return '<a class="tab' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '><span class="tab-ico">' + icon(n[2]) + (n[0] === 'today' ? badge : '') + '</span>' + n[1] + '</a>';
     }).join('');
+    var who = person.team ? 'Team ' + person.team : person.type === 'Remote' ? 'Remote participant' : person.type === 'Test' ? (p.beta ? 'Beta tester' : 'Test account') : 'Koda member';
     return '<div class="shell">' +
       '<aside class="sidebar" aria-label="Main">' +
         '<a class="brand" href="#/today"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a>' +
         '<nav>' + nav + '</nav>' +
-        '<div class="side-progress"><div class="kicker" style="color:#aeb7c2">' + esc(p.preview ? 'Preview' : 'Your challenge') + '</div><div class="big">' + esc(dayText) + '</div><div class="bar"><span style="width:' + pct + '%"></span></div></div>' +
-        '<a class="side-user" href="#/profile"><span class="avatar">' + esc(initials(person)) + '</span><span><b style="display:block;font-size:14px">' + esc(person.first + ' ' + person.last) + '</b><span class="subtle" style="font-size:12.5px">' + esc(person.team ? 'Team ' + person.team : person.type === 'Remote' ? 'Remote participant' : 'Koda member') + '</span></span></a>' +
+        '<div class="side-progress"><div class="kicker" style="color:#aeb7c2">' + esc(p.beta ? 'Beta test' : p.preview ? 'Preview' : 'Your challenge') + '</div><div class="big">' + esc(dayText) + '</div><div class="bar"><span style="width:' + pct + '%"></span></div></div>' +
+        '<a class="side-user" href="#/profile"><span class="avatar">' + esc(initials(person)) + '</span><span><b style="display:block;font-size:14px">' + esc(person.first + ' ' + person.last) + '</b><span class="subtle" style="font-size:12.5px">' + esc(who) + '</span></span></a>' +
       '</aside>' +
       '<div class="col">' +
-        '<header class="topbar"><a class="brand" href="#/today"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a><span class="day-pill">' + icon('calendar', 'ico-sm') + esc(dayText) + '</span></header>' +
+        '<header class="topbar"><a class="brand" href="#/today"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a><span class="day-pill' + (p.beta ? ' is-beta' : '') + '">' + icon('calendar', 'ico-sm') + esc((p.beta ? 'Beta · ' : '') + dayText) + '</span></header>' +
         '<main class="main" id="main">' + inner + '</main>' +
         '<nav class="tabbar" aria-label="Main">' + tabs + '</nav>' +
       '</div>' +
@@ -536,13 +562,125 @@
     return !!(S.me.checklists && S.me.checklists[date]) && date >= p.editFrom && date <= p.editTo;
   }
 
+  /* ============================================================ overdue days */
+
+  /** Everyday habits on a day's list with no Yes or No yet (the finisher and a bonus task are optional). Null when the day has no list. */
+  function habitsLeft(date) {
+    var items = itemsForDate(date);
+    if (!items) return null;
+    var a = answersFor(date), n = 0;
+    items.forEach(function (it) {
+      if (it.bonus || it.units.some(function (u) { return Number(u[2]) !== 0; })) return;
+      if (it.units.some(function (u) { return a[u[0]] !== 1 && a[u[0]] !== 0; })) n++;
+    });
+    return n;
+  }
+  /**
+   * Where a challenge day stands: upcoming; today (not finished yet); done (every habit has a Yes
+   * or No); overdue (an earlier day still open for changes, not finished); partial (locked, some
+   * answers); missed (locked, never filled in). 'out' is outside the challenge.
+   */
+  function dayState(date) {
+    var p = S.me.program, n = diffDays(p.start, date) + 1;
+    if (n < 1 || n > p.length) return 'out';
+    if (date > p.today) return 'upcoming';
+    if (habitsLeft(date) === 0) return 'done';
+    var open = !!(S.me.checklists && S.me.checklists[date]) && date >= p.editFrom && date <= p.editTo;
+    if (open) return date === p.today ? 'today' : 'overdue';
+    return logged(date) ? 'partial' : 'missed';
+  }
+  /** Earlier days that can still be filled in but aren't finished, oldest first (except the one on screen). */
+  function overdueDays(except) {
+    var p = S.me.program, out = [];
+    if (!S.me.checklists || stale() || p.phase === 'before') return out;
+    for (var d = p.editFrom; d < p.today && d <= p.end; d = addDays(d, 1)) if (d !== except && dayState(d) === 'overdue') out.push(d);
+    return out;
+  }
+  function dayName(date) {
+    var t = S.me.program.today;
+    return date === t ? 'Today' : date === addDays(t, -1) ? 'Yesterday' : fmt(date, { weekday: 'long' });
+  }
+  /** A day stays open through editDaysBack days after it (the server's edit window). */
+  function closesText(date) {
+    var last = addDays(date, Number(S.config.editDaysBack) || 0), t = S.me.program.today;
+    if (last <= t) return 'Today is the last day to fill it in';
+    if (last === addDays(t, 1)) return 'You can fill it in through tomorrow';
+    return 'You can fill it in through ' + fmt(last, { weekday: 'long' });
+  }
+  function leftText(date) {
+    var left = habitsLeft(date) || 0;
+    return logged(date) ? plural(left, 'habit') + (left === 1 ? ' still needs' : ' still need') + ' a Yes or No' : 'Not filled in yet';
+  }
+  /** Today's reminder: every earlier day that's still open and unfinished, one tap away. */
+  function overdueCard(except) {
+    var list = overdueDays(except), p = S.me.program;
+    if (!list.length) return '';
+    return '<section class="od-card" id="overdueCard" data-except="' + esc(except || '') + '" aria-label="Overdue days"><div class="od-head">' + icon('clock', 'ico-sm') + '<span>' + (list.length === 1 ? 'Overdue' : list.length + ' days overdue') + '</span></div>' +
+      list.map(function (d) {
+        return '<a class="od-row" href="#/day/' + d + '"><span class="od-main"><b>' + esc(dayName(d)) + ' · Day ' + (diffDays(p.start, d) + 1) + '</b><span>' + esc(leftText(d) + '. ' + closesText(d) + '.') + '</span></span><span class="od-go">Fill in' + icon('chevR', 'ico-sm') + '</span></a>';
+      }).join('') + '</section>';
+  }
+  /** On an overdue day's own page: what's missing and how long it stays open. */
+  function dayNote(date) {
+    if (stale() || dayState(date) !== 'overdue') return '';
+    return '<div class="od-note">' + icon('clock', 'ico-sm') + '<span><b>Overdue.</b> ' + esc((logged(date) ? leftText(date) + '.' : 'Tap Yes or No on each habit below to fill in this day.') + ' ' + closesText(date) + '.') + '</span></div>';
+  }
+  /** The challenge week around a day, one tap to open any day so far. Overdue days stand out. */
+  function weekStrip(selected) {
+    // After midnight, until today's data arrives, yesterday's view of the week would be wrong: wait.
+    if (stale()) return '<section class="card week-strip" id="weekStrip" data-date="' + selected + '" hidden></section>';
+    var p = S.me.program, range = weekRange(selected);
+    var words = { upcoming: 'coming up', today: 'today, not finished yet', done: 'filled in', overdue: 'overdue, you can still fill it in', partial: 'partly filled in, now locked', missed: 'missed' };
+    var count = 0, cells = '';
+    for (var d = range[0]; d <= range[1]; d = addDays(d, 1)) {
+      var st = dayState(d);
+      if (st === 'out') { cells += '<span class="wk-d is-out" aria-hidden="true"></span>'; continue; }
+      if (st === 'overdue') count++;
+      // A locked, half-filled day shows its score rather than the check a finished day gets.
+      var part = st === 'partial' ? dayScore(d) : null;
+      var mark = st === 'done' ? icon('check', 'ico-sm') : part ? esc(fmtScore(part.score)) : st === 'overdue' ? '!' : st === 'missed' || st === 'partial' ? '–' : st === 'today' ? '•' : '';
+      var cls = 'wk-d is-' + st + (d === selected ? ' is-sel' : '');
+      var inner = '<span class="wk-w">' + (d === p.today ? 'Today' : esc(fmt(d, { weekday: 'short' }))) + '</span><span class="wk-n">' + keyDate(d).getDate() + '</span><span class="wk-m" aria-hidden="true">' + mark + '</span>';
+      var label = fmt(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ', Day ' + (diffDays(p.start, d) + 1) + ', ' + words[st] + (part ? ', score ' + fmtScore(part.score) + ' out of 10' : '');
+      cells += st === 'upcoming'
+        ? '<span class="' + cls + '" role="img" aria-label="' + esc(label) + '">' + inner + '</span>'
+        : '<a class="' + cls + '" href="' + (d === p.today ? '#/today' : '#/day/' + d) + '" aria-label="' + esc(label) + '"' + (d === selected ? ' aria-current="date"' : '') + '>' + inner + '</a>';
+    }
+    var thisWeek = range[0] <= p.today && p.today <= range[1];
+    return '<section class="card week-strip" id="weekStrip" data-date="' + selected + '"><div class="wk-head"><span class="kicker">' + (thisWeek ? 'This week' : 'Week ' + (Math.floor(diffDays(p.start, range[0]) / 7) + 1)) + '</span>' +
+      (count ? '<span class="badge badge-warn">' + count + ' overdue</span>' : '') + '</div><div class="wk-row">' + cells + '</div></section>';
+  }
+  /** After a tap or a save: repaint what depends on every day's answers (week strip, overdue note and card, the Today badge). */
+  function refreshStatusParts() {
+    if (!S.me) return;
+    var ws = document.getElementById('weekStrip');
+    if (ws) ws.outerHTML = weekStrip(ws.getAttribute('data-date'));
+    var dn = document.getElementById('dayNote');
+    if (dn) dn.innerHTML = dayNote(dn.getAttribute('data-date'));
+    var oc = document.getElementById('overdueCard');
+    if (oc) { var html = overdueCard(oc.getAttribute('data-except') || ''); if (html) oc.outerHTML = html; else oc.remove(); }
+    var od = overdueDays().length;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-od-badge]'), function (b) {
+      b.textContent = od;
+      b.hidden = !od;
+      b.setAttribute('aria-label', plural(od, 'day') + ' overdue');
+    });
+  }
+
   /* ============================================================ landing */
 
   function viewLanding() {
     var c = S.config;
+    // Through the beta link: the beta test's dates. Until the first answer from the server, no dates
+    // at all rather than the real ones flashing first.
+    var b = betaInfo();
+    var waiting = !b && store.get('res27.beta', false) && !S.configLoaded;
+    var start = b ? b.start : c.startDate, end = b ? b.end : c.endDate;
     // Two halves that each stay whole, so a very narrow phone wraps the line instead of cutting the year off.
-    var dateHtml = '<span class="nw">' + icon('calendar') + esc(fmt(c.startDate, { month: 'short', day: 'numeric' }) + ' –') + '</span> <span class="nw">' + esc(fmt(c.endDate, { month: 'short', day: 'numeric', year: 'numeric' })) + '</span>';
-    var weeks = Math.round(c.lengthDays / 7);
+    var dateHtml = waiting ? '<span class="nw">' + icon('calendar') + 'Beta test</span>'
+      : '<span class="nw">' + icon('calendar') + esc(fmt(start, { month: 'short', day: 'numeric' }) + ' –') + '</span> <span class="nw">' + esc(fmt(end, { month: 'short', day: 'numeric', year: 'numeric' })) + '</span>';
+    var lengthText = b ? weeksText(b.days) : weeksText(Math.round(c.lengthDays / 7) * 7);
+    var betaNote = b ? '<div class="l-beta">' + icon('info') + '<span><b>This is the beta test.</b> ' + esc(weeksText(b.days)) + ' on the real dates, so you can try the app before the challenge. Everything you enter is practice and gets cleared before Day 1 on ' + esc(fmt(c.startDate, { month: 'long', day: 'numeric' })) + '.</span></div>' : '';
     var choices = c.registrationOpen
       ? '<button class="choice" data-act="choose-type" data-type="member"><span class="c-icon">' + kx() .replace('class="kx"', 'class="kx" style="width:30px;height:17px;fill:#fff"') + '</span><span><span class="c-title">Current Koda Member</span><span class="c-sub">I train at Koda CrossFit Iron View</span></span><span class="chev">' + icon('chevR') + '</span></button>' +
         '<button class="choice" data-act="choose-type" data-type="remote"><span class="c-icon silver">' + icon('globe', 'ico-lg') + '</span><span><span class="c-title">Remote Participant <span class="badge badge-brand">$' + esc(c.remotePrice) + '</span></span><span class="c-sub">Join from anywhere with the full program</span></span><span class="chev">' + icon('chevR') + '</span></button>'
@@ -552,14 +690,18 @@
         '<div class="l-inner">' +
           '<div class="l-top"><a class="l-logo" href="#/">' + kx() + '<span>Koda CrossFit Iron View</span></a><a class="btn btn-sm btn-secondary l-signin" href="#/signin">Sign in</a></div>' +
           '<div class="l-copy">' +
-            '<div class="l-when"><span class="l-date">' + dateHtml + '</span><span class="l-weeks">' + weeks + ' weeks</span></div>' +
+            (b || waiting ? '<span class="l-beta-tag">Beta test</span>' : '') +
+            '<div class="l-when"><span class="l-date">' + dateHtml + '</span>' + (waiting ? '' : '<span class="l-weeks">' + esc(lengthText) + '</span>') + '</div>' +
             '<h1 class="l-title">Koda<br><span class="silver">Resolutions 2027</span></h1>' +
             '<p class="l-sub">Six weeks. Your goal, your nutrition plan and your own daily checklist — with the whole Koda community in your corner.</p>' +
+            betaNote +
           '</div>' +
         '</div>' +
       '</section>' +
       '<div class="l-choices">' + choices + '</div>' +
       '<p class="l-signin-line">Already signed up? <a href="#/signin">Sign in</a></p>' +
+      // While a beta is open, a tester who lost the beta link (e.g. a home-screen app opened first) can still get to it.
+      (!b && !waiting && c.beta && !(c.beta.end < localToday()) ? '<p class="l-beta-line">Here for the beta test? <button class="btn-link" data-act="join-beta">Join the beta</button></p>' : '') +
       '<section class="l-section"><h2 class="l-callout">How it works</h2><p class="l-callsub">Simple, every single day</p>' +
         '<div class="steps4">' + C.steps.map(function (s, i) { return '<div class="card step4"><div class="n">0' + (i + 1) + '</div><h3>' + esc(s.title) + '</h3><p>' + esc(s.text) + '</p></div>'; }).join('') + '</div>' +
       '</section>' +
@@ -620,6 +762,8 @@
 
   function stepPayment(d) {
     var c = S.config;
+    // Beta test: the same choices, but nothing that sends money.
+    var beta = !!betaInfo();
     var methods = [
       { id: 'venmo', title: 'Venmo', sub: c.venmo || 'Venmo', icon: 'phone' },
       { id: 'zelle', title: 'Zelle', sub: c.zelle || 'Zelle', icon: 'bank' },
@@ -628,21 +772,26 @@
     var detail = '';
     if (d.payment === 'venmo') {
       detail = '<div class="pay-detail"><div class="kicker">Send $' + esc(c.remotePrice) + ' on Venmo to</div><div class="big">' + esc(c.venmo) + '</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Put your name and “Resolutions” in the note.</p>' +
-        (venmoPayUrl('Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : '')) ? '<a class="btn btn-primary btn-sm" href="' + esc(venmoPayUrl('Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : ''))) + '" target="_blank" rel="noopener">' + icon('phone', 'ico-sm') + 'Pay $' + esc(c.remotePrice) + ' on Venmo</a>' : '') + '</div>';
+        (!beta && venmoPayUrl('Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : '')) ? '<a class="btn btn-primary btn-sm" href="' + esc(venmoPayUrl('Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : ''))) + '" target="_blank" rel="noopener">' + icon('phone', 'ico-sm') + 'Pay $' + esc(c.remotePrice) + ' on Venmo</a>' : '') + '</div>';
     } else if (d.payment === 'zelle') {
       detail = '<div class="pay-detail"><div class="kicker">Send $' + esc(c.remotePrice) + ' with Zelle to</div><div class="big">' + esc(c.zelle) + '</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Use your bank’s app and put your name in the memo.</p>' +
         '<button class="btn btn-secondary btn-sm" data-act="copy" data-text="' + esc(c.zelle) + '">' + icon('copy', 'ico-sm') + 'Copy</button></div>';
     } else if (d.payment === 'card') {
-      detail = '<div class="pay-detail">' + (c.cardUrl
+      detail = '<div class="pay-detail">' + (c.cardUrl && !beta
         ? '<div class="kicker">Pay $' + esc(c.remotePrice) + ' by card</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Checkout opens in a new tab. Come back here to finish signing up.</p><a class="btn btn-secondary btn-sm" href="' + esc(c.cardUrl) + '" target="_blank" rel="noopener">' + icon('external', 'ico-sm') + 'Pay securely</a>'
         : '<div class="kicker">Pay $' + esc(c.remotePrice) + ' by card</div><p class="muted" style="margin:6px 0 0;font-size:14px">Finish signing up and we’ll email you a secure card link within a day.</p>') + '</div>';
     }
+    if (beta && d.payment) {
+      detail = '<div class="pay-detail"><div class="kicker">Beta test: nothing to pay</div><p class="muted" style="margin:6px 0 0;font-size:14px">In the real challenge, this is where you’d send $' + esc(c.remotePrice) + ' ' +
+        esc(d.payment === 'venmo' ? 'on Venmo to ' + c.venmo : d.payment === 'zelle' ? 'with Zelle to ' + c.zelle : 'by card') + '.</p></div>';
+    }
     return '<h1>Remote Participant</h1><p class="lead">The full program from anywhere: daily coaching videos, your own checklist, nutrition guides, a Koda coach and a team. <b style="color:var(--text)">$' + esc(c.remotePrice) + '</b> for all ' + Math.round(c.lengthDays / 7) + ' weeks.</p>' +
+      (beta ? '<div class="callout callout-warn" style="margin-bottom:16px">' + icon('info') + '<span><b style="color:inherit">Beta test: don’t send any money.</b> Pick any option to see how it works. Beta sign-ups never pay.</span></div>' : '') +
       '<div class="kicker" style="margin-bottom:10px">How would you like to pay?</div>' +
       '<div class="option-list">' + methods.map(function (m) {
         return '<button class="option' + (d.payment === m.id ? ' is-on' : '') + '" data-act="pay" data-method="' + m.id + '" aria-pressed="' + (d.payment === m.id) + '"><span class="o-icon">' + icon(m.icon) + '</span><span class="o-text"><span class="o-title">' + esc(m.title) + '</span><span class="o-sub">' + esc(m.sub) + '</span></span><span class="radio"></span></button>';
       }).join('') + '</div>' + fieldErr('payment') + detail +
-      '<p class="muted" style="font-size:13.5px;margin-top:16px">Your spot is confirmed once we see your payment. You can keep signing up now.</p>';
+      (beta ? '' : '<p class="muted" style="font-size:13.5px;margin-top:16px">Your spot is confirmed once we see your payment. You can keep signing up now.</p>');
   }
 
   function shirtFields(d) {
@@ -895,7 +1044,9 @@
     render();
     api('register', {
       token: '', memberType: d.memberType, payment: d.memberType === 'remote' ? d.payment : '', first: d.first.trim(), last: d.last.trim(),
-      email: d.email.trim(), password: S.password, shirt: d.shirt, size: d.size, setup: setupFromDraft(d),
+      // The beta link's flag goes as is: the server knows whether a beta is open (and stops a beta
+      // sign-up that comes after it ended instead of making it a real one).
+      email: d.email.trim(), password: S.password, shirt: d.shirt, size: d.size, setup: setupFromDraft(d), beta: !!store.get('res27.beta', false),
     }).then(function (r) {
       S.busy = false;
       S.token = r.token;
@@ -912,20 +1063,36 @@
       S.busy = false;
       S.formError = e.message;
       if (e.code === 'exists') { S.emailTaken = true; go('#/join/about'); return; }
+      if (e.code === 'beta_over') {
+        // The beta ended while this page was open: drop the beta, and go back over the real steps (payment included).
+        store.del('res27.beta');
+        S.config = Object.assign({}, S.config, { beta: null });
+        store.set('res27.config', S.config);
+        loadConfig();
+        go('#/join/' + joinSteps(d)[0]);
+        return;
+      }
       render();
       window.scrollTo(0, 0);
     });
   }
 
   function welcomeSheet(me, emailed) {
-    var p = me.person, c = me.config;
+    var p = me.person, c = me.config, prog = me.program;
     S.me = S.me || me;
+    // Earlier days that can still be filled in (the edit window), counted so the promise is exact.
+    var open = prog.phase === 'during' ? Math.max(0, diffDays(prog.editFrom, prog.today)) : 0;
+    var when = prog.phase === 'before' ? (prog.beta ? 'The beta test starts ' : 'Day 1 is ') + fmtLong(prog.start) + '.'
+      : prog.phase === 'during' && prog.dayNumber === 1 ? (prog.beta ? 'This is the beta test, and today is Day 1!' : 'Today is Day 1!')
+      : prog.phase === 'during' ? (prog.beta ? 'This is the beta test. ' : '') + 'Day 1 was ' + fmtLong(prog.start) + ', so today is Day ' + prog.dayNumber + '.' +
+        (open ? ' You can still fill in ' + (open === 1 ? 'yesterday' : 'the last ' + open + ' days') + '.' : '')
+      : 'The ' + (prog.beta ? 'beta test' : 'challenge') + ' ended ' + fmtLong(prog.end) + '.';
     var btn = p.type === 'Remote' && !p.paid ? payButtons(p, false) : '';
     var how = p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle + ', with your name in the memo' : 'by card \u2014 ' + (c.cardUrl ? 'use the button below' : 'we\u2019ll email you a secure link');
     var pay = p.type === 'Remote' && !p.paid ? '<div class="callout callout-warn" style="margin-bottom:14px">' + icon('info') + '<span><b style="color:inherit">One more step:</b> send your $' + esc(c.remotePrice) + ' ' + esc(how) + '.' +
       (btn ? '<span style="display:block;margin-top:10px">' + btn + '</span>' : '') + '</span></div>' : '';
     return '<div class="grab"></div><div class="center" style="margin-bottom:8px"><span class="avatar avatar-lg" style="margin:0 auto 12px">' + icon('check', 'ico-lg') + '</span></div>' +
-      '<h2 class="center">You\u2019re in, ' + esc(p.first) + '!</h2><p class="muted center" style="margin:0 0 18px">Day 1 is ' + esc(fmtLong(me.program.start)) + '. ' + (emailed ? 'We sent a welcome email to ' + esc(p.email) + '.' : 'Bookmark this page so you can find it again.') + '</p>' + pay +
+      '<h2 class="center">You\u2019re in, ' + esc(p.first) + '!</h2><p class="muted center" style="margin:0 0 18px">' + esc(when) + ' ' + (emailed ? 'We sent a welcome email to ' + esc(p.email) + '.' : 'Bookmark this page so you can find it again.') + '</p>' + pay +
       '<div class="note" style="margin-bottom:16px"><b>Tip:</b> add this app to your home screen so it\u2019s one tap away. Sign in once there and it remembers you.</div>' +
       '<button class="btn btn-primary btn-block" data-act="close-sheet">Let\u2019s go</button>';
   }
@@ -1012,6 +1179,8 @@
   function viewToday(dateArg) {
     var p = S.me.program;
     S.renderedDayNext = null;
+    // Today's own page (from Videos or the calendar) is the Today screen, Overdue card and all.
+    if (dateArg && dateArg === p.today && p.phase === 'during') dateArg = null;
     if (!dateArg) {
       if (p.phase === 'before') return viewBefore();
       if (p.phase === 'after' && !editable(p.end)) return viewAfter();
@@ -1023,17 +1192,17 @@
     if (!day || !day.released) return '<a class="btn btn-ghost btn-sm" href="#/progress" style="margin-bottom:10px">' + icon('chevL', 'ico-sm') + 'Back</a><div class="empty card">' + icon('lock', 'ico-lg') + '<p><b>Day ' + n + ' unlocks ' + esc(fmtLong(date)) + '.</b></p></div>';
     var key = date + '|' + videoKey(day);
     S.renderedDayNext = key;
-    var isToday = date === p.today;
-    // Days that can still be filled in but haven't been: a one-tap way back to them.
-    var gaps = [];
-    if (isToday && p.phase === 'during' && !stale()) {
-      for (var g = p.editFrom; g < p.today; g = addDays(g, 1)) if (S.me.checklists && S.me.checklists[g] && !logged(g)) gaps.push(g);
-    }
-    var gapNote = gaps.length ? '<a class="callout callout-warn" style="text-decoration:none;margin-bottom:16px" href="#/day/' + gaps[0] + '">' + icon('calendar') +
-      '<span><b style="color:inherit">' + esc(fmt(gaps[0], { weekday: 'long' })) + ' isn’t checked off yet.</b> You can still fill it in. Tap here.</span></a>' : '';
-    return (isToday ? gapNote : '<a class="btn btn-ghost btn-sm" href="#/today" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Today</a>') +
+    // The main screen lists every earlier day that's still open and unfinished (Overdue), one tap
+    // away; an overdue day's own page says what's missing and how long it stays open.
+    // (After the last day, the main screen is the last day itself: it gets its own note too.)
+    var note = '<div id="dayNote" data-date="' + date + '">' + dayNote(date) + '</div>';
+    var top = dateArg
+      ? '<a class="btn btn-ghost btn-sm" href="#/today" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Today</a>' + note
+      : overdueCard(date) + (date !== p.today ? note : '');
+    return top +
       '<div class="with-rail"><div>' +
         '<section id="dayHero">' + dayHero(date, day) + '</section>' +
+        weekStrip(date) +
         '<section class="card video-card" style="margin-top:16px" data-date="' + date + '">' + videoBlock(date, day) + '</section>' +
         '<section id="dayBody">' + dayBody(date, day) + '</section>' +
       '</div><aside class="rail">' + railHtml() + '</aside></div>';
@@ -1066,7 +1235,8 @@
     var theme = day.theme ? '<span class="theme"><span class="wk">WK ' + day.week + '</span>' + esc(day.theme) + '</span>' : '<span class="theme"><span class="wk">WK ' + day.week + '</span>Week ' + day.week + '</span>';
     return '<div class="hero">' + kx('watermark') +
       '<div class="hero-top"><div>' +
-        '<div class="kick">' + esc(date === p.today ? (p.preview ? 'Preview · ' : '') + 'Today · ' + fmt(date, { weekday: 'short', month: 'short', day: 'numeric' }) : fmt(date, { weekday: 'short', month: 'short', day: 'numeric' })) + '</div>' +
+        // (The beta says so in the top bar and the sidebar; here it would push the date onto a second line.)
+        '<div class="kick">' + esc((p.preview && !p.beta ? 'Preview · ' : '') + (date === p.today ? 'Today · ' : '') + fmt(date, { weekday: 'short', month: 'short', day: 'numeric' })) + '</div>' +
         '<div class="day">Day ' + n + '<small>/ ' + p.length + '</small></div>' + theme +
       '</div>' +
       '<div class="ring" role="img" aria-label="Score ' + fmtScore(sc.score) + ' out of 10">' + ringSvg(sc.pct) + '<div class="label"><div><span class="pct">' + fmtScore(sc.score) + '</span><span class="of">out of 10</span></div></div></div></div>' +
@@ -1088,7 +1258,7 @@
         ? '<b>Today’s video is on its way</b><span style="font-size:14px">Check back soon. You can still check off your list below.</span>'
         : '<b>No video was posted for this day</b>') + '</div></div></div>';
     } else if (v.youtube) {
-      frame = '<div class="video-frame" id="videoMount"><button class="poster" data-act="play" data-date="' + date + '" style="background-image:url(https://i.ytimg.com/vi/' + esc(v.youtube) + '/hqdefault.jpg)" aria-label="Play video: ' + esc(day.title) + '"><span class="play">' + icon('play') + '</span><span class="poster-meta"><span>Day ' + day.n + '</span><span>' + (day.presenter ? 'with ' + esc(day.presenter) : '') + '</span></span></button></div>';
+      frame = '<div class="video-frame" id="videoMount"><button class="poster" data-act="play" data-date="' + date + '" style="background-image:url(https://i.ytimg.com/vi/' + esc(v.youtube) + '/hqdefault.jpg)" aria-label="Play video: ' + esc(day.title) + '"><span class="play">' + icon('play') + '</span><span class="poster-meta"><span>Day ' + day.n + '</span><span>' + (v.standIn ? '2026 video (stand-in)' : day.presenter ? 'with ' + esc(day.presenter) : '') + '</span></span></button></div>';
     } else {
       frame = '<div class="video-frame" id="videoMount"><a class="poster" href="' + esc(v.url) + '" target="_blank" rel="noopener" data-act="ext-video" data-date="' + date + '"><span class="play">' + icon('play') + '</span><span class="poster-meta"><span>Opens in a new tab</span><span>' + icon('external', 'ico-sm') + '</span></span></a></div>';
     }
@@ -1098,10 +1268,12 @@
   function videoMeta(date, day) {
     var a = answersFor(date);
     var watched = a.video === 1;
+    var v = currentVideo(day);
     return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + (day.category ? '<span class="badge">' + esc(day.category) + '</span>' : '') +
-      '<span class="badge ' + (watched ? 'badge-good' : '') + '">' + (watched ? icon('check', 'ico-sm') + 'Watched' : 'Counts toward today’s score') + '</span></div>' +
+      '<span class="badge ' + (watched ? 'badge-good' : '') + '">' + (watched ? icon('check', 'ico-sm') + 'Watched' : 'Counts toward ' + (date === S.me.program.today ? 'today’s' : 'this day’s') + ' score') + '</span>' +
+      (v && v.standIn ? '<span class="badge badge-warn" title="The 2027 video isn’t filmed yet. The beta plays the 2026 video this day reuses.">Beta: 2026 stand-in video</span>' : '') + '</div>' +
       '<h2>' + esc(day.title || 'Day ' + day.n) + '</h2>' + (day.about ? '<p>' + esc(day.about) + '</p>' : '') +
-      (day.action ? '<div class="action-box">' + icon('target') + '<span><b>Today’s action</b>' + esc(day.action) + '</span></div>' : '');
+      (day.action ? '<div class="action-box">' + icon('target') + '<span><b>' + (date === S.me.program.today ? 'Today’s action' : 'Day ' + day.n + ' action') + '</b>' + esc(day.action) + '</span></div>' : '');
   }
 
   function dayBody(date, day) {
@@ -1167,7 +1339,7 @@
     var state = v === 1 ? ' is-done' : v === 0 ? ' is-no' : '';
     var extra = '';
     return '<li class="ci' + state + (it.bonus ? ' is-bonus' : '') + '"><span class="ci-icon">' + (v === 1 ? icon('check') : icon(it.icon || 'star')) + '</span>' +
-      '<div><div class="ci-label">' + esc(it.label) + extra + '</div>' + (it.sub ? '<div class="ci-sub">' + esc(it.sub) + '</div>' : '') + '</div>' +
+      '<div><div class="ci-label">' + esc(it.label) + extra + '</div>' + (it.sub ? '<div class="ci-sub">' + esc(it.bonus && date !== S.me.program.today ? String(it.sub).replace(/^Today only/, 'That day only') : it.sub) + '</div>' : '') + '</div>' +
       '<div class="yn" role="group" aria-label="' + esc(it.label) + '"' + dis + '>' +
         '<button class="yn-btn yes' + (v === 1 ? ' is-on' : '') + '" data-act="answer" data-date="' + date + '" data-key="' + esc(k) + '" data-val="1" aria-pressed="' + (v === 1) + '"' + (can ? '' : ' disabled') + '>' + (v === 1 ? icon('check', 'ico-sm') : '') + 'Yes</button>' +
         '<button class="yn-btn no' + (v === 0 ? ' is-on' : '') + '" data-act="answer" data-date="' + date + '" data-key="' + esc(k) + '" data-val="0" aria-pressed="' + (v === 0) + '"' + (can ? '' : ' disabled') + '>No</button>' +
@@ -1218,6 +1390,7 @@
     body.innerHTML = dayBody(date, day);
     var rail = app.querySelector('.rail');
     if (rail) rail.innerHTML = railHtml();
+    refreshStatusParts();
     window.scrollTo(0, y);
   }
 
@@ -1226,6 +1399,7 @@
     if (!S.me) return;
     var rail = app.querySelector('.rail');
     if (rail) rail.innerHTML = railHtml();
+    refreshStatusParts();
     var card = document.getElementById('checklistCard');
     var day = dayInfo(date);
     if (!card || !day || card.getAttribute('data-date') !== date) return;
@@ -1269,6 +1443,10 @@
       ? '<div class="callout callout-warn" style="margin-top:16px">' + icon('info') + '<span><b style="color:inherit">Payment pending.</b> Send $' + esc(c.remotePrice) + ' ' + esc(person.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : person.payment === 'Zelle' ? 'with Zelle to ' + c.zelle : 'by card' + (c.cardUrl ? '' : ' — watch your email for a secure link')) + (person.payment === 'Credit Card' ? '' : ' with your name in the note') + '. We’ll mark it here when it comes in.' +
         (payBtn ? '<span style="display:block;margin-top:10px">' + payBtn + '</span>' : '') + '</span></div>'
       : (person.type === 'Remote' ? '<div class="callout callout-good" style="margin-top:16px">' + icon('check') + '<span><b style="color:inherit">Payment received.</b> You’re all set.</span></div>' : '');
+    // A beta tester (or other test account) after the beta: it looks like a real sign-up, but it isn't one.
+    if (person.type === 'Test') {
+      pay = '<div class="callout callout-warn" style="margin-top:16px">' + icon('info') + '<span><b style="color:inherit">This is a test account.</b> Test and beta accounts are deleted before Day 1, so sign up again for the real challenge when sign-ups open.</span></div>';
+    }
     var list = S.me.preview || [];
     var preview = '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your daily checklist</h3><a class="btn-link" style="font-size:14px" href="#/edit/track">Edit</a></div>' +
       '<div class="card-body" style="padding-bottom:6px"><p class="muted" style="margin:0">Starting Day 1, you’ll check these off every day.</p></div>' +
@@ -1287,7 +1465,7 @@
       '<section class="hero">' + kx('watermark') +
         '<div class="kick">' + esc(S.config.programName) + '</div>' +
         '<div class="day" style="font-size:52px;margin-top:10px">' + (days === 1 ? 'Starts tomorrow' : days + ' days to go') + '</div>' +
-        '<div class="date">Day 1 is ' + esc(fmtLong(p.start)) + ' · ' + Math.round(p.length / 7) + ' weeks, through ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
+        '<div class="date">Day 1 is ' + esc(fmtLong(p.start)) + ' · ' + esc(weeksText(p.length)) + ', through ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
         '<div class="hero-stats"><span class="hero-stat">' + icon('target', 'ico-sm') + esc(goalLabel(person.setup.goal)) + '</span>' + (person.setup.track && person.setup.track.nutrition ? '<span class="hero-stat">' + icon('plate', 'ico-sm') + esc(person.setup.plan === 'other' ? person.setup.planOther : (planInfo(person.setup.plan) || {}).label) + '</span>' : '') + '</div>' +
       '</section>' + pay + preview + getReady +
       (tip ? '<section class="card card-pad" style="margin-top:16px"><div class="kicker">Coach tip · ' + esc(goalLabel(person.setup.goal)) + '</div><p style="margin:8px 0 0;font-size:15.5px;font-weight:500">' + esc(tip) + '</p></section>' : '') +
@@ -1297,9 +1475,11 @@
 
   function viewAfter() {
     var t = totals(), p = S.me.program;
-    return '<section class="hero">' + kx('watermark') + '<div class="kick">' + esc(S.config.programName) + '</div><div class="day" style="font-size:54px;margin-top:10px">You finished!</div><div class="date">' + Math.round(p.length / 7) + ' weeks, ' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
+    return '<section class="hero">' + kx('watermark') + '<div class="kick">' + esc((p.beta ? 'Beta test · ' : '') + S.config.programName) + '</div><div class="day" style="font-size:54px;margin-top:10px">You finished!</div><div class="date">' + esc(weeksText(p.length)) + ', ' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
       '<div class="hero-stats"><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<b>' + fmtPts(t.points) + '</b> points</span><span class="hero-stat">' + icon('calendar', 'ico-sm') + '<b>' + t.days + '</b> days logged</span><span class="hero-stat">' + icon('chart', 'ico-sm') + '<b>' + fmtScore(t.average) + '</b> average out of 10</span></div></section>' +
-      '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">What’s next?</h3><p class="muted" style="margin:0 0 14px">Keep the habits that worked. Your videos and nutrition guides stay here for you.</p><a class="btn btn-secondary" href="#/progress">See your six weeks</a></section>';
+      (p.beta
+        ? '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">Thanks for testing!</h3><p class="muted" style="margin:0 0 14px">That was the beta. Beta accounts are deleted before the real challenge starts ' + esc(fmtLong(S.config.startDate)) + ', so sign up again for that one when sign-ups open.</p><a class="btn btn-secondary" href="#/progress">See your ' + esc(p.length === 7 ? 'week' : weeksText(p.length)) + '</a></section>'
+        : '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">What’s next?</h3><p class="muted" style="margin:0 0 14px">Keep the habits that worked. Your videos and nutrition guides stay here for you.</p><a class="btn btn-secondary" href="#/progress">See your ' + esc(p.length === 7 ? 'week' : weeksText(p.length)) + '</a></section>');
   }
 
   function installCard() {
@@ -1367,21 +1547,30 @@
   }
   function markWatched(date) {
     if (!editable(date) || answersFor(date).video === 1) return;
-    setAnswer(date, 'video', 1);
-    toast('Nice — video checked off.');
+    var caughtUp = setAnswer(date, 'video', 1, undefined, true);
+    toast(caughtUp ? 'Video checked off. ' + dayName(date) + ' is all caught up.' : 'Nice — video checked off.');
   }
 
   /* ============================================================ saving answers */
 
-  function setAnswer(date, key, val) {
-    if (!editable(date)) return;
+  /**
+   * wasLeft: habits still unanswered before this tap, when the caller already changed some (All on
+   * plan). Returns true when this answer finished an earlier day (and says so unless quiet).
+   */
+  function setAnswer(date, key, val, wasLeft, quiet) {
+    if (!editable(date)) return false;
+    var before = wasLeft === undefined ? habitsLeft(date) : wasLeft;
     S.pending[date] = S.pending[date] || {};
     S.pending[date][key] = val;
     persistPending();
     S.saveState = 'saving';
     updateChecklistOnly(date);
+    // An overdue day just got its last answer.
+    var caughtUp = date !== S.me.program.today && before > 0 && habitsLeft(date) === 0;
+    if (caughtUp && !quiet) toast(dayName(date) + ' is all caught up.');
     clearTimeout(S.saveTimers[date]);
     S.saveTimers[date] = setTimeout(function () { flushSave(date); }, 650);
+    return caughtUp;
   }
 
   /**
@@ -1466,15 +1655,19 @@
     var p = S.me.program;
     var heads = [];
     for (var i = 0; i < 7; i++) heads.push('<div class="cal-h">' + fmt(addDays(p.start, i), { weekday: 'short' }).slice(0, 3) + '</div>');
-    var cells = [];
+    var cells = [], any = { overdue: false, missed: false };
     for (var n = 0; n < p.length; n++) {
       if (n % 7 === 0) cells.push('<div class="cal-week"><span>Week ' + (n / 7 + 1) + '</span><span class="subtle" style="font-weight:600">' + esc((dayInfo(addDays(p.start, n)) || {}).theme || '') + '</span></div>');
       var d = addDays(p.start, n), future = d > p.today, sc = future ? null : dayScore(d), isLogged = !future && logged(d);
-      var cls = 'cal-d' + (future ? ' future' : '') + (d === p.today ? ' today' : '') + (sc && isLogged && sc.score >= 10 ? ' full' : '');
-      var inner = '<span>' + (n + 1) + '</span>' + (isLogged && sc ? '<span class="fillbar"><span style="width:' + sc.pct + '%"></span></span>' : '');
-      cells.push(future ? '<div class="' + cls + '" aria-label="Day ' + (n + 1) + ', upcoming">' + inner + '</div>' : '<a class="' + cls + '" href="#/day/' + d + '" title="' + esc(fmt(d)) + (sc && isLogged ? ' · ' + fmtScore(sc.score) + '/10' : '') + '" aria-label="Day ' + (n + 1) + ', ' + esc(fmt(d)) + (sc && isLogged ? ', score ' + fmtScore(sc.score) + ' out of 10' : ', not logged') + '">' + inner + '</a>');
+      var st = future || stale() ? '' : dayState(d);
+      if (st === 'overdue' || st === 'missed') any[st] = true;
+      var cls = 'cal-d' + (future ? ' future' : '') + (d === p.today ? ' today' : '') + (sc && isLogged && sc.score >= 10 ? ' full' : '') + (st === 'overdue' ? ' overdue' : st === 'missed' ? ' missed' : '');
+      var inner = '<span>' + (n + 1) + '</span>' + (isLogged && sc ? '<span class="fillbar"><span style="width:' + sc.pct + '%"></span></span>' : '') + (st === 'overdue' ? '<span class="flag" aria-hidden="true">!</span>' : '');
+      var said = st === 'overdue' ? ', overdue: tap to fill it in' : sc && isLogged ? ', score ' + fmtScore(sc.score) + ' out of 10' : st === 'missed' ? ', missed' : ', not logged';
+      cells.push(future ? '<div class="' + cls + '" aria-label="Day ' + (n + 1) + ', upcoming">' + inner + '</div>' : '<a class="' + cls + '" href="#/day/' + d + '" title="' + esc(fmt(d)) + (st === 'overdue' ? ' · overdue' : sc && isLogged ? ' · ' + fmtScore(sc.score) + '/10' : '') + '" aria-label="Day ' + (n + 1) + ', ' + esc(fmt(d)) + said + '">' + inner + '</a>');
     }
-    return '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your ' + Math.round(p.length / 7) + ' weeks</h3><span class="subtle" style="font-size:13px">' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</span></div><div class="card-body"><div class="cal">' + heads.join('') + cells.join('') + '</div></div></section>';
+    var legend = any.overdue || any.missed ? '<div class="cal-legend">' + (any.overdue ? '<span><i class="lg-over">!</i>Overdue, tap to fill it in</span>' : '') + (any.missed ? '<span><i class="lg-miss"></i>Missed</span>' : '') + '</div>' : '';
+    return '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Your ' + esc(p.length === 7 ? 'week' : weeksText(p.length)) + '</h3><span class="subtle" style="font-size:13px">' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</span></div><div class="card-body"><div class="cal">' + heads.join('') + cells.join('') + '</div>' + legend + '</div></section>';
   }
 
   function habitsCard() {
@@ -1611,7 +1804,7 @@
           var v = (d.videos || [])[0];
           var thumb = v && v.youtube ? ' style="background-image:url(https://i.ytimg.com/vi/' + esc(v.youtube) + '/mqdefault.jpg)"' : '';
           var watched = answersFor(d.date).video === 1;
-          return '<a class="vrow" href="#/day/' + d.date + '"><span class="thumb"' + thumb + '>' + (v && v.youtube ? '' : kx()) + '</span><span><span class="t">' + esc(d.title || 'Day ' + d.n) + '</span><span class="m" style="display:block">Day ' + d.n + ' · ' + esc(fmt(d.date)) + (d.category ? ' · ' + esc(d.category) : '') + '</span></span><span class="watched' + (watched ? '' : ' not') + '" aria-label="' + (watched ? 'Watched' : 'Not watched yet') + '">' + icon(watched ? 'check' : 'play', 'ico-sm') + '</span></a>';
+          return '<a class="vrow" href="#/day/' + d.date + '"><span class="thumb"' + thumb + '>' + (v && v.youtube ? '' : kx()) + '</span><span><span class="t">' + esc(d.title || 'Day ' + d.n) + '</span><span class="m" style="display:block">Day ' + d.n + ' · ' + esc(fmt(d.date)) + (d.category ? ' · ' + esc(d.category) : '') + (v && v.standIn ? ' · 2026 stand-in' : '') + '</span></span><span class="watched' + (watched ? '' : ' not') + '" aria-label="' + (watched ? 'Watched' : 'Not watched yet') + '">' + icon(watched ? 'check' : 'play', 'ico-sm') + '</span></a>';
         }).join('') + '</div></section>';
     });
     return html;
@@ -1630,10 +1823,10 @@
       esc(p.paid ? 'Thanks! Your $' + c.remotePrice + ' remote spot is paid.' : 'Send $' + c.remotePrice + ' ' + (p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle : 'by card') + (p.payment === 'Credit Card' ? '' : ' with your name in the note') + '. We’ll mark it here when it comes in.') + '</p>' +
       (p.paid ? '' : (function () { var b = payButtons(p, true); return b ? '<div style="margin-top:12px">' + b + '</div>' : ''; })()) + '</div></section>' : '';
     var shirtLocked = !!(c.shirtChangesUntil && localToday() > c.shirtChangesUntil);
-    var faq = C.faq.map(function (f) { return '<details class="list-row" style="display:block"><summary style="cursor:pointer;font-weight:600">' + esc(f.q) + '</summary><p class="muted" style="margin:8px 0 0;font-size:14px">' + esc(f.a.replace('{editDays}', c.editDaysBack)) + '</p></details>'; }).join('');
+    var faq = C.faq.map(function (f) { return '<details class="list-row" style="display:block"><summary style="cursor:pointer;font-weight:600">' + esc(f.q) + '</summary><p class="muted" style="margin:8px 0 0;font-size:14px">' + esc((!c.editDaysBack && f.aNoBack ? f.aNoBack : f.a).replace('{editDays}', c.editDaysBack)) + '</p></details>'; }).join('');
     return '<h1 class="page-title">Profile</h1><p class="page-sub">Your challenge setup. Change anything, any time.</p>' +
       '<section class="card card-pad" style="display:flex;gap:16px;align-items:center"><span class="avatar avatar-lg">' + esc(initials(p)) + '</span><span style="min-width:0"><b style="font-size:19px;display:block">' + esc(p.first + ' ' + p.last) + '</b><span class="muted" style="font-size:14px;overflow-wrap:anywhere">' + esc(p.email) + '</span>' +
-        '<span class="chips" style="margin-top:8px"><span class="badge">' + (p.type === 'Remote' ? 'Remote participant' : p.type === 'Test' ? 'Test account' : 'Koda member') + '</span>' + (p.team ? '<span class="badge badge-brand">Team ' + esc(p.team) + '</span>' : '') + (p.coach ? '<span class="badge badge-silver">Coach ' + esc(p.coach) + '</span>' : '') + '</span></span></section>' +
+        '<span class="chips" style="margin-top:8px"><span class="badge">' + (p.type === 'Remote' ? 'Remote participant' : p.type === 'Test' ? (S.me.program.beta ? 'Beta tester' : 'Test account') : 'Koda member') + '</span>' + (p.team ? '<span class="badge badge-brand">Team ' + esc(p.team) + '</span>' : '') + (p.coach ? '<span class="badge badge-silver">Coach ' + esc(p.coach) + '</span>' : '') + '</span></span></section>' +
       '<section class="card" style="margin-top:16px"><div class="card-head"><h3>My challenge</h3></div><div style="padding-top:8px">' +
         row('target', 'Main focus', esc(goalLabel(s.goal)), '#/edit/goal') +
         row('plate', 'Nutrition plan', esc(plan), '#/edit/track') +
@@ -1849,6 +2042,7 @@
     var d = editing ? S.edit.d : S.draft;
     var rerender = function () { if (!editing) saveDraft(); render(); };
     switch (act) {
+      case 'join-beta': store.set('res27.beta', true); render(); window.scrollTo(0, 0); break;
       case 'choose-type':
         S.draft.memberType = el.dataset.type;
         if (el.dataset.type === 'member') S.draft.payment = '';
@@ -1912,8 +2106,10 @@
         break;
       case 'meals-all':
         var ad = el.dataset.date, items = itemsForDate(ad) || [];
+        if (!editable(ad)) break;
+        var wasLeft = habitsLeft(ad);
         items.forEach(function (it) { if (it.kind === 'meals') it.units.forEach(function (u) { S.pending[ad] = S.pending[ad] || {}; S.pending[ad][u[0]] = 1; }); });
-        setAnswer(ad, 'nutrition:m1', 1);
+        setAnswer(ad, 'nutrition:m1', 1, wasLeft);
         break;
       case 'play': playVideo(el.dataset.date); break;
       case 'ext-video': setTimeout(function () { markWatched(el.dataset.date); }, 1500); break;

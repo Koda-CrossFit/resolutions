@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.2.0 (2026-11-10)';
+var RES27_VERSION = '1.3.0 (2026-11-10)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -154,7 +154,9 @@ var RES27_SETTINGS_DEFAULTS = [
   ['welcome_email', true, 'TRUE sends a welcome email after sign-up'],
   ['notify_email', '', 'Optional: also email this address about every new sign-up'],
   ['show_upcoming_titles', false, 'TRUE shows the titles of videos that have not unlocked yet'],
-  ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-21. Blank = the real date'],
+  ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-21. Blank = the real date. Ignored while a beta test is set (beta_start), so beta testers always see the real date'],
+  ['beta_start', '', 'Beta test: Day 1 of a practice run, e.g. 2026-11-09. Everyone who signs up through the beta link (the app link with ?beta=1 on the end) becomes a Test account, and every Test account goes through Days 1, 2, 3… on the real dates from here. Blank = no beta test'],
+  ['beta_days', 7, 'How many days the beta test runs (1 to 42)'],
 ];
 var RES27_RETIRED_SETTINGS = ['venmo_url'];
 
@@ -608,6 +610,7 @@ function res27VenmoPayUrl_(cfg, note) {
 
 function res27PublicConfig_(cfg) {
   var program = res27Program_(cfg, null, null);
+  var beta = res27BetaOpen_(cfg);
   return {
     programName: String(cfg.program_name || 'Koda Resolutions 2027'),
     startDate: program.start,
@@ -628,7 +631,39 @@ function res27PublicConfig_(cfg) {
     sleepChoices: RES27_SLEEP_CHOICES,
     finisherChoices: RES27_FINISHER_CHOICES,
     points: RES27_POINTS,
+    // The beta test's dates, for the beta link's landing page (null when there's no beta).
+    beta: beta ? { start: beta.start, end: res27AddDays_(beta.start, beta.length - 1), days: beta.length } : null,
   };
+}
+
+/**
+ * The beta test from Settings: a practice run that Test accounts go through on the real dates,
+ * Day 1 on beta_start. Null when beta_start is blank (or isn't a date).
+ */
+function res27Beta_(cfg) {
+  var start = res27ParseDateKey_(cfg.beta_start);
+  if (!start) return null;
+  return { start: start, length: Math.max(1, Math.min(42, parseInt(cfg.beta_days, 10) || 7)) };
+}
+
+/**
+ * The beta test while people can still join it, through its last day. After that the beta link
+ * signs people up for the real challenge, even if beta_start is never cleared (Test accounts
+ * keep their beta calendar until it is).
+ */
+function res27BetaOpen_(cfg) {
+  var beta = res27Beta_(cfg);
+  return beta && res27TodayKey_() <= res27AddDays_(beta.start, beta.length - 1) ? beta : null;
+}
+
+/**
+ * The 2026 video a day's plan reuses, from "2026 Video (not shown)": a YouTube link, or the video
+ * id at the start of the cell ("nbg1s1gdjJk 'Day 1- 2026…' - re-record…"). Only the beta shows it.
+ */
+function res27StandInId_(cell) {
+  var text = String(cell || '').trim();
+  var m = /^([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/.exec(text);
+  return res27YouTubeId_(text) || (m ? m[1] : '');
 }
 
 /** Day content keyed by day number, from the Days tab (cached a minute). */
@@ -655,6 +690,7 @@ function res27DaysContent_() {
       bonus: res27CleanText_(r['Bonus Task'], 160),
       bonusPoints: Math.max(0, Math.min(20, parseInt(r['Bonus Points'], 10) || RES27_POINTS.bonus)),
       presenter: res27CleanText_(r['Presenter'], 60),
+      standIn: res27StandInId_(r['2026 Video (not shown)']),
     };
   });
   try {
@@ -693,14 +729,18 @@ function res27YouTubeId_(url) {
 }
 
 function res27Program_(cfg, person, clientToday) {
-  var start = res27ParseDateKey_(cfg.start_date) || '2027-01-18';
-  var length = Math.max(1, Math.min(120, parseInt(cfg.length_days, 10) || 42));
+  // While a beta test is set, Test accounts go through it instead, on the real dates.
+  var beta = person && person.type === 'Test' ? res27Beta_(cfg) : null;
+  var start = beta ? beta.start : res27ParseDateKey_(cfg.start_date) || '2027-01-18';
+  var length = beta ? beta.length : Math.max(1, Math.min(120, parseInt(cfg.length_days, 10) || 42));
   var end = res27AddDays_(start, length - 1);
   var serverToday = res27TodayKey_();
   var today = serverToday;
   var asked = res27ParseDateKey_(clientToday);
   if (asked && Math.abs(res27DiffDays_(serverToday, asked)) <= 1) today = asked;
-  var preview = res27ParseDateKey_(cfg.preview_today);
+  // preview_today moves every Test account, so it's off while a beta test runs: beta testers are
+  // Test accounts too, and they must always be on the real date.
+  var preview = beta ? null : res27ParseDateKey_(cfg.preview_today);
   if (person && person.type === 'Test' && preview) today = preview;
   var dayNumber = res27DiffDays_(start, today) + 1;
   var phase = dayNumber < 1 ? 'before' : dayNumber > length ? 'after' : 'during';
@@ -719,6 +759,7 @@ function res27Program_(cfg, person, clientToday) {
     editFrom: editFrom,
     editTo: editTo,
     preview: !!(person && person.type === 'Test' && preview),
+    beta: !!beta,
   };
 }
 
@@ -738,6 +779,10 @@ function res27DayPublic_(n, program, content, cfg) {
   if (released) {
     day.title = c.title || '';
     day.videos = res27ParseVideos_(c.video);
+    // Beta test: a day with no video yet plays the 2026 video its plan reuses, marked as a stand-in.
+    if (!day.videos.length && program.beta && c.standIn) {
+      day.videos = [{ label: '', url: 'https://www.youtube.com/watch?v=' + c.standIn, youtube: c.standIn, standIn: true }];
+    }
     day.category = c.category || '';
     day.about = c.about || '';
     day.action = c.action || '';
@@ -1387,6 +1432,14 @@ function res27Register_(d) {
   var size = String(d.size || '');
   if (RES27_SIZES[shirt].indexOf(size) < 0) res27Fail_('Choose your ' + RES27_SHIRTS[shirt] + ' size.');
   var setup = res27CleanSetup_(d.setup, cfg);
+  // Through the beta link while a beta test is open: a Test account (no payment, left out of the
+  // summary, cleared before launch). A beta page sent after the beta ended is stopped, so a
+  // practice sign-up never quietly turns into a real one that owes $99; the app reloads and asks again.
+  var beta = d.beta === true ? res27BetaOpen_(cfg) : null;
+  if (d.beta === true && !beta) {
+    res27Fail_('The beta test is over, so this would be a real sign-up for the challenge. Check your details, then tap Create my account again.', 'beta_over');
+  }
+  var chose = type === 'Remote' ? 'Remote · ' + RES27_PAYMENTS[pay] : 'Koda Member';
 
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -1435,9 +1488,9 @@ function res27Register_(d) {
       'First Name': first,
       'Last Name': last,
       'Email': email,
-      'Type': type,
-      'Payment': type === 'Remote' ? RES27_PAYMENTS[pay] : '',
-      'Paid': type === 'Remote' ? '' : 'n/a',
+      'Type': beta ? 'Test' : type,
+      'Payment': !beta && type === 'Remote' ? RES27_PAYMENTS[pay] : '',
+      'Paid': !beta && type === 'Remote' ? '' : 'n/a',
       'Shirt': RES27_SHIRTS[shirt],
       'Size': size,
       'Status': 'Active',
@@ -1445,6 +1498,7 @@ function res27Register_(d) {
       'Days Logged': 0,
       'Last Seen': now,
     };
+    if (beta) row['Notes'] = 'Beta test sign-up (chose ' + chose + ')';
     var cols = res27SetupColumns_(setup);
     Object.keys(cols).forEach(function (k) {
       row[k] = cols[k];
@@ -1455,11 +1509,11 @@ function res27Register_(d) {
     lock.releaseLock();
   }
   try {
-    res27Log_(email, 'Signed up', type + (type === 'Remote' ? ' · pays by ' + RES27_PAYMENTS[pay] : '') + ' · ' + RES27_GOALS[setup.goal]);
+    res27Log_(email, 'Signed up', (beta ? 'Beta test (chose ' + chose + ')' : type + (type === 'Remote' ? ' · pays by ' + RES27_PAYMENTS[pay] : '')) + ' · ' + RES27_GOALS[setup.goal]);
   } catch (e) {}
   var emailed = false;
   try {
-    emailed = res27SendWelcome_(cfg, { id: id, first: first, last: last, email: email, type: type, pay: pay, setup: setup, shirt: RES27_SHIRTS[shirt], size: size });
+    emailed = res27SendWelcome_(cfg, { id: id, first: first, last: last, email: email, type: beta ? 'Test' : type, beta: !!beta, pay: pay, setup: setup, shirt: RES27_SHIRTS[shirt], size: size });
   } catch (e) {
     try {
       console.error('res27 welcome email: ' + e);
@@ -1870,11 +1924,17 @@ function res27Mail_(cfg, to, subject, htmlBody, textBody, reserve) {
   return false;
 }
 
+/** "Monday, November 9" for a yyyy-MM-dd key. */
+function res27DayText_(key) {
+  return Utilities.formatDate(new Date(res27KeyToUtc_(key) + 12 * 3600000), 'UTC', 'EEEE, MMMM d');
+}
+
 function res27SendWelcome_(cfg, p) {
   var program = res27Program_(cfg, null, null);
-  var startText = Utilities.formatDate(new Date(res27KeyToUtc_(program.start) + 12 * 3600000), 'UTC', 'EEEE, MMMM d');
+  var startText = res27DayText_(program.start);
   var site = String(cfg.site_url || '');
   var price = Number(cfg.remote_price) || 99;
+  var beta = p.beta ? res27Beta_(cfg) : null;
   var payHtml = '';
   if (p.type === 'Remote') {
     var venmo = res27VenmoPayUrl_(cfg, 'Koda Resolutions 2027 - ' + p.first + ' ' + p.last);
@@ -1887,7 +1947,19 @@ function res27SendWelcome_(cfg, p) {
     payHtml = '<div style="background:#F0F2F5;border-radius:12px;padding:14px 16px;margin:0 0 18px"><b>Your $' + price + ' remote spot:</b> pay ' + how + '. We’ll mark you paid in the app.</div>';
   }
   var sent = false;
-  if (res27Truthy_(cfg.welcome_email)) {
+  if (res27Truthy_(cfg.welcome_email) && beta) {
+    var betaEnd = res27AddDays_(beta.start, beta.length - 1);
+    var back = Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0));
+    var betaLink = site ? site + (site.indexOf('?') >= 0 ? '&' : '?') + 'beta=1' : '';
+    var betaBody = '<p style="margin:0 0 14px">Hi ' + res27Html_(p.first) + ', you’re in the <b>beta test</b> of the Resolutions app. It runs <b>' + res27DayText_(beta.start) + ' – ' + res27DayText_(betaEnd) +
+      '</b> on the real dates, so you can try ' + (beta.length === 7 ? 'a week' : beta.length === 1 ? 'a day' : beta.length + ' days') + ' of check-ins before the challenge.</p>' +
+      '<p style="margin:0 0 14px">Each day, open the app, watch the video and tap Yes or No on your list. ' +
+      (back ? 'A day you miss shows up as <b>Overdue</b>, and you can still fill it in for ' + (back === 1 ? '1 more day' : back + ' more days') + '.' : 'A day you don’t finish locks at midnight.') + '</p>' +
+      (betaLink ? '<p style="margin:0 0 18px"><a href="' + res27Html_(betaLink) + '" style="display:inline-block;background:#0C1A2B;color:#FFFFFF;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600">Open the app</a></p>' : '') +
+      '<p style="margin:0;color:#5F6B7A">Everything in the beta is practice. Beta accounts are deleted before the real challenge starts ' + startText + ', so you’ll sign up again for that one.</p>';
+    sent = res27Mail_(cfg, p.email, 'You’re in the beta: ' + String(cfg.program_name || 'Koda Resolutions 2027'), res27EmailFrame_(cfg, 'Welcome to the beta test', betaBody),
+      'Hi ' + p.first + ', you are in the beta test of the Resolutions app, ' + res27DayText_(beta.start) + ' to ' + res27DayText_(betaEnd) + '. Open the app: ' + betaLink, RES27_MAIL_RESERVE);
+  } else if (res27Truthy_(cfg.welcome_email)) {
     var body = '<p style="margin:0 0 14px">Hi ' + res27Html_(p.first) + ', you’re signed up! Day 1 is <b>' + startText + '</b>.</p>' + payHtml +
       '<p style="margin:0 0 14px">Every day you’ll open the app, watch a short video, and check off your own daily list. Your checklist is already built from your answers, and you can change it any time on the Profile tab.</p>' +
       (site ? '<p style="margin:0 0 18px"><a href="' + res27Html_(site) + '" style="display:inline-block;background:#0C1A2B;color:#FFFFFF;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600">Open the app</a></p>' : '') +
@@ -2192,20 +2264,55 @@ function res27AdminSetType_(d) {
   return { ok: true };
 }
 
-/** Deletes every participant whose Type is Test, with their account, app data and check-ins (for clearing practice runs before launch). */
+/**
+ * Deletes every participant whose Type is Test, with their account, app data and check-ins (for
+ * clearing practice runs and beta testers before launch). With `email`, only that Test participant.
+ */
 function res27AdminPurgeTests_(d) {
+  var only = '';
+  if (d.email !== undefined && d.email !== null && d.email !== '') {
+    only = res27CleanEmail_(d.email);
+    if (!only) res27Fail_('That email isn’t valid.');
+  }
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    var ids = {};
+    var ids = {}; // ID → email, for each Test participant being removed
     res27AllRows_('participants').forEach(function (r) {
-      if (String(r['Type']).trim() === 'Test') ids[String(r['ID']).trim()] = true;
+      if (String(r['Type']).trim() !== 'Test') return;
+      var email = String(r['Email']).trim().toLowerCase();
+      if (only && email !== only) return;
+      if (String(r['ID']).trim()) ids[String(r['ID']).trim()] = email;
     });
+    if (only && !Object.keys(ids).length) res27Fail_('No Test participant with that email.');
+    // A row is only deleted when the rest of it agrees it belongs to that ID, so a tab that was
+    // sorted on one column (IDs no longer next to their data) can't take a real member with it.
+    var belongs = {
+      checkins: function (r, id) {
+        return String(r['Key']).trim().indexOf(id + '|') === 0;
+      },
+      accounts: function (r, id) {
+        return String(r['Email']).trim().toLowerCase() === ids[id];
+      },
+      appdata: function (r, id) {
+        var setup = res27ParseJson_(r['Setup'], {});
+        var history = res27ParseJson_(r['History'], {});
+        return (!setup.id || String(setup.id) === id) && (!history._id || String(history._id) === id);
+      },
+      participants: function () {
+        return true;
+      },
+    };
     var removed = { participants: 0, accounts: 0, appdata: 0, checkins: 0 };
+    var skipped = [];
     ['checkins', 'accounts', 'appdata', 'participants'].forEach(function (tab) {
       res27AllRows_(tab)
         .filter(function (r) {
-          return ids[String(r['ID']).trim()];
+          var id = String(r['ID']).trim();
+          if (!Object.prototype.hasOwnProperty.call(ids, id)) return false;
+          if (belongs[tab](r, id)) return true;
+          skipped.push(RES27_TABS[tab].name + ' row ' + r._row + ' (ID ' + id + ' doesn’t match the rest of the row: was the tab sorted?)');
+          return false;
         })
         .sort(function (a, c) {
           return c._row - a._row;
@@ -2216,14 +2323,15 @@ function res27AdminPurgeTests_(d) {
         });
     });
     SpreadsheetApp.flush();
-    return { ok: true, removed: removed };
+    return { ok: true, removed: removed, skipped: skipped };
   } finally {
     lock.releaseLock();
   }
 }
 
 function res27AdminSummary_(d) {
-  var people = res27AllPeople_().filter(function (p) {
+  var everyone = res27AllPeople_();
+  var people = everyone.filter(function (p) {
     return p && p.id && !/removed/i.test(p.status) && p.type !== 'Test';
   });
   var count = function (list, fn) {
@@ -2238,6 +2346,10 @@ function res27AdminSummary_(d) {
   return {
     ok: true,
     total: people.length,
+    // Test accounts (beta testers included) aren't in any count below.
+    testAccounts: everyone.filter(function (p) {
+      return p && p.id && p.type === 'Test';
+    }).length,
     byType: count(people, function (p) {
       return p.type;
     }),

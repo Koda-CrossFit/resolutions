@@ -53,12 +53,45 @@ Changes to Settings and Days show in the app within about a minute.
 - **Forgot password:** people reset it themselves with an emailed 6-digit code. If email fails
   they're told to email the contact address.
 
-### Trying it as a participant before Jan 18
+### Missed days (Overdue)
 
-Sign up with your own email, then set that row's `Type` to `Test` and put a date like
-`2027-01-21` in `preview_today` (Settings). That account now sees Day 4 and can check in.
-Test rows stay out of the summary. Clear every test account before launch with the
-`adminPurgeTests` request (below).
+A day that hasn't been filled in (some habit still has no Yes or No) stays open for
+`edit_days_back` days after it (2 by default), then locks. While it's open the app calls it
+**Overdue**: a card at the top of Today ("Yesterday · Day 1 — Not filled in yet. You can fill it in
+through tomorrow"), an amber day in the week strip and the Progress calendar, and a count on the
+Today tab. Tapping it opens that day; the last answer says it's caught up.
+
+### Beta test (a practice run before Jan 18)
+
+Put a date in `beta_start` (Settings), e.g. `2026-11-09`, and a length in `beta_days` (7).
+Then send testers **https://koda-crossfit.github.io/resolutions/?beta=1**:
+
+- The landing page shows the beta dates and says it's practice. Sign-ups through that link become
+  `Type` = `Test` (Notes says what they picked), pay nothing, and get a beta welcome email that
+  says they'll sign up again for the real challenge.
+- Have testers open the link in Safari/Chrome and sign up there first, then add it to the home
+  screen and sign in once. (An iPhone home-screen app keeps its own storage; if someone starts there,
+  the real landing page shows a "Here for the beta test? Join the beta" link while the beta is open.)
+- Every Test account goes through Days 1, 2, 3… of the plan on the real dates from `beta_start`. A day
+  with no `Video URL` yet plays the 2026 video in `2026 Video (not shown)`, marked as a stand-in (only
+  in the beta). A pasted link replaces it.
+- After the beta's last day the beta link stops making Test accounts. A beta page left open and sent
+  after that is stopped ("The beta test is over…") instead of quietly becoming a real $99 sign-up.
+  Beta testers keep their beta week until `beta_start` is cleared; after that their account says
+  it's a test account that will be deleted.
+- Test rows stay out of the summary (it shows how many there are). End the beta with
+  `node dev/live.js beta off`, and clear every test account before launch with
+  `node dev/live.js purge-tests` (or one with `purge-test <email>`; while a beta runs, use that one
+  for your own practice accounts, because `purge-tests` also removes every beta tester).
+
+From this folder: `node dev/live.js beta 2026-11-09 7` starts one (it checks the live backend is
+1.3.0 or later first, and prints what the app now says).
+
+### Trying one day as a participant
+
+With no beta set, give a Test account a date in `preview_today`, e.g. `2027-01-21`: every Test
+account then sees that date as today (Day 4 of the real challenge). `preview_today` is ignored while
+a beta is set, so beta testers always see the real date. Clear it when you're done.
 
 ## Points: every day is out of 10
 
@@ -87,7 +120,7 @@ page. The last page has no consent checkbox (Kevin, 11/10).
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test tests/api.test.js tests/review.test.js   # backend tests (31)
+node --test "tests/*.test.js" # backend tests (43)
 node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
 ```
 
@@ -119,7 +152,7 @@ other files in that folder match what's live before pushing (`clasp pull` into a
 and diff).
 
 Admin requests are POSTs to the web app with `{"type":"res27","action":"…","key":"<hyrox admin key>"}`:
-`adminSetup` (creates or repairs the sheet; pass `days` to seed an empty Days tab),
-`adminSeedDays` (`days`, `overwrite: true` to replace), `adminSummary` (counts, shirt sizes,
-unpaid remote people), `adminSetType` (`email`, `participantType`: Member/Remote/Test),
-`adminPurgeTests`.
+`adminSetup` (creates or repairs the sheet; pass `days` to seed an empty Days tab, `settings` to set
+values), `adminSeedDays` (`days`, `overwrite: true` to replace), `adminSummary` (counts, shirt sizes,
+unpaid remote people, test accounts), `adminSetType` (`email`, `participantType`: Member/Remote/Test),
+`adminPurgeTests` (every Test account, or just `email`). `dev/live.js` wraps all of these.
