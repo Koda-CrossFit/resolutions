@@ -423,7 +423,7 @@
                 { "t": "li", "text": "Chopped bell peppers" },
                 { "t": "li", "text": "Chopped green onion" },
                 { "t": "li", "text": "Dash salt and pepper" },
-                { "t": "p", "text": "\\Recipe.is.for.7.muffin.cup.per.muffin.tin" },
+                { "t": "p", "text": "Recipe.is.for.7.muffin.cup.per.muffin.tin" },
                 { "t": "p", "text": "Grease a muffin pan with butter or cooking spray. In a bowl, mix the large egg and egg whites in a bowl. Cut the chicken sausage, I use the Amylu Breakfast Time Mini Sausages, and add to bowl. Add veggies and spices and mix in. Transfer from the bowl to the muffin tin and bake for 20 mins at 350 degrees." }
               ]
             }
@@ -573,13 +573,12 @@
                 { "t": "p", "text": "You get 10 (!!) breakfast burritos that you can store frozen and reheat in just a few minutes every morning" },
                 { "t": "p", "text": "Per burrito (Makes 10):" },
                 { "t": "p", "text": "445 Calories 33g Protein 46g Carbs 14g Fat" },
-                { "t": "p", "text": "I used a \"Jelly Roll\" pan (the exact dimensions were 10\"x15\", 1 inch lip) for this recipe, which is a common sized sheet pan found at grocery stores. - A quarter sheet pan will be smaller, so you'll need to scale down the" }
+                { "t": "p", "text": "I used a \"Jelly Roll\" pan (the exact dimensions were 10\"x15\", 1 inch lip) for this recipe, which is a common sized sheet pan found at grocery stores. - A quarter sheet pan will be smaller, so you'll need to scale down the ingredients slightly - You can also scale up the recipe by using a larger sheet pan, just be sure it has at least a 1\" raised edge" }
               ]
             },
             {
               "heading": "INGREDIENTS",
               "lines": [
-                { "t": "p", "text": "slightly - You can also scale up the recipe by using a larger sheet pan, just be sure it has at least a 1\" raised edge" },
                 { "t": "li", "text": "1 red bell pepper" },
                 { "t": "li", "text": "diced 1 orange bell pepper" },
                 { "t": "li", "text": "diced 1 yellow onion" },
@@ -816,13 +815,7 @@
             {
               "heading": "",
               "lines": [
-                { "t": "p", "text": "Rated 3.7 stars by 386 users" },
-                { "t": "p", "text": "CATEGORY AUTHOR: Recipes Melissa Ben-Ishay" },
-                { "t": "p", "text": "Get all my tool recommendations for making the Green Goddess easily here." },
-                { "t": "p", "text": "I can't count how many times I've made this salad over the past few years - the first time I made it, it became the hit of the party, with all my friends asking for the recipe. Since I posted it on TikTok in September 2021, more than 26 MILLION people have viewed the video. It landed me on the TODAY Show and even became the number 6 top searched recipe of 2022. So crazy." },
-                { "t": "p", "text": "Because of its popularity, I also know the most typical variations. Truly, I encourage you to take the components of this recipe and make it your own, using the veggies and flavors you love. Go ahead and add an avocado for extra creaminess or a jalapeño for heat. Swap out the herbs to change the flavor profile. Eat it with a chip, a fork, on tacos, or on toast. Create the perfect green goddess salad you love, that will keep you excited to eat it again and again. I can't wait to see how you make it." },
-                { "t": "p", "text": "The goddess, as written, will keep in the fridge for up to a week, but I recommend dressing each serving individually if you aren't planning to eat it all at once." },
-                { "t": "p", "text": "Cook Mode" }
+                { "t": "p", "text": "The goddess, as written, will keep in the fridge for up to a week, but I recommend dressing each serving individually if you aren't planning to eat it all at once." }
               ]
             },
             {
@@ -907,12 +900,7 @@
             {
               "heading": "",
               "lines": [
-                { "t": "p", "text": "buffalo chicken meatballs in a pan with green onions" },
-                { "t": "p", "text": "Easy Buffalo Chicken Meatballs (Whole30 and Keto)" },
                 { "t": "p", "text": "These easy buffalo chicken meatballs are made with ground chicken, almond flour and come swimming in a creamy, tangy, and spicy buffalo sauce. Eat them alongside your favorite side dish or throw them onto a salad. They are gluten free, dairy free, paleo, keto, and Whole30." },
-                { "t": "p", "text": "Course Main Course" },
-                { "t": "p", "text": "Cuisine American" },
-                { "t": "p", "text": "Keyword Buffalo Chicken Meatballs" },
                 { "t": "p", "text": "Prep Time 10 minutes" },
                 { "t": "p", "text": "Cook Time 20 minutes" },
                 { "t": "p", "text": "Servings 6" },
@@ -947,8 +935,7 @@
                 { "t": "step", "n": 4, "text": "Bake at 400 degrees Fahrenheit for 18 minutes. Pull the pan out of the oven and let them rest for about 10 minutes before touching them." },
                 { "t": "step", "n": 5, "text": "While they are baking, prepare the sauce. In a small saucepan, combine all of the sauce ingredients together and stir. Cook over medium-low heat until simmering. Once simmering, turn the heat down to low and let cook for another 3-4 minutes, stirring often as it thickens up." },
                 { "t": "step", "n": 6, "text": "Turn off the heat and drench the meatballs in the sauce. Top off with extra green onions and serve warm." },
-                { "t": "step", "n": 7, "text": "Leftovers will keep in an airtight container refrigerated for at least 5 days." },
-                { "t": "step", "n": 8, "text": "As always, lots of tips, FAQ's and substitution information in the" }
+                { "t": "step", "n": 7, "text": "Leftovers will keep in an airtight container refrigerated for at least 5 days." }
               ]
             }
           ]
@@ -1393,13 +1380,8 @@
             {
               "heading": "NUTRITION",
               "lines": [
-                { "t": "p", "text": "Calories: 541kcal | Carbohydrates: 15g | Protein: 57g | Fat: 28g | Saturated Fat: 11g | Cholesterol: 183mg | Sodium: 1199mg | Potassium: 1701mg | Fiber: 4g | Sugar: 8g | Vitamin A: 1285IU | Vitamin C: 74.1mg | Calcium: 242mg | Iron: 2.7mg" }
-              ]
-            },
-            {
-              "heading": "NUTRITION",
-              "lines": [
-                { "t": "p", "text": "information is automatically calculated, so should only be used as an approximation." }
+                { "t": "p", "text": "Calories: 541kcal | Carbohydrates: 15g | Protein: 57g | Fat: 28g | Saturated Fat: 11g | Cholesterol: 183mg | Sodium: 1199mg | Potassium: 1701mg | Fiber: 4g | Sugar: 8g | Vitamin A: 1285IU | Vitamin C: 74.1mg | Calcium: 242mg | Iron: 2.7mg" },
+                { "t": "p", "text": "Nutrition information is automatically calculated, so should only be used as an approximation." }
               ]
             }
           ]
@@ -1681,8 +1663,8 @@
                 { "t": "li", "text": "1/2 teaspoon saffron threads" },
                 { "t": "li", "text": "3 tablespoons extra-virgin olive oil" },
                 { "t": "li", "text": "6 ounces chorizo, sliced" },
-                { "t": "li", "text": "6 ounces merguez (lamb sausage)," },
-                { "t": "li", "text": "sliced 6 ounces garlic sausage, sliced (or chicken thighs, 1\" pieces)" },
+                { "t": "li", "text": "6 ounces merguez (lamb sausage), sliced" },
+                { "t": "li", "text": "6 ounces garlic sausage, sliced (or chicken thighs, 1\" pieces)" },
                 { "t": "li", "text": "1 large onion, finely chopped" },
                 { "t": "li", "text": "1/2 cup red bell pepper, finely chopped" },
                 { "t": "li", "text": "3 cloves garlic, minced" },
@@ -2168,7 +2150,8 @@
                 { "t": "p", "text": "Preheat the oven to 375 degrees F. Place the sweet potatoes in a large saucepan and cover with cold water." },
                 { "t": "p", "text": "Bring to a boil over high heat, then reduce the heat and cook until the potatoes are fork-tender, 10 to 15 minutes." },
                 { "t": "p", "text": "Drain the potatoes and return them to the pan. Add the ghee, coconut milk, 1/2 tsp of the salt, and 1/4 tsp of the pepper. Mash with a potato masher or blend with an immersion blender until creamy; set aside." },
-                { "t": "p", "text": "In a large skillet, heat the olive oil over medium heat. Add the shallots, celery, and carrot and cook, stirring frequently, until the vegetables are softened, about 5 minutes. Add the ground meat of choice and the garlic. Cook, stirring often, until meat is browned, 7 to 10 minutes. Season with the remaining 1 tsp salt, 1/2 tsp pepper, and the thyme. Add the tomato paste and cook, stirring constantly, until the tomato paste begins to darken, about 1 minute." },
+                { "t": "p", "text": "In a large skillet, heat the olive oil over medium heat. Add the shallots, celery, and carrot and cook, stirring frequently, until the vegetables are softened, about 5 minutes. Add the ground meat of choice and the garlic." },
+                { "t": "p", "text": "Cook, stirring often, until meat is browned, 7 to 10 minutes. Season with the remaining 1 tsp salt, 1/2 tsp pepper, and the thyme. Add the tomato paste and cook, stirring constantly, until the tomato paste begins to darken, about 1 minute." },
                 { "t": "p", "text": "In a small bowl or measuring cup, stir together the beef broth and potato starch until smooth. Add to the meat mixture and cook, stirring constantly, until slightly thickened, 1 to 2 minutes." },
                 { "t": "p", "text": "Spoon the meat mixture evenly into a 2-quart casserole or 8-inch square glass baking dish. Carefully spread the mashed sweet potatoes over the top. Bake until bubbling, about 25 minutes. Let stand 10 minutes before serving." },
                 { "t": "li", "text": "*Highly recommend doubling this recipe for leftovers. I usually use 1 lb bison and 1 lb ground turkey in an 9 x 13 pan." }
@@ -2636,8 +2619,7 @@
                 { "t": "step", "n": 1, "text": "Preheat oven to 400 degrees Fahrenheit. Line a baking sheet with parchment paper." },
                 { "t": "step", "n": 2, "text": "On a microwave safe dish, microwave potatoes for 7 to 8 minutes or until fork tender. Remove potatoes from microwave with an oven mitt. They are very hot!" },
                 { "t": "step", "n": 3, "text": "While potatoes are microwaving, make pizza filling. Add sausage to a skillet over medium heat. Cook until brown and crumbly, breaking up with a spatula." },
-                { "t": "step", "n": 4, "text": "Once cooked, drain off excess grease. Add in diced onion, minced garlic, pepperoni and pizza sauce." },
-                { "t": "p", "text": "Stir. Cook for 4 to 5 minutes or until onions are tender." },
+                { "t": "step", "n": 4, "text": "Once cooked, drain off excess grease. Add in diced onion, minced garlic, pepperoni and pizza sauce. Stir. Cook for 4 to 5 minutes or until onions are tender." },
                 { "t": "step", "n": 5, "text": "Carefully slice each potato in half lengthwise. Scoop out insides of potato, leaving about 1/2 inch of filling around the edges." },
                 { "t": "step", "n": 6, "text": "In a small microwave dish, melt ghee. Brush melted ghee on the inside and edges of each potato." },
                 { "t": "step", "n": 7, "text": "Scoop pizza filling into each potato. Place potatoes on parchment lined pan." },
@@ -2767,7 +2749,8 @@
                 { "t": "step", "n": 2, "text": "Scoop about 1/3 cup of rice into your hands and form a small ball or triangle shape." },
                 { "t": "step", "n": 3, "text": "Make an indentation in the center and add about 1 teaspoon of the tuna mixture (or salmon, if using)." },
                 { "t": "step", "n": 4, "text": "Cover the filling with more rice and shape firmly into a ball or triangle." },
-                { "t": "step", "n": 4, "text": "Wrap with Nori: Place a strip of nori on the bottom of each onigiri, wrapping it partially around the rice ball. Nutrition (Per Onigiri Ball):" },
+                { "t": "step", "n": 4, "text": "Wrap with Nori: Place a strip of nori on the bottom of each onigiri, wrapping it partially around the rice ball." },
+                { "t": "p", "text": "Nutrition (Per Onigiri Ball):" },
                 { "t": "li", "text": "Calories: ~105 kcal" },
                 { "t": "li", "text": "Carbs: ~15g" },
                 { "t": "li", "text": "Protein: ~5.5g (tuna) or ~4.5g (salmon)" },

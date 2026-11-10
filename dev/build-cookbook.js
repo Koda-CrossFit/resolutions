@@ -28,7 +28,8 @@ const KNOWN_HEADINGS = ['INGREDIENTS', 'DIRECTIONS', 'INSTRUCTIONS', 'PREPARATIO
 
 /**
  * OVERRIDES: one-off fixes by recipe number. Each names a PDF line by its exact text (as the PDF
- * prints it, bullet included) and is applied before the lines are put back together.
+ * prints it, bullet included, after the repairs in cleanupLines()) and is applied before the lines
+ * are put back together.
  *   join:    [line, ...]          this line continues the line above it
  *   noJoin:  [line, ...]          this line starts a new line even if it looks like a continuation
  *   drop:    [line, ...]          leave this line out
@@ -37,10 +38,40 @@ const KNOWN_HEADINGS = ['INGREDIENTS', 'DIRECTIONS', 'INSTRUCTIONS', 'PREPARATIO
 const OVERRIDES = {
   // A name split over two lines: "...by Shalane Flanagan and Elyse / Kopecky (with minor tweaks)."
   17: { join: ['Kopecky (with minor tweaks). Their original recipe is here . Note: These are gluten-free.'] },
-  // "It landed me on the TODAY / Show and even became..."
-  22: { join: ['Show and even became the number 6 top searched recipe of 2022. So crazy.'] },
+  // A blog page printed into the PDF. Its star rating, author line, tool plug, "Cook Mode" button and
+  // the blogger's own story aren't part of the recipe, and the app is public, so they're left out
+  // (11/10/2026). The title keeps the "Baked by Melissa" credit; the storage tip stays.
+  22: { drop: [
+    'Rated 3.7 stars by 386 users',
+    'CATEGORY AUTHOR: Recipes Melissa Ben-Ishay',
+    'Get all my tool recommendations for making the Green Goddess easily here.',
+    "I can't count how many times I've made this salad over the past few years - the first time I made it, it",
+    'became the hit of the party, with all my friends asking for the recipe. Since I posted it on TikTok in',
+    'September 2021, more than 26 MILLION people have viewed the video. It landed me on the TODAY',
+    'Show and even became the number 6 top searched recipe of 2022. So crazy.',
+    'Because of its popularity, I also know the most typical variations. Truly, I encourage you to take the',
+    'components of this recipe and make it your own, using the veggies and flavors you love. Go ahead',
+    'and add an avocado for extra creaminess or a jalapeño for heat. Swap out the herbs to change the',
+    'flavor profile. Eat it with a chip, a fork, on tacos, or on toast. Create the perfect green goddess salad',
+    "you love, that will keep you excited to eat it again and again. I can't wait to see how you make it.",
+    'Cook Mode',
+  ] },
+  // Web recipe-card leftovers: the photo's caption, the page's own title, the Course / Cuisine / Keyword
+  // labels, and a cut-off pointer to the blog post ("...information in the"). Prep, cook time,
+  // servings and calories stay.
+  24: { drop: [
+    'buffalo chicken meatballs in a pan with green onions',
+    'Easy Buffalo Chicken Meatballs (Whole30 and Keto)',
+    'Course Main Course',
+    'Cuisine American',
+    'Keyword Buffalo Chicken Meatballs',
+    "8. As always, lots of tips, FAQ's and substitution information in the",
+  ] },
   // "...garlic sausage, sliced / (or chicken thighs, 1" pieces)": the brackets belong to that ingredient.
   40: { join: ['(or chicken thighs, 1" pieces)'] },
+  // Two paragraphs on PDF page 73, although the first one's last line is full and ends a sentence
+  // ("...Add the ground meat of choice and the garlic." / "Cook, stirring often, ...").
+  52: { noJoin: ['Cook, stirring often, until meat is browned, 7 to 10 minutes. Season with the remaining 1 tsp salt, 1/2 tsp'] },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -250,9 +281,15 @@ function readBook(pages, contents) {
 //  - the browser's print header and footer on a recipe printed from a website
 //    ("2/1/26, 2:40 PM <page title>", "about:blank 1/2")
 //  - a divider of underscores pasted from an original: the line is split there
+//  - the last word of an item printed at the start of the next bullet, after the item's comma
+//    ("• 6 ounces merguez (lamb sausage), / • sliced 6 ounces garlic sausage, sliced"): it goes back to its item
+//  - a list's label printed at the end of the wrapped line above the list ("...wrapping it partially around the
+//    rice / ball. Nutrition (Per Onigiri Ball):", then the bullets): the line is split before the label
 //  - "fi" where the PDF's font drew the fi ligature for "→" (code 0xAE is → in Symbol, fi in Standard encoding)
 //  - "11/2" where "1½" lost its space when the ½ became 1/2 ("11/2 tbsp" → "1 1/2 tbsp", "1-11/4 lb" → "1-1 1/4 lb")
-//  - a "**" note marker pasted at the start of a line ("**Makes enough quantity for...")
+//  - a "**" note marker or a backslash pasted at the start of a line ("**Makes enough quantity for...",
+//    "\Recipe.is.for.7.muffin.cup.per.muffin.tin")
+//  - a heading made out of a word of a sentence: see headingWords()
 
 function cleanupLines(sections) {
   const removed = [];
@@ -284,6 +321,24 @@ function cleanupLines(sections) {
           removed.push({ n: r.n, text: l.text.match(/_{4,}/)[0], why: 'divider, the line is split there' });
         }
       }
+      for (let k = 1; k < r.lines.length; k++) {
+        const a = r.lines[k - 1];
+        const b = r.lines[k];
+        const m = !a.bold && !b.bold && /^•.*,$/.test(a.text) && b.text.match(/^•\s*((?:[a-z]+ly )?[a-z]+(?:ed|en)) (\d.*)$/);
+        if (m) {
+          removed.push({ n: r.n, text: m[1], why: 'start of a bullet, moved back to the end of the item above' });
+          a.text += ' ' + m[1];
+          b.text = '• ' + m[2];
+        }
+      }
+      for (let k = 0; k + 1 < r.lines.length; k++) {
+        const l = r.lines[k];
+        const m = !l.bold && /^•/.test(r.lines[k + 1].text) && l.text.match(/^([a-z].*[.!?])\s+([A-Z][^.!?:]{0,40}:)$/);
+        if (m) {
+          r.lines.splice(k, 1, Object.assign({}, l, { text: m[1] }), Object.assign({}, l, { text: m[2], split: true }));
+          removed.push({ n: r.n, text: m[2], why: 'label of the list below, the line is split before it' });
+        }
+      }
     }
     const next = sections[i + 1];
     const last = s.recipes[s.recipes.length - 1];
@@ -301,6 +356,7 @@ function fixText(text) {
     .replace(/(^|\s)fi(?=\s)/g, (m, before) => before + '→')
     .replace(/(^|[\s(-])1(1\/[248])(?=[\s,).]|$)/g, (m, before, fraction) => before + '1 ' + fraction)
     .replace(/^\*\*\s*/, '')
+    .replace(/^\\(?=\S)/, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -328,12 +384,15 @@ function fullLine(prevRendered, next) {
 }
 
 /**
- * Should PDF line `next` continue the logical line `cur`, whose last PDF line is `prev`? Returns the
- * reason, or '' for no. Bullets, steps and paragraphs stay apart unless the break is plainly in the
- * middle of a sentence or an item. A line that ends a sentence starts a new paragraph unless it sits
- * inside a paragraph that's already wrapping and reaches as far as every line above it.
+ * Should PDF line `next` continue the logical line `cur`, whose last PDF line is `prev`? `after` is the
+ * PDF line after `next`. Returns the reason, or '' for no. Bullets, steps and paragraphs stay apart
+ * unless the break is plainly in the middle of a sentence or an item. A line that ends a sentence starts
+ * a new paragraph unless it sits inside a paragraph that's already wrapping and reaches as far as every
+ * line above it, or it is the rest of a numbered step: a plain line between a step that runs out to the
+ * right margin and the next step ("4. ...pepperoni and pizza sauce." / "Stir. Cook for 4 to 5 minutes..." /
+ * "5. ...").
  */
-function continues(cur, prev, next) {
+function continues(cur, prev, next, after) {
   if (next.kind === 'heading' || next.kind === 'step' || next.bold || next.split) return '';
   const p = prev.text;
   const n = next.text;
@@ -350,6 +409,8 @@ function continues(cur, prev, next) {
   if (/:$/.test(p) && /^https?:\/\/\S+$/.test(n)) return 'link after its label';
   const label = /:$/.test(n) || /^[A-Z][A-Za-z ]{0,30}:/.test(n) || /^step \d/i.test(n);
   if (terminal) {
+    if (cur.t === 'step' && !label && after && after.kind === 'step' && after.n === cur.n + 1 &&
+      textWidth(prev.rendered, BODY_SIZE) > BODY_WIDTH * 0.85) return 'rest of the step';
     if (cur.parts.length < 2 || label) return '';
     const widest = Math.max(...cur.parts.slice(0, -1).map((r) => textWidth(r, BODY_SIZE)));
     return textWidth(prev.rendered, BODY_SIZE) >= widest ? 'sentence ends at the wrap' : '';
@@ -368,42 +429,80 @@ function joinText(a, b) {
   return /[A-Za-z]-$/.test(a) && /^[a-z]/.test(b) ? a + b : a + ' ' + b;
 }
 
+/**
+ * Headings the PDF made out of a word of a sentence: the PDF prints the heading in the middle of the
+ * sentence, and the line after it goes on in lower case. Either the line before it stops mid-phrase
+ * ("...you'll need to scale down the / INGREDIENTS / slightly - You can also...") or the heading repeats the
+ * heading it's under ("NUTRITION / Calories: ... / NUTRITION / information is automatically calculated...").
+ * The word goes back into its sentence (lower case inside it, capitalised at its start). A repeated heading
+ * goes away; any other heading moves down to where that paragraph ends, so it still heads what follows.
+ */
+function headingWords(items) {
+  let heading = '';
+  items.forEach((c, k) => {
+    if (c.kind !== 'heading') return;
+    const before = items[k - 1];
+    const after = items[k + 1];
+    const goesOn = after && after.kind === 'text' && !after.bold && !after.split && /^[a-z]/.test(after.text);
+    const midPhrase = before && before.kind === 'text' && !before.bold && !TERMINAL.test(before.text) && FUNCTION_WORDS.has(lastWord(before.text));
+    if (goesOn && midPhrase) {
+      Object.assign(c, { kind: 'text', text: c.text.toLowerCase(), join: 'heading word inside a sentence', moves: c.text });
+      after.join = 'rest of the sentence after the heading word';
+    } else if (goesOn && c.text === heading) {
+      Object.assign(c, { kind: 'text', text: c.text.charAt(0) + c.text.slice(1).toLowerCase(), split: true });
+      after.join = 'rest of the sentence after the heading word';
+    }
+    heading = c.moves || (c.kind === 'heading' ? c.text : heading);
+  });
+}
+
 /** Turns a recipe's PDF lines into blocks of logical lines: [{ heading, lines: [{ t, n?, text }] }]. */
 function buildBlocks(r, ov, log) {
   ov = ov || {};
   const replace = new Map(ov.replace || []);
+  const items = [];
+  for (const line of r.lines) {
+    if ((ov.drop || []).includes(line.text)) { log.push({ n: r.n, override: 'drop', text: line.text }); continue; }
+    const c = classify(replace.has(line.text) ? Object.assign({}, line, { text: replace.get(line.text) }) : line);
+    Object.assign(c, { line: line.text, page: line.page, split: line.split });
+    items.push(c);
+  }
+  headingWords(items);
   const blocks = [];
   let block = null;
   let cur = null; // the logical line being built
   let prev = null; // the last PDF line added to it
-  for (const line of r.lines) {
-    if ((ov.drop || []).includes(line.text)) { log.push({ n: r.n, override: 'drop', text: line.text }); continue; }
-    const c = classify(replace.has(line.text) ? Object.assign({}, line, { text: replace.get(line.text) }) : line);
-    c.page = line.page;
-    c.split = line.split;
+  let moved = null; // a heading waiting for the end of the paragraph it was printed in
+  items.forEach((c, k) => {
     // The line as the PDF printed it, for measuring.
     c.rendered = (c.bulleted || c.kind === 'bullet' ? '• ' : '') + (c.kind === 'step' ? c.n + '. ' : '') + c.text;
     if (c.kind === 'heading') {
       block = { heading: c.text, lines: [] };
       blocks.push(block);
-      cur = prev = null;
-      continue;
+      cur = prev = moved = null;
+      return;
     }
     if (!block) { block = { heading: '', lines: [] }; blocks.push(block); }
-    let why = cur ? continues(cur, prev, c) : '';
-    if (cur && (ov.join || []).includes(line.text)) why = 'override';
-    if ((ov.noJoin || []).includes(line.text)) why = '';
+    let why = cur ? c.join || continues(cur, prev, c, items[k + 1]) : '';
+    if (cur && (ov.join || []).includes(c.line)) why = 'override';
+    if ((ov.noJoin || []).includes(c.line)) why = '';
     log.push({ n: r.n, page: c.page, prev: prev && prev.text, next: c.text, kind: c.kind, joined: !!why, why });
     if (why) {
       cur.text = joinText(cur.text, c.text);
       cur.parts.push(c.rendered);
     } else {
+      if (moved) {
+        block = { heading: moved, lines: [] };
+        blocks.push(block);
+        moved = null;
+      }
       cur = c.kind === 'step' ? { t: 'step', n: c.n, text: c.text } : { t: c.kind === 'bullet' ? 'li' : 'p', text: c.text };
       Object.defineProperty(cur, 'parts', { value: [c.rendered] }); // not enumerable: stays out of the JSON
       block.lines.push(cur);
     }
+    if (c.moves) moved = c.moves;
     prev = c;
-  }
+  });
   for (const b of blocks) b.lines = b.lines.map((l) => Object.assign(l, { text: fixText(l.text) })).filter((l) => l.text);
   return blocks.filter((b) => b.lines.length);
 }
@@ -470,7 +569,7 @@ function check(book) {
       for (const b of r.blocks) {
         for (const l of b.lines) {
           if (!l.text.trim()) problems.push('recipe ' + r.n + ': empty line');
-          if (/KODA RESOLUTIONS COOKBOOK|Koda community recipes|Back to table of contents|^Page \d+$|-----|\|\s*:-:|\*\*|\\[!-\/:-@\[-`{-~]|&#?\w+;|^•|�|about:blank/.test(l.text)) {
+          if (/KODA RESOLUTIONS COOKBOOK|Koda community recipes|Back to table of contents|^Page \d+$|-----|\|\s*:-:|\*\*|\\|&#?\w+;|^•|�|about:blank/.test(l.text)) {
             problems.push('recipe ' + r.n + ': artifact left in "' + l.text + '"');
           }
         }
@@ -508,7 +607,7 @@ function main() {
   for (const s of book.sections) console.log('  ' + s.title + ': ' + s.recipes.length);
   console.log('headings (recipes using each): ' + Object.entries(headings).sort((a, b) => b[1] - a[1]).map(([h, c]) => h + ' ' + c).join(', '));
   console.log('recipes over more than one page: ' + multiPage.map((m) => m.n + ' (pp. ' + m.pages.join('-') + ')').join(', '));
-  if (removed.length) console.log('removed from the PDF text:\n' + removed.map((x) => '  recipe ' + x.n + ': "' + x.text + '" (' + x.why + ')').join('\n'));
+  if (removed.length) console.log('removed or repaired in the PDF text:\n' + removed.map((x) => '  recipe ' + x.n + ': "' + x.text + '" (' + x.why + ')').join('\n'));
   for (const note of notes) console.log('note: ' + note);
 }
 
