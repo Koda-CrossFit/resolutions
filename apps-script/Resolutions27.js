@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.6.0 (2026-11-11)';
+var RES27_VERSION = '1.7.0 (2026-11-11)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -1438,8 +1438,14 @@ function res27Auth_(token) {
   if (res27Sign_(payload) !== parts[3]) res27Fail_('Please sign in again.', 'auth');
   var issued = parseInt(parts[2], 36);
   if (!issued || res27Now_() - issued > RES27_TOKEN_MAX_DAYS * 86400000) res27Fail_('Please sign in again.', 'auth');
+  // A phone still signed in to an account that's gone (beta and test accounts are deleted after the
+  // beta) is told so, instead of a sign-in that then says there's no such account.
+  var gone = 'This account no longer exists (beta and test accounts are deleted after the beta). Sign up again to join the challenge.';
   var acct = res27FindRow_('accounts', 'ID', parts[0]);
-  if (!acct || String(Number(acct['Token Version']) || 1) !== parts[1]) res27Fail_('Please sign in again.', 'auth');
+  if (!acct) res27Fail_(gone, 'auth');
+  if (String(Number(acct['Token Version']) || 1) !== parts[1]) res27Fail_('Please sign in again.', 'auth');
+  // An account with no Participants row wasn't purged (the purge takes both): signing in again
+  // leads to "We couldn't find your sign-up… we'll fix it", not to a sign-up that starts over.
   var person = res27LoadPerson_(parts[0]);
   if (!person) res27Fail_('Please sign in again.', 'auth');
   if (/removed/i.test(person.status)) res27Fail_('This account is no longer active. Questions? Email ' + res27Settings_().contact_email + '.', 'inactive');
@@ -2328,6 +2334,7 @@ function res27AdminSetup_(d) {
     try {
       book.setSpreadsheetTimeZone(RES27_TZ);
     } catch (e) {}
+    var newFinishers = !book.getSheetByName(RES27_TABS.finishers.name);
     ['participants', 'checkins', 'days', 'finishers', 'settings', 'accounts', 'questions', 'log', 'appdata'].forEach(function (k) {
       res27EnsureTab_(book, k);
     });
@@ -2345,6 +2352,12 @@ function res27AdminSetup_(d) {
     var have = {};
     for (var i = 1; i < values.length; i++) have[String(values[i][0]).trim()] = i + 1;
     var overrides = d.settings && typeof d.settings === 'object' ? d.settings : {};
+    // A misspelled setting is reported back (dev/live.js setting fails on it) instead of quietly ignored.
+    var unknown = Object.keys(overrides).filter(function (k) {
+      return !RES27_SETTINGS_DEFAULTS.some(function (row) {
+        return row[0] === k;
+      });
+    });
     RES27_SETTINGS_DEFAULTS.forEach(function (row) {
       var value = Object.prototype.hasOwnProperty.call(overrides, row[0]) ? overrides[row[0]] : row[1];
       if (!have[row[0]]) settings.appendRow([row[0], res27SafeCell_(value), row[2]]);
@@ -2354,9 +2367,10 @@ function res27AdminSetup_(d) {
       }
     });
 
-    // Finishers: a sample row so the format is obvious, only on a brand-new tab.
+    // Finishers: a sample row so the format is obvious, only on a brand-new tab (setup runs again
+    // with every settings change, e.g. `live.js beta off`: a tab Kevin emptied stays empty).
     var fin = book.getSheetByName(RES27_TABS.finishers.name);
-    if (fin.getLastRow() < 2) fin.appendRow([1, 'Example finisher (replace me)', 'e.g. 3 rounds: 10 burpees, 15 KB swings, 200m run', '']);
+    if (newFinishers && fin.getLastRow() < 2) fin.appendRow([1, 'Example finisher (replace me)', 'e.g. 3 rounds: 10 burpees, 15 KB swings, 200m run', '']);
 
     res27Secret_();
     if (d.adminKey && String(d.adminKey).length >= 12) props.setProperty(RES27_ADMIN_PROP, String(d.adminKey));
@@ -2367,7 +2381,7 @@ function res27AdminSetup_(d) {
     if (Array.isArray(d.days) && d.days.length) {
       seeded = res27WriteDays_(book, d.days, d.overwriteDays === true);
     }
-    return { ok: true, created: created, sheetId: book.getId(), url: book.getUrl(), seededDays: seeded, migrated: migrated, bonusFixed: bonusFixed };
+    return { ok: true, created: created, sheetId: book.getId(), url: book.getUrl(), seededDays: seeded, migrated: migrated, bonusFixed: bonusFixed, unknown: unknown };
   } finally {
     lock.releaseLock();
   }
@@ -2481,28 +2495,111 @@ function res27AdminSeedDays_(d) {
   }
 }
 
+/**
+ * Changes someone's Type (Member, Remote or Test). Moving someone off Test (Kevin back to Member
+ * after the beta) also clears their practice days: days saved outside the real challenge's dates
+ * (the beta week) come out of their history and the Check-ins tab, and Points / Days Logged are
+ * counted again, so their row starts from zero like everyone else's. Days inside the real challenge
+ * are never touched. clearPractice: true does the same for someone already Member or Remote (a Type
+ * cell changed by hand); it's safe to repeat. Each change goes on the Log tab.
+ */
 function res27AdminSetType_(d) {
   var email = res27CleanEmail_(d.email);
-  var row = res27FindRow_('participants', 'Email', email);
-  if (!row) res27Fail_('No participant with that email.');
   // (not d.type: the hyrox router already uses type for routing)
   var type = String(d.participantType || '');
-  if (['Member', 'Remote', 'Test'].indexOf(type) < 0) res27Fail_('participantType must be Member, Remote or Test.');
-  res27AssertRow_('participants', row._row, 'Email', email);
-  var was = String(row['Type'] || '').trim();
-  res27UpdateRow_('participants', row._row, { 'Type': type });
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  var was;
+  var cleared = null;
+  try {
+    RES27_REQ_.headers = {};
+    var row = res27FindRow_('participants', 'Email', email);
+    if (!row) res27Fail_('No participant with that email.');
+    if (['Member', 'Remote', 'Test'].indexOf(type) < 0) res27Fail_('participantType must be Member, Remote or Test.');
+    res27AssertRow_('participants', row._row, 'Email', email);
+    was = String(row['Type'] || '').trim();
+    var update = { 'Type': type };
+    if (type !== 'Test' && (was === 'Test' || d.clearPractice === true)) {
+      cleared = res27ClearPractice_(row, type, email);
+      update['Points'] = cleared.points;
+      update['Days Logged'] = cleared.daysLogged;
+    }
+    res27UpdateRow_('participants', row._row, update);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
   // On the Log tab, so after a beta it's clear who signed up for real before being moved onto it.
-  if (was !== type) {
+  if (was !== type || (cleared && cleared.days)) {
     try {
-      res27Log_(email, 'Changed type', (was || '(blank)') + ' → ' + type);
+      res27Log_(email, 'Changed type', (was || '(blank)') + ' → ' + type + (cleared && cleared.days ? ' · cleared ' + cleared.days + ' practice day' + (cleared.days === 1 ? '' : 's') : ''));
     } catch (e) {}
   }
-  return { ok: true, was: was, type: type };
+  return { ok: true, was: was, type: type, cleared: cleared };
 }
 
 /**
- * Deletes every participant whose Type is Test, with their account, app data and check-ins (for
- * clearing practice runs and beta testers before launch). With `email`, only that Test participant.
+ * For someone leaving Test: drops their days dated outside the real challenge (a beta's practice
+ * days) from App Data and the Check-ins tab, and returns their totals counted again for the new
+ * type. Runs inside the caller's lock. If the rows don't line up (an ID column sorted on its own
+ * would clear someone else's days), it stops before writing anything and says why.
+ */
+function res27ClearPractice_(row, type, email) {
+  var id = String(row['ID']).trim();
+  if (!id) res27Fail_('That participant’s row has no ID. Nothing was changed.', 'mismatch');
+  // The Accounts tab says who an ID belongs to (the app writes it; nobody edits it by hand).
+  var acct = res27FindRow_('accounts', 'ID', id);
+  if (acct && String(acct['Email']).trim().toLowerCase() !== email) {
+    res27Fail_('The Participants row for ' + email + ' has ID ' + id + ', but the Accounts tab gives that ID to ' + String(acct['Email']).trim() + '. Was the ID column sorted on its own? Undo the sort, then try again. Nothing was changed.', 'mismatch');
+  }
+  var app = res27FindRow_('appdata', 'ID', id);
+  var person;
+  try {
+    person = res27Person_(row, app);
+  } catch (e) {
+    res27Fail_(String((e && e.message) || e) + ' Nothing was changed.', 'mismatch');
+  }
+  person.type = type;
+  var program = res27Program_(res27Settings_(), person, null);
+  var outside = function (date) {
+    return res27IsDayKey_(date) && (date < program.start || date > program.end);
+  };
+  var dropped = Object.keys(person.history).filter(outside);
+  dropped.forEach(function (date) {
+    delete person.history[date];
+  });
+  if (dropped.length && app) {
+    res27AssertRow_('appdata', app._row, 'ID', id);
+    res27UpdateRow_('appdata', app._row, { 'History': res27HistoryJson_(person.history, id), 'Updated': new Date(res27Now_()) });
+  }
+  // That person's Check-ins rows (Key = ID|date) dated outside the challenge, from the bottom up.
+  var rows = res27AllRows_('checkins')
+    .filter(function (r) {
+      var key = String(r['Key']).trim();
+      return String(r['ID']).trim() === id && key.indexOf(id + '|') === 0 && outside(key.slice(id.length + 1));
+    })
+    .sort(function (a, c) {
+      return c._row - a._row;
+    });
+  rows.forEach(function (r) {
+    res27Sheet_('checkins').deleteRow(r._row);
+  });
+  var totals = res27Totals_(person.history, program);
+  return { days: dropped.length, checkins: rows.length, points: totals.points, daysLogged: totals.days };
+}
+
+/**
+ * Deletes every participant whose Type is Test, with their account, app data, check-ins and
+ * questions (for clearing practice runs and beta testers before launch). With `email`, only that
+ * Test participant. Guards for the after-beta cleanup (Kevin, 11/11):
+ *   dryRun: true   only lists who would go (and any rows that don't line up), deleting nothing.
+ *   keep: [emails] never deleted, nor any row carrying their IDs, even if Test (Kevin's own account).
+ *   ids: [...]     refuses, deleting nothing, unless exactly those IDs would go (the dry run's list).
+ *   expect: n      the same, by count.
+ * Every row is checked before anything is deleted. The Accounts tab says who each ID belongs to; if
+ * any row of those people doesn't line up (a tab sorted on one column, so an ID sits next to someone
+ * else's data), nothing is deleted and the reply says which rows. Each person goes on the Log tab
+ * before their rows are deleted.
  */
 function res27AdminPurgeTests_(d) {
   var only = '';
@@ -2510,50 +2607,141 @@ function res27AdminPurgeTests_(d) {
     only = res27CleanEmail_(d.email);
     if (!only) res27Fail_('That email isn’t valid.');
   }
+  var keep = {};
+  [].concat(d.keep === undefined || d.keep === null ? [] : d.keep).forEach(function (e) {
+    var clean = res27CleanEmail_(e);
+    if (!clean) res27Fail_('A keep email isn’t valid: ' + e);
+    keep[clean] = true;
+  });
+  var expect = d.expect === undefined || d.expect === null || d.expect === '' ? null : Number(d.expect);
+  if (expect !== null && !(expect >= 0 && Math.floor(expect) === expect)) res27Fail_('expect must be a whole number.');
+  var want = d.ids === undefined || d.ids === null ? null : [].concat(d.ids).map(function (x) {
+    return String(x).trim();
+  }).filter(Boolean).sort();
+  var has = function (o, k) {
+    return Object.prototype.hasOwnProperty.call(o, k);
+  };
+  var lower = function (v) {
+    return String(v === null || v === undefined ? '' : v).trim().toLowerCase();
+  };
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    var ids = {}; // ID → email, for each Test participant being removed
-    res27AllRows_('participants').forEach(function (r) {
-      if (String(r['Type']).trim() !== 'Test') return;
-      var email = String(r['Email']).trim().toLowerCase();
-      if (only && email !== only) return;
-      if (String(r['ID']).trim()) ids[String(r['ID']).trim()] = email;
+    RES27_REQ_.headers = {};
+    var participants = res27AllRows_('participants');
+    var accounts = res27AllRows_('accounts');
+    var owners = {}; // ID → the emails the Accounts tab gives it
+    var keepIds = {}; // every ID a kept email has, on Participants or Accounts
+    accounts.forEach(function (r) {
+      var id = String(r['ID']).trim();
+      if (!id) return;
+      (owners[id] = owners[id] || []).push(lower(r['Email']));
+      if (keep[lower(r['Email'])]) keepIds[id] = true;
     });
-    if (only && !Object.keys(ids).length) res27Fail_('No Test participant with that email.');
-    // A row is only deleted when the rest of it agrees it belongs to that ID, so a tab that was
-    // sorted on one column (IDs no longer next to their data) can't take a real member with it.
+    var rowsWithId = {}; // ID → how many Participants rows have it
+    var kept = [];
+    participants.forEach(function (r) {
+      var id = String(r['ID']).trim();
+      if (id) rowsWithId[id] = (rowsWithId[id] || 0) + 1;
+      if (keep[lower(r['Email'])]) {
+        if (id) keepIds[id] = true;
+        kept.push({ email: lower(r['Email']), type: String(r['Type']).trim() });
+      }
+    });
+    // How each person came to be Test, so the list can flag anyone who is neither a beta sign-up
+    // nor moved there with set-type (a Type column sorted on its own looks just like a move).
+    var movedToTest = {};
+    if (res27Book_().getSheetByName(RES27_TABS.log.name)) {
+      res27AllRows_('log').forEach(function (r) {
+        if (String(r['What']).trim() === 'Changed type' && /→ Test$/.test(String(r['Detail']).trim())) movedToTest[lower(r['Who'])] = true;
+      });
+    }
+    var ids = {}; // ID → email, for each Test participant being removed
+    var people = []; // who that is, for the dry run, the reply and the Log
+    var problems = [];
+    participants.forEach(function (r) {
+      var email = lower(r['Email']);
+      if (keep[email] || String(r['Type']).trim() !== 'Test') return;
+      if (only && email !== only) return;
+      var id = String(r['ID']).trim();
+      if (!id) return;
+      var where = 'Participants row ' + r._row + ' (' + email + ', ID ' + id + ')';
+      if (keepIds[id]) problems.push(where + ': that ID belongs to a kept account');
+      else if (rowsWithId[id] > 1) problems.push(where + ': ' + rowsWithId[id] + ' Participants rows have that ID');
+      else if (has(owners, id) && (owners[id].length > 1 || owners[id][0] !== email)) problems.push(where + ': the Accounts tab gives that ID to ' + owners[id].join(', ') + ' (a sorted ID column, or an email changed on only one of the two tabs)');
+      ids[id] = email;
+      var signed = r['Signed Up'];
+      var notes = String(r['Notes'] || '');
+      people.push({
+        id: id,
+        name: (String(r['First Name'] || '') + ' ' + String(r['Last Name'] || '')).trim(),
+        email: email,
+        signedUp: res27IsDate_(signed) ? Utilities.formatDate(signed, RES27_TZ, 'MMM d, h:mm a') : String(signed || ''),
+        points: Number(r['Points']) || 0,
+        days: Number(r['Days Logged']) || 0,
+        payment: String(r['Payment'] || '').trim(),
+        paid: res27Truthy_(r['Paid']),
+        notes: notes,
+        how: /^Beta test sign-up/.test(notes) ? 'beta sign-up' : movedToTest[email] ? 'moved to Test' : '',
+      });
+    });
+    if (only && !people.length) res27Fail_(keep[only] ? 'That email is on the keep list.' : 'No Test participant with that email.');
+    // Every other row of those IDs must agree it belongs to them, so a tab sorted on one column
+    // (IDs no longer next to their data) can't take someone else's rows with it.
     var belongs = {
       checkins: function (r, id) {
         return String(r['Key']).trim().indexOf(id + '|') === 0;
       },
       accounts: function (r, id) {
-        return String(r['Email']).trim().toLowerCase() === ids[id];
+        return lower(r['Email']) === ids[id];
       },
       appdata: function (r, id) {
         var setup = res27ParseJson_(r['Setup'], {});
         var history = res27ParseJson_(r['History'], {});
         return (!setup.id || String(setup.id) === id) && (!history._id || String(history._id) === id);
       },
-      participants: function () {
-        return true;
+      participants: function (r, id) {
+        return lower(r['Email']) === ids[id];
       },
       questions: function (r, id) {
-        return String(r['Email']).trim().toLowerCase() === ids[id];
+        return lower(r['Email']) === ids[id];
       },
     };
-    var removed = { participants: 0, accounts: 0, appdata: 0, checkins: 0, questions: 0 };
-    var skipped = [];
-    ['checkins', 'accounts', 'appdata', 'questions', 'participants'].forEach(function (tab) {
+    var tabs = ['checkins', 'accounts', 'appdata', 'questions', 'participants'];
+    var plan = {};
+    var leftAlone = []; // Questions rows that don't match: a record, never anyone's identity, so kept
+    tabs.forEach(function (tab) {
+      plan[tab] = [];
       if (!res27Book_().getSheetByName(RES27_TABS[tab].name)) return; // a tab setup hasn't added yet
-      res27AllRows_(tab)
-        .filter(function (r) {
-          var id = String(r['ID']).trim();
-          if (!Object.prototype.hasOwnProperty.call(ids, id)) return false;
-          if (belongs[tab](r, id)) return true;
-          skipped.push(RES27_TABS[tab].name + ' row ' + r._row + ' (ID ' + id + ' doesn’t match the rest of the row: was the tab sorted?)');
-          return false;
-        })
+      var rows = tab === 'participants' ? participants : tab === 'accounts' ? accounts : res27AllRows_(tab);
+      rows.forEach(function (r) {
+        var id = String(r['ID']).trim();
+        if (!has(ids, id)) return;
+        if (belongs[tab](r, id)) plan[tab].push(r);
+        else if (tab === 'questions') leftAlone.push('Questions row ' + r._row + ' (ID ' + id + ', ' + lower(r['Email']) + ') kept: its email isn’t ' + ids[id]);
+        else problems.push(RES27_TABS[tab].name + ' row ' + r._row + ' (ID ' + id + (tab === 'accounts' ? ', ' + lower(r['Email']) : '') + ') doesn’t match the rest of its row');
+      });
+    });
+    if (d.dryRun === true) return { ok: true, dryRun: true, people: people, kept: kept, problems: problems, leftAlone: leftAlone };
+    if (problems.length) {
+      res27Fail_('Nothing was deleted: some rows don’t line up (was a tab sorted on one column, or an email changed on only one tab?). Undo the sort or make the emails match, then try again. ' + problems.join('; ') + '.', 'mismatch');
+    }
+    if (expect !== null && expect !== people.length) {
+      res27Fail_('Expected ' + expect + ' test account' + (expect === 1 ? '' : 's') + ' to delete, but found ' + people.length + '. Nothing was deleted: look at the list again.', 'expect');
+    }
+    if (want && want.join(',') !== Object.keys(ids).sort().join(',')) {
+      res27Fail_('The test accounts to delete aren’t the ones on the list (' + people.length + ' now, ' + want.length + ' listed). Nothing was deleted: list them again.', 'changed');
+    }
+    // On the Log first, so the sheet keeps who went even if a delete fails partway.
+    people.forEach(function (p) {
+      try {
+        var paying = p.payment ? 'pays by ' + p.payment + (p.paid ? ' (PAID)' : ' (not paid)') : '';
+        res27Log_(p.email, 'Deleting test account', [p.name, p.id, p.points + ' pts', p.days + (p.days === 1 ? ' day' : ' days'), paying, p.notes].filter(Boolean).join(' · '));
+      } catch (e) {}
+    });
+    var removed = { participants: 0, accounts: 0, appdata: 0, checkins: 0, questions: 0 };
+    tabs.forEach(function (tab) {
+      plan[tab]
         .sort(function (a, c) {
           return c._row - a._row;
         })
@@ -2563,13 +2751,25 @@ function res27AdminPurgeTests_(d) {
         });
     });
     SpreadsheetApp.flush();
-    return { ok: true, removed: removed, skipped: skipped };
+    return { ok: true, removed: removed, skipped: [], people: people, kept: kept, leftAlone: leftAlone };
   } finally {
     lock.releaseLock();
   }
 }
 
+/**
+ * The beta's dates as the backend locks them: its last week can still be filled in through
+ * lastOpen (the day after that week), so the after-beta cleanup waits for lockedFrom.
+ */
+function res27BetaDates_(cfg) {
+  var beta = res27Beta_(cfg);
+  if (!beta) return null;
+  var lastOpen = res27AddDays_(beta.start, 7 * Math.ceil(beta.length / 7));
+  return { start: beta.start, end: res27AddDays_(beta.start, beta.length - 1), days: beta.length, lastOpen: lastOpen, lockedFrom: res27AddDays_(lastOpen, 1) };
+}
+
 function res27AdminSummary_(d) {
+  var cfg = res27Settings_();
   var everyone = res27AllPeople_();
   var people = everyone.filter(function (p) {
     return p && p.id && !/removed/i.test(p.status) && p.type !== 'Test';
@@ -2586,9 +2786,10 @@ function res27AdminSummary_(d) {
   return {
     ok: true,
     total: people.length,
-    // Test accounts (beta testers included) aren't in any count below.
-    testAccounts: everyone.filter(function (p) {
-      return p && p.id && p.type === 'Test';
+    // Test accounts (beta testers included) aren't in any count below. Counted straight from the
+    // Participants rows, so a row whose App Data doesn't load is still counted.
+    testAccounts: res27AllRows_('participants').filter(function (r) {
+      return String(r['ID']).trim() && String(r['Type']).trim() === 'Test';
     }).length,
     byType: count(people, function (p) {
       return p.type;
@@ -2615,5 +2816,16 @@ function res27AdminSummary_(d) {
     firstChoiceCoach: count(people, function (p) {
       return (p.setup.coaches || [])[0] || 'No preference';
     }),
+    // The stored values the beta commands check (dev/live.js beta / end-beta), and the server's date.
+    settings: {
+      beta_start: res27ParseDateKey_(cfg.beta_start) || '',
+      beta_days: Math.max(1, Math.min(42, parseInt(cfg.beta_days, 10) || 7)),
+      beta_everyone: res27Truthy_(cfg.beta_everyone),
+      preview_today: res27ParseDateKey_(cfg.preview_today) || '',
+      registration_open: res27Truthy_(cfg.registration_open),
+      welcome_email: res27Truthy_(cfg.welcome_email),
+    },
+    beta: res27BetaDates_(cfg),
+    today: res27TodayKey_(),
   };
 }

@@ -116,7 +116,10 @@ Then send testers **https://koda-crossfit.github.io/resolutions/?beta=1**:
   sign-up joins it (the landing page shows the beta to everyone, and even a page loaded earlier signs
   up a Test account). Once the beta is over, sign-ups are real again either way. Someone who already
   signed up for real can be moved over with `node dev/live.js set-type <email> Test`; type changes are
-  written to the Log tab ("Changed type", e.g. `Member → Test`), so you can move them back afterwards.
+  written to the Log tab ("Changed type", e.g. `Member → Test`). Moved people are deleted with the
+  beta like everyone else on it (Kevin, 11/11), so tell them they'll sign up again.
+- Every beta account sees a grey note at the top of Today: practice only, beta accounts are deleted
+  when the beta ends, sign up again for Day 1.
 - Every Test account goes through Days 1, 2, 3… of the plan on the real dates from `beta_start`. A day
   with no `Video URL` yet plays the 2026 video in `2026 Video (not shown)`, marked as a stand-in (only
   in the beta). A pasted link replaces it.
@@ -124,19 +127,65 @@ Then send testers **https://koda-crossfit.github.io/resolutions/?beta=1**:
   after that is stopped ("The beta test is over…") instead of quietly becoming a real $99 sign-up.
   Beta testers keep their beta week until `beta_start` is cleared; after that their account says
   it's a test account that will be deleted.
-- Test rows stay out of the summary (it shows how many there are). End the beta with
-  `node dev/live.js beta off` (it also turns `beta_everyone` back off), and clear every test account before launch with
-  `node dev/live.js purge-tests` (or one with `purge-test <email>`; while a beta runs, use that one
-  for your own practice accounts, because `purge-tests` also removes every beta tester).
+- Test rows stay out of the summary (it shows how many there are). While a beta runs, clear one of
+  your own practice accounts with `purge-test <email>`: `purge-tests` covers every beta tester too.
 
 From this folder: `node dev/live.js beta 2026-11-09 7` starts one (it checks the live backend is
-1.3.0 or later first, and prints what the app now says).
+1.3.0 or later first, and prints what the app now says). `beta off`, `end-beta` and `purge-tests`
+need 1.7.0.
+
+### Ending the beta
+
+Kevin's call (11/11/2026, "Delete with the beta"): when the beta ends, every beta account is deleted,
+including people who signed up for real and were moved onto it. They sign up again for January.
+Kevin's own account goes back to Member and is kept. One command does it, in the safe order:
+
+1. **When:** not before the Tuesday after the beta's last day. The last week can be filled in until
+   midnight on Monday (Mountain); `end-beta` and `beta off` both refuse to run before then.
+2. **Look first.** While Kevin is still Test, his Leaderboard shows the beta's final standings, and the
+   sheet's Check-ins and Questions tabs hold the testers' days and questions. All of that goes with the
+   purge. For a marked copy, use File › Version history › Name current version first; version history
+   can also bring rows back after a mistake.
+3. **Tell the testers** their beta account is being deleted and to sign up again (the Today note has
+   said so since 11/11, but a direct message is the sure way, especially for people who were moved).
+4. **Preview:** `node dev/live.js end-beta <kevin's email>` lists who would be deleted and how each
+   became Test ("beta sign-up" or "moved to Test"), and flags anyone who may have paid (a Remote
+   choice, a payment method or Paid) or who is neither (a Type cell changed by hand, or the Type
+   column sorted on its own, looks like that; so do people moved before moves were logged, at about
+   11 AM on 11/11/2026: Kevin and the first four testers). It changes nothing, and ends with the exact
+   command to run, including a short code for that list: `--yes=<code>`.
+5. **Do it:** run that command. If the list changed since the preview, the code no longer matches and
+   nothing happens. Otherwise, in order, it:
+   - sets Kevin to Member, clearing his practice days (his beta-dated Check-ins rows and history) and
+     counting his Points and Days Logged again;
+   - deletes exactly the Test accounts on that list, never the kept email or any row with its ID,
+     writing each one to the Log tab first ("Deleting test account");
+   - turns the beta off (`beta_start` blank, `beta_everyone` FALSE);
+   - checks that no Test accounts are left. It ends with `"ok": true`.
+6. If it lists rows that "don't line up", a tab was sorted on one column, or an email was changed on
+   only one of Participants and Accounts: nothing is deleted. Undo the sort (Edit › Undo is safest;
+   restoring an old version also undoes everything since) or make the emails match, then preview again.
+
+The backend checks every row before deleting anything (the Accounts tab says who each ID belongs
+to), so a sorted ID, email or data column can't take a real member's rows with it. A Type column
+sorted on its own can't be caught that way, which is why the list says how each person became Test.
+A Questions row whose email doesn't match is left in place and listed. A phone still signed in to a
+deleted account is told "This account no longer exists… Sign up again" and lands on Sign in.
+`purge-tests` works the same way (it lists with a code; `--yes=<code>` deletes that list) and takes no
+email: for one account use `purge-test <email>`. Every `live.js` command checks its arguments (an
+on/off flag like `--overwrite` or `--force` takes no `=value`), says which backend it's talking to,
+and exits 1 when the backend says no, so nothing chained after a failed step runs.
+`setting <key> --clear` blanks a value (in PowerShell an empty `""` never reaches node), and a
+misspelled setting name is refused. `node tests/endbeta-cli.js` runs all of this against the dev
+server (see "Running it locally"), with every request kept on this computer.
 
 ### Trying one day as a participant
 
 With no beta set, give a Test account a date in `preview_today`, e.g. `2027-01-21`: every Test
 account then sees that date as today (Day 4 of the real challenge). `preview_today` is ignored while
-a beta is set, so beta testers always see the real date. Clear it when you're done.
+a beta is set, so beta testers always see the real date. Clear it when you're done. Use a separate
+Test account for this, not your own: days saved this way are on real challenge dates, so they stay
+when the account goes back to Member and would count in January.
 
 ## Points: every day is out of 10
 
@@ -165,8 +214,9 @@ page. The last page has no consent checkbox (Kevin, 11/10).
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test "tests/*.test.js" # backend tests (52)
+node --test "tests/*.test.js" # backend tests (71)
 node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
+node tests/endbeta-cli.js     # live.js end-beta / purge-tests against the dev server (resets it)
 ```
 
 Dev-only URLs: `/dev/reset?demo=1&at=2027-01-27T19:30:00-07:00` (fresh world plus a demo

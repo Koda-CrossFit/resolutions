@@ -230,13 +230,24 @@ test('clearing test accounts never deletes rows whose ID cell got separated from
   const app = gas.sheet('App Data');
   const ids = app.getRange(2, 1, 2, 1).getValues();
   app.getRange(2, 1, 2, 1).setValues([ids[1], ids[0]]);
+  const counts = () => ['Participants', 'Accounts', 'App Data', 'Check-ins'].map((t) => gas.rows(t).length);
+  const before = counts();
+  // 1.7.0: every row is checked first, so nothing at all is deleted, and the dry run says why.
+  const dry = post({ action: 'adminPurgeTests', key: ADMIN, email: 'tester@example.com', dryRun: true });
+  assert.equal(dry.problems.length, 1);
+  assert.match(dry.problems[0], /^App Data row \d+ \(ID \w+\) doesn’t match the rest of its row$/);
   const out = post({ action: 'adminPurgeTests', key: ADMIN, email: 'tester@example.com' });
-  assert.equal(out.ok, true, out.error);
-  assert.deepEqual(out.removed, { participants: 1, accounts: 1, appdata: 0, checkins: 0, questions: 0 });
-  assert.equal(out.skipped.length, 1);
-  assert.match(out.skipped[0], /App Data row \d+/);
+  assert.equal(out.code, 'mismatch');
+  assert.match(out.error, /^Nothing was deleted: some rows don’t line up/);
+  assert.deepEqual(counts(), before, 'nothing deleted anywhere');
   const left = gas.rows('App Data').map((r) => JSON.parse(r.History)._id).sort();
   assert.deepEqual(left, [member.me.person.id, tester.me.person.id].sort(), 'both App Data rows kept, so nobody lost data');
+  // Undo the sort, run it again: the tester goes, the member stays.
+  app.getRange(2, 1, 2, 1).setValues(ids);
+  const again = post({ action: 'adminPurgeTests', key: ADMIN, email: 'tester@example.com' });
+  assert.equal(again.ok, true, again.error);
+  assert.deepEqual(again.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 0, questions: 0 });
+  assert.deepEqual(gas.rows('Participants').map((r) => r.Email), ['member@example.com']);
 });
 
 test('purging one test account by email leaves everyone else', () => {

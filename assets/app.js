@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.4.2';
+  var APP_VERSION = '1.4.3';
 
   /* ============================================================ small helpers */
 
@@ -16,6 +16,15 @@
   }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function localToday() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  /** Today in Mountain time: the server's day, which decides when a beta is over. */
+  function mountainToday() {
+    try {
+      var v = {};
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).forEach(function (p) { v[p.type] = p.value; });
+      if (v.year && v.month && v.day) return v.year + '-' + v.month + '-' + v.day;
+    } catch (e) { /* an old browser: the phone's own date */ }
+    return localToday();
+  }
   function keyDate(k) { var p = String(k).split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
   function addDays(k, n) { var d = keyDate(k); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function diffDays(a, b) { return Math.round((keyDate(b) - keyDate(a)) / 86400000); }
@@ -44,14 +53,14 @@
   })();
   /**
    * The beta test's dates when a beta is open and this phone came in through the beta link, or
-   * everyone who signs up joins it (beta_everyone in Settings). The server only sends a beta while
-   * it's open by its own (Mountain) date, so a fresh answer is taken as is, even on a phone whose
-   * midnight came first; the phone's date only judges a copy saved on an earlier visit.
+   * everyone who signs up joins it (beta_everyone in Settings). It ends by Mountain time's date, as
+   * on the server: a phone whose midnight comes first still sees it on the last evening, and a page
+   * left open (or a copy saved on an earlier visit) stops showing it once it's over.
    */
   function betaInfo() {
     var b = S.config && S.config.beta ? S.config.beta : null;
     if (!b || !(store.get('res27.beta', false) || b.everyone)) return null;
-    return !S.configFresh && b.end < localToday() ? null : b;
+    return b.end < mountainToday() ? null : b;
   }
   function weeksText(days) { return days % 7 ? plural(days, 'day') : plural(days / 7, 'week'); }
 
@@ -163,8 +172,8 @@
     lastRouteKey: '',
     lastPaintHash: '',
     returnToReview: false,
-    configLoaded: false,
-    configFresh: false, // S.config came from the server on this visit (not a saved copy)
+    configLoaded: false, // the server answered, or couldn't be reached
+    configOk: false, // the server answered (S.config is its answer, not a saved copy or the defaults)
     board: null,
     boardAt: 0,
     boardLoading: false,
@@ -192,6 +201,9 @@
       plan: '', planOther: '', macros: { protein: '', carbs: '', fat: '', calories: '', wantHelp: false },
       sleepHours: 7, proteinG: '', bodyweight: '', hydrationOz: '', hydrationMode: 'weight', finishersPerWeek: 2,
       skill: '', mobility: '', other: [''], coaches: [],
+      // This sign-up was shown the beta ("don't send any money"), so it goes as a beta one: if the
+      // beta ends before it's sent, the server says so and the real steps come back (payment too).
+      sawBeta: false,
     };
   }
   /**
@@ -258,7 +270,7 @@
       S.config = Object.assign({}, DEFAULT_CONFIG, r.config);
       store.set('res27.config', S.config);
       S.configLoaded = true;
-      S.configFresh = true;
+      S.configOk = true;
       if (!S.config.beta) store.del('res27.beta'); // the beta test is over: back to the real sign-up
       if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); // the landing shows on any other route
     }).catch(function () { S.configLoaded = true; if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); });
@@ -292,7 +304,7 @@
     S.loadedDay = localToday();
     S.config = Object.assign({}, DEFAULT_CONFIG, me.config);
     store.set('res27.config', S.config);
-    S.configFresh = true;
+    S.configOk = true;
     if (!S.config.beta) store.del('res27.beta');
     S.lastLoad = Date.now();
     S.loadError = '';
@@ -328,7 +340,7 @@
     destroyPlayer();
     // Back on the landing page: fresh dates (a beta may have ended while signed in).
     S.configLoaded = false;
-    S.configFresh = false;
+    S.configOk = false;
     loadConfig();
   }
   function hasPending() {
@@ -754,7 +766,7 @@
       '<div class="l-choices">' + choices + '</div>' +
       '<p class="l-signin-line">Already signed up? <a href="#/signin">Sign in</a></p>' +
       // While a beta is open, a tester who lost the beta link (e.g. a home-screen app opened first) can still get to it.
-      (!b && !waiting && c.beta && !(c.beta.end < localToday()) ? '<p class="l-beta-line">Here for the beta test? <button class="btn-link" data-act="join-beta">Join the beta</button></p>' : '') +
+      (!b && !waiting && c.beta && !(c.beta.end < mountainToday()) ? '<p class="l-beta-line">Here for the beta test? <button class="btn-link" data-act="join-beta">Join the beta</button></p>' : '') +
       '<section class="l-section"><h2 class="l-callout">How it works</h2><p class="l-callsub">Simple, every single day</p>' +
         '<div class="steps4">' + C.steps.map(function (s, i) { return '<div class="card step4"><div class="n">0' + (i + 1) + '</div><h3>' + esc(s.title) + '</h3><p>' + esc(s.text) + '</p></div>'; }).join('') + '</div>' +
       '</section>' +
@@ -807,7 +819,7 @@
     else if (step === 'coaches') { body = stepCoaches(d); nextLabel = d.coaches.length ? 'Continue' : 'Skip — no preference'; }
     else if (step === 'review') { body = stepReview(d); nextLabel = 'Create my account'; S.returnToReview = false; }
     if (S.returnToReview && step !== 'review') nextLabel = 'Back to review';
-    var foot = '<button class="btn btn-primary" data-act="next" data-step="' + step + '"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spinner"></span>' : esc(nextLabel)) + '</button>';
+    var foot = '<button class="btn btn-primary" data-act="next" data-step="' + step + '"' + (S.busy || (step === 'payment' && !S.configOk) ? ' disabled' : '') + '>' + (S.busy ? '<span class="spinner"></span>' : esc(nextLabel)) + '</button>';
     return flowFrame({ steps: steps, step: step, body: body, foot: foot });
   }
 
@@ -815,8 +827,16 @@
 
   function stepPayment(d) {
     var c = S.config;
+    // Until the server answers, no prices, handles or pay links: during a beta this page is about
+    // to say "don't send any money" (and if it can't be reached, a saved copy may be out of date).
+    if (!S.configOk) {
+      return '<h1>Remote Participant</h1>' + (S.configLoaded
+        ? '<p class="lead">We can’t reach Koda right now, so the payment options can’t show yet.</p><button class="btn btn-secondary" data-act="config-retry">Try again</button>'
+        : '<p class="lead muted" role="status">Loading…</p>');
+    }
     // Beta test: the same choices, but nothing that sends money.
     var beta = !!betaInfo();
+    if (beta) d.sawBeta = true;
     var methods = [
       { id: 'venmo', title: 'Venmo', sub: c.venmo || 'Venmo', icon: 'phone' },
       { id: 'zelle', title: 'Zelle', sub: c.zelle || 'Zelle', icon: 'bank' },
@@ -839,7 +859,7 @@
         esc(d.payment === 'venmo' ? 'on Venmo to ' + c.venmo : d.payment === 'zelle' ? 'with Zelle to ' + c.zelle : 'by card') + '.</p></div>';
     }
     return '<h1>Remote Participant</h1><p class="lead">The full program from anywhere: daily coaching videos, your own checklist, nutrition guides, a Koda coach and a team. <b style="color:var(--text)">$' + esc(c.remotePrice) + '</b> for all ' + Math.round(c.lengthDays / 7) + ' weeks.</p>' +
-      (beta ? '<div class="callout callout-warn" style="margin-bottom:16px">' + icon('info') + '<span><b style="color:inherit">Beta test: don’t send any money.</b> Pick any option to see how it works. Beta sign-ups never pay.</span></div>' : '') +
+      (beta ? '<div class="callout callout-warn beta-pay" style="margin-bottom:16px">' + icon('info') + '<span><b style="color:inherit">Beta test: don’t send any money.</b> Pick any option to see how it works. Beta sign-ups never pay.</span></div>' : '') +
       '<div class="kicker" style="margin-bottom:10px">How would you like to pay?</div>' +
       '<div class="option-list">' + methods.map(function (m) {
         return '<button class="option' + (d.payment === m.id ? ' is-on' : '') + '" data-act="pay" data-method="' + m.id + '" aria-pressed="' + (d.payment === m.id) + '"><span class="o-icon">' + icon(m.icon) + '</span><span class="o-text"><span class="o-title">' + esc(m.title) + '</span><span class="o-sub">' + esc(m.sub) + '</span></span><span class="radio"></span></button>';
@@ -1100,7 +1120,7 @@
       // The beta link's flag goes as is (or the beta this page showed everyone): the server knows
       // whether a beta is open, and stops a beta sign-up that comes after it ended instead of making
       // it a real one.
-      email: d.email.trim(), password: S.password, shirt: d.shirt, size: d.size, setup: setupFromDraft(d), beta: !!store.get('res27.beta', false) || !!betaInfo(),
+      email: d.email.trim(), password: S.password, shirt: d.shirt, size: d.size, setup: setupFromDraft(d), beta: !!store.get('res27.beta', false) || !!betaInfo() || !!d.sawBeta,
     }).then(function (r) {
       S.busy = false;
       S.token = r.token;
@@ -1120,6 +1140,8 @@
       if (e.code === 'beta_over') {
         // The beta ended while this page was open: drop the beta, and go back over the real steps (payment included).
         store.del('res27.beta');
+        d.sawBeta = false;
+        saveDraft();
         S.config = Object.assign({}, S.config, { beta: null });
         store.set('res27.config', S.config);
         loadConfig();
@@ -1140,7 +1162,9 @@
       : prog.phase === 'during' && prog.dayNumber === 1 ? (prog.beta ? 'This is the beta test, and today is Day 1!' : 'Today is Day 1!')
       : prog.phase === 'during' ? (prog.beta ? 'This is the beta test. ' : '') + 'Day 1 was ' + fmtLong(prog.start) + ', so today is Day ' + prog.dayNumber + '.' +
         (open ? ' You can still fill in ' + (open === 1 ? 'yesterday' : 'the last ' + open + ' days') + '.' : '')
-      : 'The ' + (prog.beta ? 'beta test' : 'challenge') + ' ended ' + fmtLong(prog.end) + '.';
+      // A beta sign-up "after" it only happens on a phone whose midnight comes before Mountain time's.
+      : prog.beta ? 'You joined on the beta test’s last day, so you can still fill in its days until midnight tonight.'
+      : 'The challenge ended ' + fmtLong(prog.end) + '.';
     if (prog.beta) when += ' It’s all practice: beta accounts are deleted when the beta ends.';
     var btn = p.type === 'Remote' && !p.paid ? payButtons(p, false) : '';
     var how = p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle + ', with your name in the memo' : 'by card \u2014 ' + (c.cardUrl ? 'use the button below' : 'we\u2019ll email you a secure link');
@@ -2326,6 +2350,7 @@
     var rerender = function () { if (!editing) saveDraft(); render(); };
     switch (act) {
       case 'join-beta': store.set('res27.beta', true); render(); window.scrollTo(0, 0); break;
+      case 'config-retry': S.configLoaded = false; render(); loadConfig(); break;
       case 'board-view':
         S.boardView = el.dataset.view === 'week' ? 'week' : 'overall';
         render();
@@ -2338,6 +2363,8 @@
       case 'cookbook-retry': S.cookbookError = ''; loadCookbook(true); render(); break;
       case 'choose-type':
         S.draft.memberType = el.dataset.type;
+        // What the screen showed, even if the beta ended since it was painted.
+        S.draft.sawBeta = !!betaInfo() || !!document.querySelector('#app .l-beta-tag');
         if (el.dataset.type === 'member') S.draft.payment = '';
         S.errors = {}; S.formError = ''; saveDraft();
         go(el.dataset.type === 'remote' ? '#/join/payment' : '#/join/about');
@@ -2448,8 +2475,15 @@
 
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); S.installEvent = e; });
 
+  /** A signed-out page still showing a beta that has ended (by Mountain time) is painted again. */
+  function repaintEndedBeta() {
+    var waiting = store.get('res27.beta', false) && !S.configLoaded;
+    if (!waiting && !betaInfo() && document.querySelector('#app .l-beta-tag, #app .l-beta, #app .beta-pay')) render();
+  }
+
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState !== 'visible' || !S.token) return;
+    if (document.visibilityState !== 'visible') return;
+    if (!S.token) { repaintEndedBeta(); return; }
     var old = Date.now() - S.lastLoad > 10 * 60 * 1000;
     if (stale()) render(); // yesterday's screen locks until today's data arrives
     if (old || stale()) loadMe(true);
@@ -2459,6 +2493,7 @@
   // A tab left open past midnight: lock yesterday's screen and fetch today.
   setInterval(function () {
     if (S.token && S.me && document.visibilityState === 'visible' && stale()) { render(); loadMe(true); }
+    if (!S.token) repaintEndedBeta();
   }, 60000);
 
   /* ============================================================ start */

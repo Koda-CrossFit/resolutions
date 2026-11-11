@@ -505,6 +505,95 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log('SKIP the time-zone check: Kiritimati and Mountain time are on the same date right now (' + todayKey + ')');
   }
   await c10k.close();
+  // The server can't be reached on a first visit: the payment step shows no price, handle or pay
+  // link (a beta may be on), Continue waits, and "Try again" brings the real answer (here, the beta).
+  const c10f = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p10f = await c10f.newPage();
+  p10f.on('pageerror', (e) => errors.push(e.message));
+  const blockConfig = (route) => (/"action":"config"/.test(route.request().postData() || '') ? route.abort() : route.continue());
+  await p10f.route('**/api', blockConfig);
+  await p10f.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  await p10f.waitForSelector('[data-type="remote"]');
+  await wait(400);
+  await p10f.click('[data-type="remote"]');
+  await p10f.waitForSelector('[data-act="config-retry"]');
+  const offline = await p10f.evaluate(() => ({ html: document.querySelector('.flow-body').innerHTML, next: document.querySelector('[data-act="next"]').disabled }));
+  check('server unreachable: the payment step offers "Try again", no $99, no pay link, Continue waits',
+    !/\$99|venmo\.com|kevin-schuetz/.test(offline.html) && offline.next, JSON.stringify(offline).slice(0, 300));
+  await p10f.unroute('**/api', blockConfig);
+  await p10f.click('[data-act="config-retry"]');
+  await p10f.waitForSelector('.beta-pay');
+  check('…"Try again" gets the answer: this week that is the beta, nothing to pay', /Beta test: don’t send any money/.test(await p10f.textContent('.flow-body')) && !(await p10f.$('[data-act="next"][disabled]')));
+  await c10f.close();
+  // A page left open past the beta's end (review, 11/11): the landing stops showing the beta by
+  // Mountain time's date, and a sign-up that was shown it ("don't send any money") is bounced back
+  // to the real steps by the server, never quietly made a real $99 one.
+  const tomorrow8 = shift(todayKey, 1) + 'T08:00:00-07:00';
+  // (1) The beta landing is still on screen after Mountain midnight and someone taps a choice: that
+  // sign-up counts as shown the beta, so the server bounces it instead of making a real one quietly.
+  const c10t = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p10t = await c10t.newPage();
+  p10t.on('pageerror', (e) => errors.push(e.message));
+  await p10t.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  await p10t.waitForSelector('.l-beta');
+  await p10t.clock.setFixedTime(new Date(tomorrow8));
+  await p10t.click('[data-type="member"]');
+  await p10t.waitForSelector('[data-field="first"]');
+  const staleDraft = await p10t.evaluate(() => JSON.parse(localStorage.getItem('res27.draft') || '{}'));
+  check('a stale beta screen tapped after Mountain midnight still counts as shown the beta (the server will bounce it)', staleDraft.sawBeta === true, JSON.stringify({ sawBeta: staleDraft.sawBeta }));
+  await c10t.close();
+  // (2) The same screen, looked at again (no tap, no navigation): it's painted again without the beta.
+  const c10v = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p10v = await c10v.newPage();
+  p10v.on('pageerror', (e) => errors.push(e.message));
+  await p10v.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  await p10v.waitForSelector('.l-beta');
+  await p10v.clock.setFixedTime(new Date(tomorrow8));
+  await p10v.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await wait(300);
+  check('a landing page left open past Mountain midnight drops the ended beta when it’s looked at again', !(await p10v.$('.l-beta-tag')) && /Jan 18/.test(await p10v.textContent('.l-date')), await p10v.textContent('.l-date'));
+  await c10v.close();
+  const c10b = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p10b = await c10b.newPage();
+  p10b.on('pageerror', (e) => errors.push(e.message));
+  await p10b.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  await p10b.waitForSelector('.l-beta');
+  await p10b.click('[data-type="remote"]');
+  await p10b.click('[data-method="venmo"]');
+  check('late sign-up: during the beta its payment step says not to send money', /Beta test: don’t send any money/.test(await p10b.textContent('.flow-body')));
+  await p10b.click('[data-act="next"]');
+  await p10b.waitForSelector('[data-field="first"]');
+  await p10b.fill('[data-field="first"]', 'Late');
+  await p10b.fill('[data-field="last"]', 'Night');
+  await p10b.fill('[data-field="email"]', 'late.night@example.com');
+  await p10b.fill('[data-field="password"]', 'koda2027');
+  await p10b.click('[data-shirt="tee"]');
+  await p10b.click('[data-size="L"]');
+  await p10b.click('[data-act="next"]');
+  await p10b.click('[data-goal="health"]');
+  await p10b.click('[data-act="next"]');
+  await p10b.waitForSelector('[data-act="track"]');
+  for (const id of ['protein', 'hydration', 'finishers', 'skill', 'mobility', 'recovery', 'other']) await p10b.click(`[data-act="track"][data-id="${id}"][data-val="0"]`);
+  await p10b.click('[data-act="next"]');
+  await p10b.waitForSelector('[data-plan="recommended"]');
+  await p10b.click('[data-plan="recommended"]');
+  await p10b.click('[data-act="next"]');
+  await p10b.waitForSelector('[data-act="coach-none"], [data-act="coach"]');
+  await p10b.click('[data-act="next"]');
+  await p10b.waitForSelector('.review-sec');
+  // Mountain midnight passes before "Create my account".
+  await get('/dev/time?set=' + encodeURIComponent(tomorrow8));
+  await p10b.clock.setFixedTime(new Date(tomorrow8));
+  await p10b.click('[data-act="next"]');
+  await p10b.waitForSelector('.form-error', { timeout: 15000 });
+  await wait(300);
+  const lateRows = (await get('/dev/rows?tab=Participants')).filter((r) => r.Email === 'late.night@example.com');
+  const lateHtml = await p10b.innerHTML('.flow-body');
+  check('…sent after Mountain midnight it comes back to the real payment step (no account made), not a real $99 sign-up',
+    /beta test is over/i.test(await p10b.textContent('.form-error')) && /#\/join\/payment$/.test(p10b.url()) && lateRows.length === 0 && !/Beta test: don’t send any money/.test(lateHtml) && /venmo\.com/.test(lateHtml),
+    JSON.stringify({ url: p10b.url(), rows: lateRows.length, error: await p10b.textContent('.form-error') }));
+  await c10b.close();
+  await get('/dev/time?clear=1');
   await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: yesterday, beta_everyone: false } });
   await c7.close();
   await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: '' } });
