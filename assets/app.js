@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.4.0';
+  var APP_VERSION = '1.4.1';
 
   /* ============================================================ small helpers */
 
@@ -42,10 +42,14 @@
     if (/^(0|off|false|no)$/i.test(m[1] || '')) store.del('res27.beta');
     else store.set('res27.beta', true);
   })();
-  /** The beta test's dates when this phone came in through the beta link and a beta is running (not one that has ended since). */
+  /**
+   * The beta test's dates when a beta is running (not one that has ended since) and this phone came
+   * in through the beta link, or everyone who signs up joins it (beta_everyone in Settings).
+   */
   function betaInfo() {
-    var b = store.get('res27.beta', false) && S.config && S.config.beta ? S.config.beta : null;
-    return b && !(b.end < localToday()) ? b : null;
+    var b = S.config && S.config.beta ? S.config.beta : null;
+    if (!b || !(store.get('res27.beta', false) || b.everyone)) return null;
+    return b.end < localToday() ? null : b;
   }
   function weeksText(days) { return days % 7 ? plural(days, 'day') : plural(days / 7, 'week'); }
 
@@ -1087,9 +1091,10 @@
     render();
     api('register', {
       token: '', memberType: d.memberType, payment: d.memberType === 'remote' ? d.payment : '', first: d.first.trim(), last: d.last.trim(),
-      // The beta link's flag goes as is: the server knows whether a beta is open (and stops a beta
-      // sign-up that comes after it ended instead of making it a real one).
-      email: d.email.trim(), password: S.password, shirt: d.shirt, size: d.size, setup: setupFromDraft(d), beta: !!store.get('res27.beta', false),
+      // The beta link's flag goes as is (or the beta this page showed everyone): the server knows
+      // whether a beta is open, and stops a beta sign-up that comes after it ended instead of making
+      // it a real one.
+      email: d.email.trim(), password: S.password, shirt: d.shirt, size: d.size, setup: setupFromDraft(d), beta: !!store.get('res27.beta', false) || !!betaInfo(),
     }).then(function (r) {
       S.busy = false;
       S.token = r.token;

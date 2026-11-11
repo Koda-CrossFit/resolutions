@@ -10,7 +10,7 @@
  *   node dev/live.js purge-tests                      (every Test account, beta testers included)
  *   node dev/live.js purge-test <email>               (just that Test account)
  *   node dev/live.js setting <key> <value>            (one Settings value, via adminSetup)
- *   node dev/live.js beta <yyyy-mm-dd|off> [days]     (start or end the beta test)
+ *   node dev/live.js beta <yyyy-mm-dd|off> [days]     (start or end the beta test; off also turns beta_everyone off)
  */
 
 const fs = require('node:fs');
@@ -88,6 +88,8 @@ function realDay(text) {
     await needBeta();
     const settings = { beta_start: a === 'off' ? '' : a };
     if (b) settings.beta_days = Number(b);
+    // So the next beta starts out link-only again (beta_everyone is turned on by hand when wanted).
+    if (a === 'off') settings.beta_everyone = false;
     out = await post({ action: 'adminSetup', key, settings });
     // What the app now says (the settings cache can take up to a minute to catch up).
     const cfg = await post({ action: 'config' });

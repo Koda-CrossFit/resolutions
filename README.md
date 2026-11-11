@@ -112,6 +112,11 @@ Then send testers **https://koda-crossfit.github.io/resolutions/?beta=1**:
 - Have testers open the link in Safari/Chrome and sign up there first, then add it to the home
   screen and sign in once. (An iPhone home-screen app keeps its own storage; if someone starts there,
   the real landing page shows a "Here for the beta test? Join the beta" link while the beta is open.)
+- Testers on the plain link instead? Set `beta_everyone` to `TRUE`: while the beta is open, every
+  sign-up joins it (the landing page shows the beta to everyone, and even a page loaded earlier signs
+  up a Test account). Once the beta is over, sign-ups are real again either way. Someone who already
+  signed up for real can be moved over with `node dev/live.js set-type <email> Test`; type changes are
+  written to the Log tab ("Changed type", e.g. `Member → Test`), so you can move them back afterwards.
 - Every Test account goes through Days 1, 2, 3… of the plan on the real dates from `beta_start`. A day
   with no `Video URL` yet plays the 2026 video in `2026 Video (not shown)`, marked as a stand-in (only
   in the beta). A pasted link replaces it.
@@ -120,7 +125,7 @@ Then send testers **https://koda-crossfit.github.io/resolutions/?beta=1**:
   Beta testers keep their beta week until `beta_start` is cleared; after that their account says
   it's a test account that will be deleted.
 - Test rows stay out of the summary (it shows how many there are). End the beta with
-  `node dev/live.js beta off`, and clear every test account before launch with
+  `node dev/live.js beta off` (it also turns `beta_everyone` back off), and clear every test account before launch with
   `node dev/live.js purge-tests` (or one with `purge-test <email>`; while a beta runs, use that one
   for your own practice accounts, because `purge-tests` also removes every beta tester).
 

@@ -437,6 +437,47 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await p10.waitForSelector('.l-beta-tag');
   check('tapping "Join the beta" switches the landing page to the beta', /Nov/.test(await p10.textContent('.l-date')) && !(await p10.$('[data-act="join-beta"]')));
   await c10.close();
+  // beta_everyone (Kevin, 11/11): testers came in on the plain link and landed on January. With it on,
+  // the plain link shows the beta, and signing up there puts them on it, daily checklist and all.
+  check('dev world: beta_everyone on', (await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_everyone: true } })).ok);
+  const c10e = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
+  const p10e = await c10e.newPage();
+  p10e.on('pageerror', (e) => errors.push(e.message));
+  await p10e.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  await p10e.waitForSelector('.l-beta');
+  check('beta_everyone: the plain link shows the beta (tag, its dates, practice note), no "Join the beta" link',
+    !!(await p10e.$('.l-beta-tag')) && (await p10e.textContent('.l-date')).indexOf(shortDay(yesterday)) >= 0 && /practice/.test(await p10e.textContent('.l-beta')) && !(await p10e.$('[data-act="join-beta"]')));
+  await p10e.click('[data-type="member"]');
+  await p10e.waitForSelector('[data-field="first"]');
+  await p10e.fill('[data-field="first"]', 'Plain');
+  await p10e.fill('[data-field="last"]', 'Link');
+  await p10e.fill('[data-field="email"]', 'plain.link@example.com');
+  await p10e.fill('[data-field="password"]', 'koda2027');
+  await p10e.click('[data-shirt="tee"]');
+  await p10e.click('[data-size="L"]');
+  await p10e.click('[data-act="next"]');
+  await p10e.click('[data-goal="health"]');
+  await p10e.click('[data-act="next"]');
+  await p10e.waitForSelector('[data-act="track"]');
+  for (const id of ['protein', 'hydration', 'finishers', 'skill', 'mobility', 'recovery', 'other']) await p10e.click(`[data-act="track"][data-id="${id}"][data-val="0"]`);
+  await p10e.click('[data-act="next"]');
+  await p10e.waitForSelector('[data-plan="recommended"]');
+  await p10e.click('[data-plan="recommended"]');
+  await p10e.click('[data-act="next"]');
+  await p10e.waitForSelector('[data-act="coach-none"], [data-act="coach"]');
+  await p10e.click('[data-act="next"]');
+  await p10e.waitForSelector('.review-sec');
+  await p10e.click('[data-act="next"]');
+  await p10e.waitForSelector('#sheet', { timeout: 15000 });
+  check('beta_everyone: the welcome sheet says it is the beta', /This is the beta test/.test(await p10e.textContent('#sheet')));
+  await p10e.click('[data-act="close-sheet"]');
+  await p10e.waitForSelector('#overdueCard');
+  const plainPerson = (await get('/dev/rows?tab=Participants')).find((r) => r.Email === 'plain.link@example.com') || {};
+  check('beta_everyone: a plain-link sign-up gets the beta Today (Day 2 of 7, yesterday Overdue) as a Test account',
+    /Beta · Day 2 of 7/.test(await p10e.textContent('.day-pill')) && (await p10e.$$('#checklistCard .ci')).length >= 4 && plainPerson.Type === 'Test' && /Beta test sign-up/.test(plainPerson.Notes || ''), JSON.stringify({ type: plainPerson.Type, notes: plainPerson.Notes }));
+  await p10e.screenshot({ path: path.join(OUT, 'beta-08-plain-link-today.png'), fullPage: true });
+  await c10e.close();
+  await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_everyone: false } });
   await c7.close();
   await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: '' } });
   // Beta over and turned off: a beta tester's account now looks like a January sign-up, so it says it isn't one.

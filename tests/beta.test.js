@@ -57,7 +57,7 @@ function setSetting(gas, key, value) {
 test('beta link sign-ups go through Nov 9 – 15 on the real dates; everyone else keeps Jan 18', () => {
   const { gas, post } = world(TUESDAY, BETA);
   const cfg = post({ action: 'config' }).config;
-  assert.deepEqual(cfg.beta, { start: '2026-11-09', end: '2026-11-15', days: 7 });
+  assert.deepEqual(cfg.beta, { start: '2026-11-09', end: '2026-11-15', days: 7, everyone: false });
   assert.equal(cfg.startDate, '2027-01-18', 'the real challenge dates stay put');
 
   const r = signUp(post);
@@ -252,4 +252,59 @@ test('purging one test account by email leaves everyone else', () => {
   assert.equal(post({ action: 'adminPurgeTests', key: ADMIN, email: 'm@example.com' }).error, 'No Test participant with that email.', 'never a member');
   assert.equal(post({ action: 'adminPurgeTests', key: ADMIN, email: 'not-an-email' }).ok, false);
   assert.equal(gas.rows('Participants').length, 2);
+});
+
+test('beta_everyone: while the beta is open every sign-up joins it, link or not; after it, sign-ups are real again (Kevin, 11/11)', () => {
+  const { gas, post } = world(TUESDAY, Object.assign({ beta_everyone: true }, BETA));
+  assert.deepEqual(post({ action: 'config' }).config.beta, { start: '2026-11-09', end: '2026-11-15', days: 7, everyone: true });
+
+  // The plain link (or a page loaded before the switch): no beta flag at all.
+  const plain = signUp(post, { email: 'plain@example.com', beta: false });
+  assert.equal(plain.ok, true, plain.error);
+  const p = plain.me.program;
+  assert.equal(plain.me.person.type, 'Test');
+  assert.deepEqual([p.start, p.length, p.dayNumber, p.beta], ['2026-11-09', 7, 2, true], 'Day 2 of the beta, with the daily checklist');
+  assert.deepEqual(Object.keys(plain.me.checklists).sort(), ['2026-11-09', '2026-11-10']);
+  assert.match(gas.rows('Participants')[0]['Notes'], /Beta test sign-up \(chose Koda Member\)/);
+  assert.match(gas.state.mail[gas.state.mail.length - 1].subject, /You’re in the beta/);
+
+  // A remote sign-up from the plain link never owes anything during the beta.
+  const remote = signUp(post, { email: 'remote.plain@example.com', memberType: 'remote', payment: 'venmo', beta: false });
+  assert.equal(remote.me.person.type, 'Test');
+  assert.equal(remote.me.payUrl, '');
+  const rrow = gas.rows('Participants').find((r) => r.Email === 'remote.plain@example.com');
+  assert.deepEqual([rrow['Payment'], rrow['Paid']], ['', 'n/a']);
+  assert.equal(post({ action: 'adminSummary', key: ADMIN }).total, 0, 'nobody counted as a real sign-up');
+
+  // Monday after the beta: the setting can stay on, and sign-ups are real again.
+  gas.setNow('2026-11-16T09:00:00-07:00');
+  assert.equal(post({ action: 'config' }).config.beta, null);
+  const after = signUp(post, { email: 'after@example.com', beta: false });
+  assert.equal(after.me.person.type, 'Member');
+  assert.deepEqual([after.me.program.start, after.me.program.beta], ['2027-01-18', false]);
+  assert.equal(signUp(post, { email: 'late.beta@example.com' }).code, 'beta_over', 'an old beta page is still stopped');
+});
+
+test('beta_everyone off (the default): only the beta link joins the beta', () => {
+  const { post } = world(TUESDAY, BETA);
+  assert.equal(post({ action: 'config' }).config.beta.everyone, false);
+  assert.equal(signUp(post, { email: 'plain@example.com', beta: false }).me.person.type, 'Member');
+  assert.equal(signUp(post, { email: 'link@example.com' }).me.person.type, 'Test');
+});
+
+test('changing someone’s type is written to the Log tab (who was moved onto the beta)', () => {
+  const { gas, post } = world(TUESDAY, BETA);
+  signUp(post, { email: 'moved@example.com', beta: false });
+  const out = post({ action: 'adminSetType', key: ADMIN, email: 'Moved@Example.com', participantType: 'Test' });
+  assert.equal(out.ok, true, out.error);
+  assert.deepEqual([out.was, out.type], ['Member', 'Test']);
+  const me = post({ action: 'login', email: 'moved@example.com', password: 'secret1' });
+  assert.equal(me.ok, true, me.error);
+  assert.deepEqual([me.me.person.type, me.me.program.beta, me.me.program.dayNumber], ['Test', true, 2], 'on the beta right away');
+  const changes = () => gas.rows('Log').filter((r) => r.What === 'Changed type');
+  assert.equal(changes().length, 1);
+  assert.equal(changes()[0].Who, 'moved@example.com');
+  assert.equal(changes()[0].Detail, 'Member → Test');
+  post({ action: 'adminSetType', key: ADMIN, email: 'moved@example.com', participantType: 'Test' });
+  assert.equal(changes().length, 1, 'no change, no new line');
 });

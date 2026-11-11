@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.5.0 (2026-11-11)';
+var RES27_VERSION = '1.6.0 (2026-11-11)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -163,8 +163,9 @@ var RES27_SETTINGS_DEFAULTS = [
   ['coach_emails', '', 'Where "Ask a question" (FAQs page) goes for each coach, one per line or comma-separated, like  Riley: riley@example.com. The person’s Coach column picks the coach. No coach, or a coach not listed here: it goes to contact_email. Every question is also kept on the Questions tab'],
   ['show_upcoming_titles', false, 'TRUE shows the titles of videos that have not unlocked yet'],
   ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-21. Blank = the real date. Ignored while a beta test is set (beta_start), so beta testers always see the real date'],
-  ['beta_start', '', 'Beta test: Day 1 of a practice run, e.g. 2026-11-09. Everyone who signs up through the beta link (the app link with ?beta=1 on the end) becomes a Test account, and every Test account goes through Days 1, 2, 3… on the real dates from here. Blank = no beta test'],
+  ['beta_start', '', 'Beta test: Day 1 of a practice run, e.g. 2026-11-09. Everyone who signs up through the beta link (the app link with ?beta=1 on the end), or anyone at all while beta_everyone is TRUE, becomes a Test account, and every Test account goes through Days 1, 2, 3… on the real dates from here. Blank = no beta test'],
   ['beta_days', 7, 'How many days the beta test runs (1 to 42)'],
+  ['beta_everyone', false, 'TRUE: while the beta test is open, everyone who signs up joins it as a Test account, with or without the beta link (the sign-up page shows the beta to everyone). FALSE: only the beta link does. Once the beta is over, sign-ups are real again either way'],
 ];
 // edit_days_back: replaced 11/11/2026 by the weekly window (a week stays open until midnight the Monday after it).
 var RES27_RETIRED_SETTINGS = ['venmo_url', 'edit_days_back'];
@@ -641,8 +642,9 @@ function res27PublicConfig_(cfg) {
     sleepChoices: RES27_SLEEP_CHOICES,
     finisherChoices: RES27_FINISHER_CHOICES,
     points: RES27_POINTS,
-    // The beta test's dates, for the beta link's landing page (null when there's no beta).
-    beta: beta ? { start: beta.start, end: res27AddDays_(beta.start, beta.length - 1), days: beta.length } : null,
+    // The beta test's dates, for the beta link's landing page (null when there's no beta). With
+    // everyone (beta_everyone), every sign-up joins it, so the landing page shows it to everyone.
+    beta: beta ? { start: beta.start, end: res27AddDays_(beta.start, beta.length - 1), days: beta.length, everyone: res27Truthy_(cfg.beta_everyone) } : null,
   };
 }
 
@@ -1487,10 +1489,11 @@ function res27Register_(d) {
   var size = String(d.size || '');
   if (RES27_SIZES[shirt].indexOf(size) < 0) res27Fail_('Choose your ' + RES27_SHIRTS[shirt] + ' size.');
   var setup = res27CleanSetup_(d.setup, cfg);
-  // Through the beta link while a beta test is open: a Test account (no payment, left out of the
-  // summary, cleared before launch). A beta page sent after the beta ended is stopped, so a
-  // practice sign-up never quietly turns into a real one that owes $99; the app reloads and asks again.
-  var beta = d.beta === true ? res27BetaOpen_(cfg) : null;
+  // Through the beta link while a beta test is open (or any sign-up then, with beta_everyone on,
+  // even from a page loaded before it was): a Test account (no payment, left out of the summary,
+  // cleared before launch). A beta page sent after the beta ended is stopped, so a practice
+  // sign-up never quietly turns into a real one that owes $99; the app reloads and asks again.
+  var beta = d.beta === true || res27Truthy_(cfg.beta_everyone) ? res27BetaOpen_(cfg) : null;
   if (d.beta === true && !beta) {
     res27Fail_('The beta test is over, so this would be a real sign-up for the challenge. Check your details, then tap Create my account again.', 'beta_over');
   }
@@ -2486,8 +2489,15 @@ function res27AdminSetType_(d) {
   var type = String(d.participantType || '');
   if (['Member', 'Remote', 'Test'].indexOf(type) < 0) res27Fail_('participantType must be Member, Remote or Test.');
   res27AssertRow_('participants', row._row, 'Email', email);
+  var was = String(row['Type'] || '').trim();
   res27UpdateRow_('participants', row._row, { 'Type': type });
-  return { ok: true };
+  // On the Log tab, so after a beta it's clear who signed up for real before being moved onto it.
+  if (was !== type) {
+    try {
+      res27Log_(email, 'Changed type', (was || '(blank)') + ' → ' + type);
+    } catch (e) {}
+  }
+  return { ok: true, was: was, type: type };
 }
 
 /**
