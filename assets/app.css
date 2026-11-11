@@ -43,6 +43,7 @@
   --warn-bg: #fdf3dc;
   --bad: #b42318;
   --bad-bg: #fdecea;
+  --on-bad: #ffffff;
   --silver-sheen: linear-gradient(135deg, #f6f8fa 0%, #dde2e8 45%, #f3f5f8 70%, #cfd6de 100%);
 
   --radius-xl: 22px;
@@ -89,6 +90,7 @@
     --warn-bg: #33270d;
     --bad: #ff8a80;
     --bad-bg: #3a1513;
+    --on-bad: #2b0d0b;
     --silver-sheen: linear-gradient(135deg, #1a2a3e 0%, #24384f 50%, #182739 100%);
     --silver-200: #2b3f57;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -351,7 +353,7 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
 .ci:first-child { border-top: 0; }
 .ci-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--surface-3); color: var(--muted); display: grid; place-items: center; transition: background .2s, color .2s; }
 .ci.is-done .ci-icon { background: var(--yes); color: var(--on-yes); }
-.ci.is-no .ci-icon { background: var(--no); color: var(--on-no); }
+.ci.is-no .ci-icon { background: var(--bad-bg); color: var(--bad); }
 .ci-label { font-weight: 600; font-size: 15px; line-height: 1.3; }
 .ci-sub { font-size: 13px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
 .ci.is-bonus .ci-icon { background: var(--silver-sheen); color: var(--navy-900); border: 1px solid var(--border); }
@@ -359,13 +361,21 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
 .yn-btn { min-width: 58px; height: 40px; padding: 0 12px; border-radius: 11px; border: 1px solid var(--border-strong); background: var(--surface); font-weight: 700; font-size: 14px; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background .15s, color .15s, border-color .15s; }
 .yn-btn:hover { border-color: var(--silver-400); color: var(--text); }
 .yn-btn.yes.is-on { background: var(--yes); border-color: var(--yes); color: var(--on-yes); }
-.yn-btn.no.is-on { background: var(--no); border-color: var(--no); color: var(--on-no); }
+/* A chosen No is as plain to see as a chosen Yes (Kevin, 11/11: the light grey was hard to tell). */
+.yn-btn.no.is-on { background: var(--on-no); border-color: var(--on-no); color: var(--surface); }
+/* On the daily checklist a No is a miss: red, with an ✕ (meal chips already draw their own). */
+.ci .yn-btn.no.is-on, .meal.is-off { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
+.ci .yn-btn.no.is-on::before {
+  content: ''; width: 13px; height: 13px; flex: none; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 .yn-btn .ico-sm { width: 15px; height: 15px; }
 .yn[aria-disabled='true'] { opacity: .55; pointer-events: none; }
 .ci-meals { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
 .meal { height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed var(--border-strong); background: var(--surface); font-weight: 600; font-size: 13.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 .meal.is-on { background: var(--yes); color: var(--on-yes); border: 1px solid var(--yes); }
-.meal.is-off { background: var(--no); color: var(--on-no); border: 1px solid var(--no); }
+.meal.is-off { border-style: solid; }
 .meal .ico-sm { width: 14px; height: 14px; }
 .meals-all { height: 36px; padding: 0 10px; border: 0; background: none; color: var(--brand-2); font-weight: 700; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .ci .ci-wide { grid-column: 1 / -1; }
@@ -374,7 +384,7 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
   .ci-icon { width: 36px; height: 36px; border-radius: 10px; }
   .ci-icon .ico { width: 18px; height: 18px; }
   .yn-btn { min-width: 50px; padding: 0 10px; height: 38px; }
-  .yn-btn.is-on .ico-sm { display: none; }
+  .yn-btn.is-on .ico-sm, .ci .yn-btn.no.is-on::before { display: none; }
   .perfect { margin: 4px 16px 16px; }
 }
 @media (max-width: 350px) {
