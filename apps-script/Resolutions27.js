@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.4.0 (2026-11-10)';
+var RES27_VERSION = '1.5.0 (2026-11-11)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -126,6 +126,14 @@ var RES27_TABS = {
     widths: { 'Setting': 190, 'Value': 300, 'What it does': 460 },
     hidden: [],
   },
+  questions: {
+    name: 'Questions',
+    headers: ['When', 'ID', 'Name', 'Email', 'Team', 'Coach', 'Sent To', 'Question', 'Emailed'],
+    dates: ['When'],
+    numbers: [],
+    widths: { 'Name': 150, 'Email': 210, 'Sent To': 210, 'Question': 480 },
+    hidden: [],
+  },
   log: {
     name: 'Log',
     headers: ['When', 'Who', 'What', 'Detail'],
@@ -148,17 +156,18 @@ var RES27_SETTINGS_DEFAULTS = [
   ['coaches', 'Kevin, Riley, Jamie, Maggie', 'Coaches people rank at sign-up, comma-separated, in the order shown'],
   ['contact_email', 'kodaironview@gmail.com', 'Where participants send questions (also the reply-to on emails)'],
   ['site_url', 'https://koda-crossfit.github.io/resolutions/', 'The app link used in emails'],
-  ['edit_days_back', 2, 'How many days back people can still change a check-in (0 = today only)'],
   ['shirt_changes_until', '', 'Last day people can change their shirt style or size, e.g. 2026-12-15 (blank = any time)'],
   ['cookbook_url', 'https://docs.google.com/document/d/1GYO72pgnYteRCpjKJSa0rvk4ZRN1DRvGElrm0lFWy6o/edit?usp=sharing', 'The Koda Cookbook link on the Nutrition tab'],
   ['welcome_email', true, 'TRUE sends a welcome email after sign-up'],
   ['notify_email', '', 'Optional: also email this address about every new sign-up'],
+  ['coach_emails', '', 'Where "Ask a question" (FAQs page) goes for each coach, one per line or comma-separated, like  Riley: riley@example.com. The person’s Coach column picks the coach. No coach, or a coach not listed here: it goes to contact_email. Every question is also kept on the Questions tab'],
   ['show_upcoming_titles', false, 'TRUE shows the titles of videos that have not unlocked yet'],
   ['preview_today', '', 'Test accounts (Type = Test on Participants) see this date as today, e.g. 2027-01-21. Blank = the real date. Ignored while a beta test is set (beta_start), so beta testers always see the real date'],
   ['beta_start', '', 'Beta test: Day 1 of a practice run, e.g. 2026-11-09. Everyone who signs up through the beta link (the app link with ?beta=1 on the end) becomes a Test account, and every Test account goes through Days 1, 2, 3… on the real dates from here. Blank = no beta test'],
   ['beta_days', 7, 'How many days the beta test runs (1 to 42)'],
 ];
-var RES27_RETIRED_SETTINGS = ['venmo_url'];
+// edit_days_back: replaced 11/11/2026 by the weekly window (a week stays open until midnight the Monday after it).
+var RES27_RETIRED_SETTINGS = ['venmo_url', 'edit_days_back'];
 
 var RES27_REQ_ = {};
 
@@ -213,6 +222,7 @@ function res27Route_(d) {
     password: res27ChangePassword_,
     signoutAll: res27SignOutAll_,
     leaderboard: res27Leaderboard_,
+    ask: res27Ask_,
   };
   var admin = {
     adminSetup: res27AdminSetup_,
@@ -626,7 +636,6 @@ function res27PublicConfig_(cfg) {
     contactEmail: String(cfg.contact_email || ''),
     siteUrl: String(cfg.site_url || ''),
     cookbookUrl: String(cfg.cookbook_url || ''),
-    editDaysBack: Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0)),
     shirtChangesUntil: res27ParseDateKey_(cfg.shirt_changes_until) || '',
     sizes: RES27_SIZES,
     sleepChoices: RES27_SLEEP_CHOICES,
@@ -729,6 +738,23 @@ function res27YouTubeId_(url) {
   return m ? m[1] : '';
 }
 
+/**
+ * The first day that can still be filled in or changed (Kevin, 11/11/2026): each challenge week
+ * (7 days from Day 1, Monday–Sunday) stays open until midnight on the first day after it, the
+ * Monday. Kevin pulls the scores then and tallies them Tuesday morning. So on a week's first day
+ * last week is still open; from its second day on, only this week.
+ */
+function res27OpenFrom_(start, today) {
+  var yesterday = res27DiffDays_(start, today) - 1;
+  if (yesterday < 0) return start;
+  return res27AddDays_(start, Math.floor(yesterday / 7) * 7);
+}
+
+/** "Monday" for a yyyy-MM-dd key. */
+function res27WeekdayName_(key) {
+  return Utilities.formatDate(new Date(res27KeyToUtc_(key) + 12 * 3600000), 'UTC', 'EEEE');
+}
+
 function res27Program_(cfg, person, clientToday) {
   // While a beta test is set, Test accounts go through it instead, on the real dates.
   var beta = person && person.type === 'Test' ? res27Beta_(cfg) : null;
@@ -745,9 +771,10 @@ function res27Program_(cfg, person, clientToday) {
   if (person && person.type === 'Test' && preview) today = preview;
   var dayNumber = res27DiffDays_(start, today) + 1;
   var phase = dayNumber < 1 ? 'before' : dayNumber > length ? 'after' : 'during';
-  var back = Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0));
-  var editFrom = res27AddDays_(today, -back);
-  if (editFrom < start) editFrom = start;
+  // The week locks at midnight Mountain time (when Kevin pulls the scores) or at the phone's own
+  // midnight, whichever comes first, so a phone that's a day behind Denver can't reopen last week.
+  var lockDay = person && person.type === 'Test' && preview ? today : serverToday > today ? serverToday : today;
+  var editFrom = res27OpenFrom_(start, lockDay);
   var editTo = today < end ? today : end;
   return {
     start: start,
@@ -1220,20 +1247,41 @@ function res27SetFinisher_(units, f) {
 }
 
 /**
- * A week's last day keeps the finisher goal that week really had. When it's first filled in after
- * the week is over (Sunday caught up on Monday), its finisher comes from the latest logged day of
- * that week, or is left off if that day had none, so a setup change made since can't add, drop or
- * move the penalty. Today's own last day follows the setup as usual.
+ * A finished week keeps the finisher goal it really had. When one of its days is first filled in
+ * after the week is over (caught up on the Monday), its finisher comes from that week's entries
+ * saved while the week was on (the latest one), else from its nearest earlier logged day in that
+ * week, else today's setup. So a setup change made since can't add, drop or move that week's
+ * finishers or its Sunday penalty. Days of the current week follow the setup as usual.
  */
 function res27WeekEndUnits_(person, program, date, units) {
-  if (res27WeekEnd_(program, date) !== date || date >= program.today) return units;
-  for (var i = 1; i < 7; i++) {
-    var e = person.history[res27AddDays_(date, -i)];
-    if (e && e.u && e.u.length) {
-      return res27SetFinisher_(units, e.u.filter(function (u) {
-        return u[0] === 'finisher';
-      })[0] || null);
+  var index = res27DiffDays_(program.start, date);
+  if (index < 0) return units;
+  var from = res27AddDays_(program.start, Math.floor(index / 7) * 7);
+  var last = res27AddDays_(from, 6);
+  if (last >= program.today) return units;
+  var finisherOf = function (e) {
+    return e.u.filter(function (u) {
+      return u[0] === 'finisher';
+    })[0] || null;
+  };
+  var during = null;
+  var duringT = -1;
+  for (var i = 0; i < 7; i++) {
+    var d = res27AddDays_(from, i);
+    var e = d === date ? null : person.history[d];
+    if (!e || !e.u || !e.u.length) continue;
+    var t = Number(e.t) || 0;
+    if (t > duringT && Utilities.formatDate(new Date(t), RES27_TZ, 'yyyy-MM-dd') <= last) {
+      during = e;
+      duringT = t;
     }
+  }
+  if (during) return res27SetFinisher_(units, finisherOf(during));
+  for (var j = 1; j < 7; j++) {
+    var before = res27AddDays_(date, -j);
+    if (before < from) break;
+    var p = person.history[before];
+    if (p && p.u && p.u.length) return res27SetFinisher_(units, finisherOf(p));
   }
   return units;
 }
@@ -1330,9 +1378,15 @@ function res27EditableChecklists_(person, program, content, cfg) {
     if (n < 1 || n > program.length) continue;
     var day = res27DayPublic_(n, program, content, cfg);
     var saved = person.history[date];
-    if (saved && saved.u && saved.u.length) out[date] = res27ItemsForUnits_(person, day, res27SyncBonus_(saved.u, day));
-    else if (res27WeekEnd_(program, date) === date && date < program.today) out[date] = res27ItemsForUnits_(person, day, res27WeekEndUnits_(person, program, date, res27UnitsOf_(res27Checklist_(person, day))));
-    else out[date] = res27Checklist_(person, day);
+    if (saved && saved.u && saved.u.length) {
+      out[date] = res27ItemsForUnits_(person, day, res27SyncBonus_(saved.u, day));
+    } else {
+      // A day of a finished week shows the finisher that week really had (see res27WeekEndUnits_).
+      var fresh = res27Checklist_(person, day);
+      var units = res27UnitsOf_(fresh);
+      var kept = res27WeekEndUnits_(person, program, date, units);
+      out[date] = kept === units ? fresh : res27ItemsForUnits_(person, day, kept);
+    }
   }
   return out;
 }
@@ -1359,7 +1413,7 @@ function res27Bootstrap_(person, clientToday) {
   for (var n = 1; n <= program.length; n++) days.push(res27DayPublic_(n, program, content, cfg));
   var checklists = res27EditableChecklists_(person, program, content, cfg);
   return {
-    person: res27PublicPerson_(person),
+    person: Object.assign(res27PublicPerson_(person), { askToCoach: !!res27CoachEmail_(cfg, person.coach) }),
     program: program,
     config: res27PublicConfig_(cfg),
     days: days,
@@ -1676,8 +1730,7 @@ function res27Save_(d, auth) {
   if (date > program.today) res27Fail_('You can’t check in for a day that hasn’t happened yet.', 'locked_day');
   if (date > program.end || n > program.length) res27Fail_('That day is after the challenge ended.', 'locked_day');
   if (date < program.editFrom) {
-    var back = Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0));
-    res27Fail_(back ? 'That day is locked. You can change today and the ' + (back === 1 ? 'day' : back + ' days') + ' before it.' : 'That day is locked. You can only change today.', 'locked_day');
+    res27Fail_('That week is locked. Each week stays open until midnight on the ' + res27WeekdayName_(program.start) + ' after it.', 'locked_day');
   }
   var raw = d.answers && typeof d.answers === 'object' ? d.answers : {};
   var patch = d.patch === true;
@@ -1876,6 +1929,97 @@ function res27SignOutAll_(d, auth) {
   return { ok: true };
 }
 
+/* ================================================================ ask your coach ==== */
+
+var RES27_ASK_MAX = 2000;
+var RES27_ASK_PER_HOUR = 5;
+var RES27_ASK_PER_DAY = 20;
+var RES27_ASK_ALL_PER_HOUR = 40; // the whole app, so questions can't use up the shared daily email allowance
+
+/** coach_emails from Settings ("Riley: riley@x.com, Maggie: maggie@x.com" or one per line) as { riley: 'riley@x.com' }. */
+function res27CoachEmails_(cfg) {
+  var out = {};
+  String(cfg.coach_emails || '').split(/[\n,;]+/).forEach(function (part) {
+    var m = /^\s*(.+?)\s*[:=]\s*<?(\S+@[^\s>]+)>?\s*$/.exec(part) || /^\s*(.+?)\s+<?(\S+@[^\s>]+)>?\s*$/.exec(part);
+    if (!m) return;
+    var name = res27CleanText_(m[1], 60).toLowerCase();
+    var email = res27CleanEmail_(m[2]);
+    if (name && email) out[name] = email;
+  });
+  return out;
+}
+
+/** The email for a person's coach (Participants Coach column): the full name, else a unique first-name match. '' if none. */
+function res27CoachEmail_(cfg, coach) {
+  var map = res27CoachEmails_(cfg);
+  var key = res27CleanText_(coach, 60).toLowerCase();
+  if (!key) return '';
+  if (map[key]) return map[key];
+  // A first-name match only when one side is just a first name ("Riley" vs "Riley Smith"); two
+  // different last names ("Riley Jones" vs "Riley Smith") are different coaches.
+  var first = key.split(' ')[0];
+  var bare = key.indexOf(' ') < 0;
+  var hits = Object.keys(map).filter(function (k) {
+    return k.split(' ')[0] === first && (bare || k.indexOf(' ') < 0);
+  });
+  return hits.length === 1 ? map[hits[0]] : '';
+}
+
+/**
+ * "Ask a question" on the FAQs page (Kevin, 11/11/2026): the question is emailed to the person's
+ * coach, with Reply-To set to the person so the coach just answers it. No coach yet (or no email
+ * for that coach): it goes to contact_email. Every question is also kept on the Questions tab.
+ * The coach's address never goes back to the app.
+ */
+function res27Ask_(d, auth) {
+  var cfg = res27Settings_();
+  var p = auth.person;
+  var q = String(d.question || '').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  if (q.length < 3) res27Fail_('Type your question first.', 'bad_question');
+  if (q.length > RES27_ASK_MAX) res27Fail_('That’s a long one. Please keep it under ' + RES27_ASK_MAX + ' characters.', 'bad_question');
+  var hour = Utilities.formatDate(new Date(res27Now_()), RES27_TZ, 'yyyy-MM-dd-HH');
+  var dayAgo = res27Now_() - 86400000;
+  var lastDay = 0;
+  try {
+    lastDay = res27AllRows_('questions').filter(function (r) {
+      return String(r['ID']).trim() === p.id && res27Time_(r['When']) > dayAgo;
+    }).length;
+  } catch (e) {
+    /* no Questions tab yet (setup adds it): no daily count */
+  }
+  if (res27Count_('res27:ask:h:' + p.id + ':' + hour) >= RES27_ASK_PER_HOUR || lastDay >= RES27_ASK_PER_DAY) {
+    res27Fail_('That’s a lot of questions for one day. Please wait a little, or email ' + cfg.contact_email + '.', 'busy_asks');
+  }
+  if (res27Count_('res27:ask:all:' + hour) >= RES27_ASK_ALL_PER_HOUR) {
+    res27Fail_('Lots of questions are coming in right now. Please try again in a little while, or email ' + cfg.contact_email + '.', 'busy_asks');
+  }
+  res27Bump_('res27:ask:h:' + p.id + ':' + hour, 3700);
+  res27Bump_('res27:ask:all:' + hour, 3700);
+  var coach = res27CleanText_(p.coach, 60);
+  var coachEmail = res27CoachEmail_(cfg, coach);
+  var to = coachEmail || res27CleanEmail_(cfg.contact_email);
+  var name = p.first + ' ' + p.last;
+  var program = res27Program_(cfg, p, d.today);
+  var when = program.phase === 'during' ? 'Day ' + program.dayNumber + ' of ' + program.length : program.phase === 'before' ? 'before Day 1' : 'after the challenge';
+  var note = coachEmail ? '' : coach ? 'Coach ' + coach + ' has no email in coach_emails (Settings) yet, so this came to the gym.' : 'No coach is assigned yet, so this came to the gym.';
+  var html = res27EmailFrame_(cfg, 'A question from ' + name,
+    '<div style="background:#F0F2F5;border-radius:12px;padding:14px 16px;margin:0 0 16px;font-size:15px;color:#0F1925">' + res27Html_(q).replace(/\n/g, '<br>') + '</div>' +
+    '<p style="margin:0 0 6px"><b>' + res27Html_(name) + '</b> · ' + res27Html_(p.email) + (p.team ? ' · Team ' + res27Html_(p.team) : '') + ' · ' + res27Html_(when) + '</p>' +
+    (note ? '<p style="margin:0 0 6px;color:#5F6B7A">' + res27Html_(note) + '</p>' : '') +
+    '<p style="margin:12px 0 0;color:#5F6B7A">Reply to this email to answer ' + res27Html_(p.first) + ' directly.</p>');
+  var text = q + '\n\n- ' + name + ' (' + p.email + ')' + (note ? '\n' + note : '') + '\nReply to this email to answer ' + p.first + ' directly.';
+  var subject = (p.type === 'Test' ? '[Beta] ' : '') + 'Resolutions question from ' + name;
+  var sent = to ? res27Mail_(cfg, to, subject, html, text, RES27_MAIL_RESERVE, p.email) : false;
+  var kept = true;
+  try {
+    res27AppendRow_('questions', { 'When': new Date(res27Now_()), 'ID': p.id, 'Name': name, 'Email': p.email, 'Team': p.team, 'Coach': coach, 'Sent To': to, 'Question': q, 'Emailed': sent ? 'Sent' : 'NOT SENT' });
+  } catch (e) {
+    kept = false;
+  }
+  if (!sent && !kept) res27Fail_('That didn’t go through. Please try again in a minute, or email ' + cfg.contact_email + '.', 'server');
+  return { ok: true, sent: sent, to: coachEmail ? 'coach' : 'gym', coach: coachEmail && sent ? coach : '' };
+}
+
 /* ================================================================ leaderboard ==== */
 
 var RES27_BOARD_SECONDS = 120;
@@ -1985,7 +2129,7 @@ function res27EmailFrame_(cfg, heading, bodyHtml) {
  * Sends one email as the script owner. `reserve` keeps that many of the account's daily sends for
  * Koda's other sign-up pages. Anything not sent is written to the Log tab, so it can be resent.
  */
-function res27Mail_(cfg, to, subject, htmlBody, textBody, reserve) {
+function res27Mail_(cfg, to, subject, htmlBody, textBody, reserve, replyTo) {
   if (!to) return false;
   var why = '';
   try {
@@ -1994,7 +2138,7 @@ function res27Mail_(cfg, to, subject, htmlBody, textBody, reserve) {
       why = 'daily email limit (' + left + ' left)';
     } else {
       var message = { to: to, subject: subject, htmlBody: htmlBody, body: textBody || '', name: 'Koda Resolutions' };
-      if (cfg.contact_email) message.replyTo = String(cfg.contact_email);
+      if (replyTo || cfg.contact_email) message.replyTo = String(replyTo || cfg.contact_email);
       MailApp.sendEmail(message);
       return true;
     }
@@ -2032,12 +2176,11 @@ function res27SendWelcome_(cfg, p) {
   var sent = false;
   if (res27Truthy_(cfg.welcome_email) && beta) {
     var betaEnd = res27AddDays_(beta.start, beta.length - 1);
-    var back = Math.max(0, Math.min(14, parseInt(cfg.edit_days_back, 10) || 0));
     var betaLink = site ? site + (site.indexOf('?') >= 0 ? '&' : '?') + 'beta=1' : '';
     var betaBody = '<p style="margin:0 0 14px">Hi ' + res27Html_(p.first) + ', you’re in the <b>beta test</b> of the Resolutions app. It runs <b>' + res27DayText_(beta.start) + ' – ' + res27DayText_(betaEnd) +
       '</b> on the real dates, so you can try ' + (beta.length === 7 ? 'a week' : beta.length === 1 ? 'a day' : beta.length + ' days') + ' of check-ins before the challenge.</p>' +
       '<p style="margin:0 0 14px">Each day, open the app, watch the video and tap Yes or No on your list. ' +
-      (back ? 'A day you miss shows up as <b>Overdue</b>, and you can still fill it in for ' + (back === 1 ? '1 more day' : back + ' more days') + '.' : 'A day you don’t finish locks at midnight.') + '</p>' +
+      'A day you miss shows up as <b>Overdue</b>, and you can still fill it in until midnight on ' + res27WeekdayName_(beta.start) + ', when the week’s scores are pulled.</p>' +
       (betaLink ? '<p style="margin:0 0 18px"><a href="' + res27Html_(betaLink) + '" style="display:inline-block;background:#0C1A2B;color:#FFFFFF;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600">Open the app</a></p>' : '') +
       '<p style="margin:0;color:#5F6B7A">Everything in the beta is practice. Beta accounts are deleted before the real challenge starts ' + startText + ', so you’ll sign up again for that one.</p>';
     sent = res27Mail_(cfg, p.email, 'You’re in the beta: ' + String(cfg.program_name || 'Koda Resolutions 2027'), res27EmailFrame_(cfg, 'Welcome to the beta test', betaBody),
@@ -2182,7 +2325,7 @@ function res27AdminSetup_(d) {
     try {
       book.setSpreadsheetTimeZone(RES27_TZ);
     } catch (e) {}
-    ['participants', 'checkins', 'days', 'finishers', 'settings', 'accounts', 'log', 'appdata'].forEach(function (k) {
+    ['participants', 'checkins', 'days', 'finishers', 'settings', 'accounts', 'questions', 'log', 'appdata'].forEach(function (k) {
       res27EnsureTab_(book, k);
     });
     var migrated = res27MigrateAppData_(book);
@@ -2385,10 +2528,14 @@ function res27AdminPurgeTests_(d) {
       participants: function () {
         return true;
       },
+      questions: function (r, id) {
+        return String(r['Email']).trim().toLowerCase() === ids[id];
+      },
     };
-    var removed = { participants: 0, accounts: 0, appdata: 0, checkins: 0 };
+    var removed = { participants: 0, accounts: 0, appdata: 0, checkins: 0, questions: 0 };
     var skipped = [];
-    ['checkins', 'accounts', 'appdata', 'participants'].forEach(function (tab) {
+    ['checkins', 'accounts', 'appdata', 'questions', 'participants'].forEach(function (tab) {
+      if (!res27Book_().getSheetByName(RES27_TABS[tab].name)) return; // a tab setup hasn't added yet
       res27AllRows_(tab)
         .filter(function (r) {
           var id = String(r['ID']).trim();

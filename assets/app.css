@@ -797,3 +797,12 @@ a.wk-d:hover { border-color: var(--silver-400); }
 /* Keyboard focus shows inside the dropdown rows (their cards clip anything outside). */
 .acc-item > summary:focus-visible, .cb-recipe > summary:focus-visible { outline: 2px solid var(--brand-2); outline-offset: -3px; }
 .cb-search:focus-within { box-shadow: 0 0 0 3px rgba(201, 209, 218, .55), 0 6px 20px rgba(0,0,0,.18); }
+
+/* ---------------------------------------------------------------- FAQs: Ask a question (11/11) */
+@media (min-width: 900px) { .phone-only { display: none !important; } }
+.ask-box { min-height: 112px; resize: vertical; line-height: 1.5; font: inherit; font-size: 16px; }
+.ask-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.ask-count { font-size: 12.5px; color: var(--subtle); }
+.ask-count.is-low { color: var(--warn); font-weight: 700; }
+.ask-sent { margin-bottom: 12px; }
+.od-more { margin: 0; padding: 0 16px 14px; font-size: 13px; }

@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.3.0';
+  var APP_VERSION = '1.4.0';
 
   /* ============================================================ small helpers */
 
@@ -117,7 +117,7 @@
   var DEFAULT_CONFIG = {
     programName: 'Koda Resolutions 2027', startDate: '2027-01-18', endDate: '2027-02-28', lengthDays: 42, registrationOpen: true,
     remotePrice: 99, venmo: '@kevin-schuetz-5', venmoUrl: 'https://venmo.com/u/kevin-schuetz-5', zelle: 'kodaironview@gmail.com', cardUrl: '',
-    coaches: ['Kevin', 'Riley', 'Jamie', 'Maggie'], contactEmail: 'kodaironview@gmail.com', siteUrl: '', cookbookUrl: '', editDaysBack: 2,
+    coaches: ['Kevin', 'Riley', 'Jamie', 'Maggie'], contactEmail: 'kodaironview@gmail.com', siteUrl: '', cookbookUrl: '',
     sizes: { tee: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'], tank: ['XS', 'S', 'M', 'L', 'XL', '2XL'] }, sleepChoices: [7, 7.5, 8, 8.5, 9], finisherChoices: [1, 2, 3],
     beta: null,
   };
@@ -169,6 +169,10 @@
     cookbookLoading: false,
     cookbookError: '',
     cookbookQuery: '',
+    askText: '',
+    askBusy: false,
+    askError: '',
+    askSent: null,
   };
   var cached = store.get('res27.me', null);
   if (S.token && cached && cached.token === S.token) { S.me = cached.me; S.loadedDay = cached.loadedDay || ''; }
@@ -311,6 +315,7 @@
     S.boardLoading = false;
     S.boardError = '';
     S.myTeam = '';
+    S.askText = ''; S.askBusy = false; S.askError = ''; S.askSent = null;
     destroyPlayer();
     // Back on the landing page: fresh dates (a beta may have ended while signed in).
     S.configLoaded = false;
@@ -364,7 +369,7 @@
     var inner;
     // The Progress tab became the Leaderboard (11/10); old #/progress links still land there.
     if (r.name === 'leaderboard' || r.name === 'progress') { tab = 'leaderboard'; inner = viewLeaderboard(); }
-    else if (r.name === 'faqs') { tab = 'profile'; inner = viewFaqs(); }
+    else if (r.name === 'faqs') { tab = 'faqs'; inner = viewFaqs(); }
     else if (r.name === 'nutrition') { tab = 'nutrition'; inner = viewNutrition(r.args[0] || 'mine'); }
     else if (r.name === 'videos') { tab = 'videos'; inner = viewVideos(); }
     else if (r.name === 'profile') { tab = 'profile'; inner = viewProfile(); }
@@ -386,8 +391,8 @@
   /** Replaces the page. On a re-render of the same page, the field being typed in keeps focus and caret. */
   function paint(html) {
     var a = document.activeElement, keep = null, same = location.hash === S.lastPaintHash;
-    if (same && a && app.contains(a) && a.dataset && (a.dataset.field || a.dataset.search !== undefined || a.dataset.cbsearch !== undefined)) {
-      keep = { sel: a.dataset.field ? '[data-field="' + a.dataset.field + '"]' : a.dataset.cbsearch !== undefined ? '[data-cbsearch]' : '[data-search]' };
+    if (same && a && app.contains(a) && a.dataset && (a.dataset.field || a.dataset.search !== undefined || a.dataset.cbsearch !== undefined || a.dataset.ask !== undefined)) {
+      keep = { sel: a.dataset.field ? '[data-field="' + a.dataset.field + '"]' : a.dataset.cbsearch !== undefined ? '[data-cbsearch]' : a.dataset.ask !== undefined ? '[data-ask]' : '[data-search]' };
       try { keep.start = a.selectionStart; keep.end = a.selectionEnd; } catch (e) {}
     }
     // A repaint of the same page (e.g. fresh data after the phone wakes) keeps open dropdowns (a
@@ -426,6 +431,7 @@
       ['leaderboard', 'Leaderboard', 'trophy', '#/leaderboard'],
       ['nutrition', 'Nutrition', 'plate', '#/nutrition'],
       ['videos', 'Videos', 'video', '#/videos'],
+      ['faqs', 'FAQs', 'help', '#/faqs', 'side'],
       ['profile', 'Profile', 'user', '#/profile'],
     ];
   }
@@ -441,8 +447,10 @@
     var nav = navItems().map(function (n) {
       return '<a class="nav-item' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '>' + icon(n[2]) + '<span>' + n[1] + '</span>' + (n[0] === 'today' ? badge : '') + '</a>';
     }).join('');
-    var tabs = navItems().map(function (n) {
-      return '<a class="tab' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '><span class="tab-ico">' + icon(n[2]) + (n[0] === 'today' ? badge : '') + '</span>' + n[1] + '</a>';
+    // The phone tab bar has room for five: sidebar-only items (FAQs) live under Profile there.
+    var tabActive = active === 'faqs' ? 'profile' : active;
+    var tabs = navItems().filter(function (n) { return n[4] !== 'side'; }).map(function (n) {
+      return '<a class="tab' + (tabActive === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (tabActive === n[0] ? ' aria-current="page"' : '') + '><span class="tab-ico">' + icon(n[2]) + (n[0] === 'today' ? badge : '') + '</span>' + n[1] + '</a>';
     }).join('');
     var who = person.team ? teamLabel(person.team) : person.type === 'Remote' ? 'Remote participant' : person.type === 'Test' ? (p.beta ? 'Beta tester' : 'Test account') : 'Koda member';
     return '<div class="shell">' +
@@ -627,12 +635,14 @@
     var t = S.me.program.today;
     return date === t ? 'Today' : date === addDays(t, -1) ? 'Yesterday' : fmt(date, { weekday: 'long' });
   }
-  /** A day stays open through editDaysBack days after it (the server's edit window). */
+  /** Kevin, 11/11/2026: a week stays open until midnight on the first day after it (the Monday), when the scores are pulled. */
+  function lastOpenDay(date) { return addDays(weekRange(date)[0], 7); }
+  function openDayName() { return fmt(S.me.program.start, { weekday: 'long' }); }
   function closesText(date) {
-    var last = addDays(date, Number(S.config.editDaysBack) || 0), t = S.me.program.today;
-    if (last <= t) return 'Today is the last day to fill it in';
-    if (last === addDays(t, 1)) return 'You can fill it in through tomorrow';
-    return 'You can fill it in through ' + fmt(last, { weekday: 'long' });
+    var last = lastOpenDay(date), t = S.me.program.today;
+    if (last <= t) return 'Last chance: it locks at midnight tonight';
+    if (last === addDays(t, 1)) return 'You can fill it in until tomorrow at midnight';
+    return 'You can fill it in until ' + fmt(last, { weekday: 'long' }) + ' at midnight';
   }
   function leftText(date) {
     var left = habitsLeft(date) || 0;
@@ -642,10 +652,16 @@
   function overdueCard(except) {
     var list = overdueDays(except), p = S.me.program;
     if (!list.length) return '';
+    var stripFrom = weekRange(except || p.today)[0];
+    var foldable = list.length > 3 && list.slice(3).every(function (d) { return d >= stripFrom; });
+    var shown = foldable ? list.slice(0, 3) : list;
     return '<section class="od-card" id="overdueCard" data-except="' + esc(except || '') + '" aria-label="Overdue days"><div class="od-head">' + icon('clock', 'ico-sm') + '<span>' + (list.length === 1 ? 'Overdue' : list.length + ' days overdue') + '</span></div>' +
-      list.map(function (d) {
+      shown.map(function (d) {
         return '<a class="od-row" href="#/day/' + d + '"><span class="od-main"><b>' + esc(dayName(d)) + ' · Day ' + (diffDays(p.start, d) + 1) + '</b><span>' + esc(leftText(d) + '. ' + closesText(d) + '.') + '</span></span><span class="od-go">Fill in' + icon('chevR', 'ico-sm') + '</span></a>';
-      }).join('') + '</section>';
+      }).join('') +
+      // Rows beyond three are folded only when they're in the week strip below (mid-week). On a
+      // Monday, last week's days aren't in it, so they're all listed.
+      (shown.length < list.length ? '<p class="od-more">' + esc('And ' + plural(list.length - shown.length, 'more day') + '. The week strip below shows them all.') + '</p>' : '') + '</section>';
   }
   /** On an overdue day's own page: what's missing and how long it stays open. */
   function dayNote(date) {
@@ -1343,7 +1359,7 @@
     }
     var lockNote = can ? '' : stale()
       ? '<div class="note locked-note">' + icon('clock', 'ico-sm') + ' Updating to today…</div>'
-      : '<div class="note locked-note">' + icon('lock', 'ico-sm') + ' This day is locked. You can change today and the ' + (S.config.editDaysBack ? plural(S.config.editDaysBack, 'day') + ' before it' : 'that’s it') + '.</div>';
+      : '<div class="note locked-note">' + icon('lock', 'ico-sm') + ' This day is locked. Each week stays open until midnight on the ' + esc(openDayName()) + ' after it, when the scores are pulled.</div>';
     return '<section class="card" id="checklistCard" data-date="' + date + '" style="margin-top:16px"><div class="card-head"><h3>Your checklist</h3>' + (can ? saveStateHtml() : '<span class="badge">' + fmtScore(sc.score) + ' / 10</span>') + '</div>' +
       '<ul class="checklist">' + rows + '</ul>' + perfect + lockNote + '</section>';
   }
@@ -2015,18 +2031,67 @@
       '</div></section><p class="center subtle" style="font-size:12px;margin-top:20px">Koda Resolutions 2027 · v' + APP_VERSION + '</p>';
   }
 
-  /** FAQs: the Help questions, moved off the Profile page onto their own page (Kevin, 11/10). */
+  /**
+   * FAQs (its own sidebar item since 11/11; on phones it's under Profile): the questions, then
+   * "Ask a question": a box whose text is emailed to the person's coach (or the gym until they
+   * have one), who replies to them by email.
+   */
   function viewFaqs() {
-    var c = S.config;
+    var p = S.me.program;
+    var tally = fmt(addDays(p.start, 1), { weekday: 'long' });
     var items = C.faq.map(function (f, i) {
-      var a = (!c.editDaysBack && f.aNoBack ? f.aNoBack : f.a).replace('{editDays}', c.editDaysBack);
+      var a = f.a.replace(/\{openDay\}/g, openDayName()).replace(/\{tallyDay\}/g, tally);
       return '<details class="acc-item faq-item" id="faq-' + i + '"><summary><span>' + esc(f.q) + '</span>' + icon('chevR', 'ico-sm acc-chev') + '</summary><p>' + esc(a) + '</p></details>';
     }).join('');
-    return '<a class="btn btn-ghost btn-sm" href="#/profile" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Profile</a>' +
+    return '<a class="btn btn-ghost btn-sm phone-only" href="#/profile" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Profile</a>' +
       '<h1 class="page-title">FAQs</h1><p class="page-sub">Quick answers about the challenge and the app.</p>' +
-      '<section class="card acc">' + items + '</section>' +
-      '<section class="card card-pad" style="margin-top:16px"><b>Still have a question?</b><p class="muted" style="margin:4px 0 12px;font-size:14px">Ask your coach, or email us.</p>' +
-        '<a class="btn btn-secondary btn-sm" href="mailto:' + esc(c.contactEmail) + '">' + icon('mail', 'ico-sm') + esc(c.contactEmail) + '</a></section>';
+      '<section class="card acc">' + items + '</section>' + askCard();
+  }
+
+  /**
+   * The Ask a question box. The text stays in memory while typing, so a background refresh never
+   * loses it. It names the coach only when the server knows the coach's address (askToCoach is a
+   * yes/no; the address itself never reaches the app).
+   */
+  function askCard() {
+    var person = S.me.person, coach = String(person.coach || '').trim(), toCoach = !!(coach && person.askToCoach);
+    var where = toCoach ? 'It goes straight to your coach, ' + coach + ', by email.'
+      : coach ? 'It goes to the Koda team by email, and they’ll pass it to ' + coach + '.'
+      : 'It goes straight to the Koda team by email (you’ll get a coach soon).';
+    var done = S.askSent;
+    var sent = done ? '<div class="callout ' + (done.sent ? 'callout-good' : 'callout-info') + ' ask-sent" role="status">' + icon(done.sent ? 'check' : 'info') + '<span><b style="color:inherit">' +
+      esc(done.sent ? (done.coach ? 'Sent to ' + done.coach + '.' : 'Sent to the Koda team.') : 'Saved.') + '</b> ' +
+      esc(done.sent ? 'You’ll get the answer by email at ' + person.email + '.' : 'It didn’t email right away, but the Koda team will see it and get back to you by email.') + '</span></div>' : '';
+    var left = 2000 - S.askText.length;
+    return '<section class="card card-pad ask-card" style="margin-top:16px"><h3 style="margin:0 0 4px">Ask a question</h3>' +
+      '<p class="muted" style="margin:0 0 12px;font-size:14px">' + esc(where) + ' They’ll reply to ' + esc(person.email) + '.</p>' + sent +
+      '<label class="sr-only" for="askBox">Your question</label>' +
+      '<textarea id="askBox" class="input ask-box" data-ask rows="4" maxlength="2000" placeholder="Type your question here…"' + (S.askBusy ? ' disabled' : '') + '>' + esc(S.askText) + '</textarea>' +
+      (S.askError ? '<span class="error" role="alert">' + esc(S.askError) + '</span>' : '') +
+      '<div class="ask-foot"><span class="ask-count' + (left < 100 ? ' is-low' : '') + '" aria-live="polite">' + (left < 300 ? left + ' characters left' : '') + '</span>' +
+        '<button class="btn btn-primary btn-sm" data-act="ask-send"' + (S.askBusy || S.askText.trim().length < 3 ? ' disabled' : '') + '>' + (S.askBusy ? '<span class="spinner"></span>' : icon('mail', 'ico-sm') + 'Send' + (toCoach ? ' to ' + esc(coach) : '')) + '</button></div>' +
+    '</section>';
+  }
+
+  function sendQuestion() {
+    var q = S.askText.trim();
+    if (q.length < 3 || S.askBusy) return;
+    S.askBusy = true; S.askError = ''; S.askSent = null;
+    render();
+    var session = S.session;
+    api('ask', { question: q }).then(function (r) {
+      if (session !== S.session) return;
+      S.askBusy = false;
+      S.askText = '';
+      S.askSent = { coach: r.coach || '', sent: !!r.sent };
+      render();
+      toast(!r.sent ? 'Saved. The Koda team will get back to you.' : r.coach ? 'Sent to ' + r.coach + '.' : 'Sent to the Koda team.');
+    }, function (e) {
+      if (session !== S.session) return;
+      S.askBusy = false;
+      S.askError = e.message;
+      render();
+    });
   }
 
   function draftFromPerson() {
@@ -2150,6 +2215,18 @@
 
   document.addEventListener('input', function (e) {
     var el = e.target;
+    if (el.dataset && el.dataset.ask !== undefined) {
+      // Ask a question: keep the text, and update just the counter and the Send button (no repaint while typing).
+      S.askText = el.value.slice(0, 2000);
+      if (S.askError) { S.askError = ''; var err = el.parentNode.querySelector('.error'); if (err) err.remove(); }
+      var card = el.closest('.ask-card');
+      var btn = card && card.querySelector('[data-act="ask-send"]');
+      if (btn && !S.askBusy) btn.disabled = S.askText.trim().length < 3;
+      var count = card && card.querySelector('.ask-count');
+      var left = 2000 - S.askText.length;
+      if (count) { count.textContent = left < 300 ? left + ' characters left' : ''; count.classList.toggle('is-low', left < 100); }
+      return;
+    }
     if (el.dataset && el.dataset.cbsearch !== undefined) {
       // Cookbook search: repaint just the list, so the box keeps focus and the keyboard stays up.
       S.cookbookQuery = el.value;
@@ -2242,6 +2319,7 @@
         if (pressed) pressed.focus({ preventScroll: true });
         break;
       case 'board-retry': S.boardError = ''; render(); loadBoard(true); break;
+      case 'ask-send': sendQuestion(); break;
       case 'cookbook-retry': S.cookbookError = ''; loadCookbook(true); render(); break;
       case 'choose-type':
         S.draft.memberType = el.dataset.type;

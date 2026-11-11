@@ -312,9 +312,9 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     overflow: document.documentElement.scrollWidth - window.innerWidth,
   }));
   check('beta Today: Day 2 of 7, the beta pill', /Beta · Day 2 of 7/.test(bt.pill), bt.pill);
-  // edit_days_back is 2, so yesterday stays open through tomorrow.
-  check('beta Today: yesterday (Day 1) is Overdue, not filled in, open through tomorrow',
-    /Yesterday · Day 1/.test(bt.card) && /Not filled in yet/.test(bt.card) && /You can fill it in through tomorrow/.test(bt.card) && bt.href === '#/day/' + yesterday, bt.card);
+  // The week stays open until midnight on the first day after it (Kevin, 11/11): here that's yesterday's weekday, next week.
+  check('beta Today: yesterday (Day 1) is Overdue, not filled in, open until ' + longDay(yesterday) + ' at midnight',
+    /Yesterday · Day 1/.test(bt.card) && /Not filled in yet/.test(bt.card) && bt.card.indexOf('You can fill it in until ' + longDay(yesterday) + ' at midnight') >= 0 && bt.href === '#/day/' + yesterday, bt.card);
   check('beta Today: the week strip marks Day 1 overdue and today, the rest coming up', bt.strip[0] === 'is-overdue' && /is-today/.test(bt.strip[1]) && /is-sel/.test(bt.strip[1]) && bt.strip.slice(2).every((c) => c === 'is-upcoming'), bt.strip.join(' | '));
   check('beta Today: the Today tab shows 1 overdue', bt.badge === '1', bt.badge);
   check('beta Today: Day 2 plays its 2026 stand-in video, marked as one', /As3Zpd7XEY8/.test(bt.poster) && bt.standIn, bt.poster);
@@ -419,6 +419,12 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await wait(400);
   check('beta desktop: the sidebar Today item shows the overdue count', (await p9.textContent('.nav-item.is-on [data-od-badge]')).trim() === '1');
   await p9.screenshot({ path: path.join(OUT, 'beta-07-desktop.png'), fullPage: true });
+  const side = await p9.$$eval('.sidebar .nav-item', (els) => els.map((e) => e.textContent.trim()));
+  await p9.click('.sidebar a.nav-item[href="#/faqs"]');
+  await p9.waitForSelector('.ask-card');
+  const faqDesk = await p9.evaluate(() => ({ on: (document.querySelector('.sidebar .nav-item.is-on') || {}).textContent, back: getComputedStyle(document.querySelector('.phone-only')).display }));
+  check('desktop sidebar: FAQs is its own item (before Profile), highlighted on its page, no "‹ Profile" link', side.join(',') === 'Today1,Leaderboard,Nutrition,Videos,FAQs,Profile' && /FAQs/.test(faqDesk.on) && faqDesk.back === 'none', side.join(',') + ' ' + JSON.stringify(faqDesk));
+  await p9.screenshot({ path: path.join(OUT, 'faqs-desktop.png'), fullPage: true });
   await c9.close();
   // A phone without the beta link (e.g. a home-screen app opened first) can still join the beta.
   const c10 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
@@ -449,14 +455,41 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const p12 = await c12.newPage();
   p12.on('pageerror', (e) => errors.push(e.message));
   await p12.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent('#/profile'));
-  await p12.waitForSelector('a[href="#/faqs"]');
+  await p12.waitForSelector('.list-row[href="#/faqs"]');
   check('Profile: the questions moved off (no FAQ list), with a link to FAQs', (await p12.$$('details')).length === 0);
-  await p12.click('a[href="#/faqs"]');
+  await p12.click('.list-row[href="#/faqs"]');
   await p12.waitForSelector('.faq-item');
   const faqCount = await p12.$$eval('.faq-item', (els) => els.length);
   await p12.click('.faq-item summary');
   const faqOpen = await p12.evaluate(() => document.querySelector('.faq-item').open && /\S/.test(document.querySelector('.faq-item p').textContent));
   check('FAQs page: every question, tap one to open its answer', faqCount >= 6 && faqOpen && (await p12.textContent('.page-title')) === 'FAQs' && /Profile/.test(await p12.textContent('.tabbar .tab.is-on')), 'questions ' + faqCount);
+  const missed = await p12.evaluate(() => Array.from(document.querySelectorAll('.faq-item')).map((d) => d.textContent).find((t) => /missed a day/.test(t)) || '');
+  check('FAQ: a missed day can be filled in until Monday at midnight, tallied Tuesday morning', /until Monday at midnight/.test(missed) && /Tuesday morning/.test(missed), missed.slice(0, 200));
+  const tabsPhone = await p12.$$eval('.tabbar .tab', (els) => els.map((e) => e.textContent.trim()));
+  check('phone tab bar keeps five (FAQs lives under Profile there)', tabsPhone.length === 5 && tabsPhone.indexOf('FAQs') < 0, tabsPhone.join(','));
+  // Ask a question: no coach yet → the gym; with a coach in coach_emails → that coach, Reply-To the member.
+  await get('/dev/emails?clear=1');
+  await p12.fill('[data-ask]', 'Is oat milk okay in coffee?');
+  await p12.click('[data-act="ask-send"]');
+  await p12.waitForSelector('.ask-sent');
+  let mails = await get('/dev/emails');
+  let askMail = mails.filter((m) => /Resolutions question from Jordan Rivera/.test(m.subject)).pop();
+  check('Ask a question (no coach yet): emailed to the gym, Reply-To the member, box cleared', askMail && askMail.to === 'kodaironview@gmail.com' && askMail.replyTo === 'demo@koda.test' && /oat milk/.test(askMail.htmlBody) && (await p12.inputValue('[data-ask]')) === '', JSON.stringify(askMail && { to: askMail.to, replyTo: askMail.replyTo }));
+  await api({ action: 'adminSetup', key: 'test-admin-key-123', settings: { coach_emails: 'Riley: riley.coach@example.com' } });
+  await get('/dev/cell?email=demo%40koda.test&col=Coach&value=Riley');
+  await p12.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent('#/faqs'));
+  await p12.waitForSelector('[data-ask]');
+  const askIntro = await p12.textContent('.ask-card');
+  await p12.fill('[data-ask]', 'How many finishers should I do?');
+  await p12.click('[data-act="ask-send"]');
+  await p12.waitForSelector('.ask-sent');
+  mails = await get('/dev/emails');
+  askMail = mails.filter((m) => /finishers/.test(m.htmlBody || '')).pop();
+  check('Ask a question (coach Riley): goes to Riley’s email, the page says so', /your coach, Riley/.test(askIntro) && askMail && askMail.to === 'riley.coach@example.com' && askMail.replyTo === 'demo@koda.test' && /Sent to Riley/.test(await p12.textContent('.ask-sent')), JSON.stringify(askMail && askMail.to));
+  const qRows = await get('/dev/rows?tab=Questions');
+  check('every question is kept on the Questions tab', qRows.length === 2 && qRows[1]['Coach'] === 'Riley' && qRows[1]['Emailed'] === 'Sent', JSON.stringify(qRows.map((r) => r['Sent To'])));
+  await p12.screenshot({ path: path.join(OUT, 'faqs-ask.png'), fullPage: true });
+  await get('/dev/cell?email=demo%40koda.test&col=Coach&value=');
   await p12.goto(BASE + '/#/nutrition/other');
   await p12.waitForSelector('.plan-hero');
   const otherFirst = (await p12.textContent('.plan-hero')).trim();

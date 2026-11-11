@@ -189,7 +189,7 @@ window.RES27_CONTENT = {
 
   faq: [
     { q: 'What counts as a workout?', a: 'Anything on purpose: a Koda class, a run, bike, swim, walk, hike or sport.' },
-    { q: 'I missed a day. Can I fix it?', a: 'Yes. A day you haven’t filled in shows as Overdue on your Today screen: tap it and answer each habit. You can change today and the past {editDays} days; after that a day locks.', aNoBack: 'Only today can be changed. A day you don’t finish locks at midnight, so check in before bed.' },
+    { q: 'I missed a day. Can I fix it?', a: 'Yes. You can enter or change your scores for any day of the week until {openDay} at midnight (Mountain time). That’s when we pull the week’s scores, and we tally them up {tallyDay} morning. A day you haven’t filled in shows as Overdue on your Today screen: tap it and answer each habit.' },
     { q: 'Do I have to track everything?', a: 'No. Your checklist is only what you chose, and every day is still scored out of 10. Change it any time on the Profile tab.' },
     { q: 'How do points work?', a: 'Every day is scored out of 10, however many habits you track. Nutrition counts the most: breakfast, lunch, dinner and snacks (or no snacks) each count. A workout and sleep each count half as much as nutrition, and the video and every other habit a quarter as much. Finishers count on the days you do them, and any you miss from your weekly goal count against that Sunday. A bonus task adds 1 extra point on top.' },
     { q: 'Can I have a drink at a party?', a: 'No alcohol on any plan during the challenge. The videos cover how to handle social events.' },

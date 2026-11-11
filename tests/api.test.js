@@ -209,16 +209,22 @@ test('daily check-ins: scoring, edit window, the sheet log', () => {
   assert.equal(log[0]['Score'], 10);
   assert.equal(log[0]['Bonus'], 1);
   assert.equal(log[0]['Points'], 11);
-  // window: two days back is fine, three is not, tomorrow is not
+  // Window (Kevin, 11/11/2026): the whole week stays open until midnight the Monday after it; never a day ahead.
   assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } }).ok, true);
-  gas.setNow('2027-01-21T08:00:00-07:00');
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } }).code, 'locked_day');
-  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-22', answers: { video: 1 } }).code, 'locked_day');
+  gas.setNow('2027-01-25T23:30:00-07:00'); // Monday of week 2: week 1 is still open
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } }).ok, true);
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-27', answers: { video: 1 } }).code, 'locked_day', 'not a day ahead');
+  gas.setNow('2027-01-26T00:05:00-07:00'); // Tuesday just after midnight: week 1 is locked
+  const locked = post({ action: 'save', token: r.token, date: '2027-01-18', answers: { video: 1 } });
+  assert.equal(locked.code, 'locked_day');
+  assert.match(locked.error, /stays open until midnight on the Monday after it/);
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-24', answers: { video: 1 } }).code, 'locked_day', 'its Sunday too');
+  assert.equal(post({ action: 'save', token: r.token, date: '2027-01-25', answers: { video: 1 } }).ok, true, 'this week is open');
   me = post({ action: 'me', token: r.token }).me;
-  assert.equal(Object.keys(me.history).length, 2);
-  assert.equal(me.totals.days, 2);
+  assert.equal(Object.keys(me.history).length, 3);
+  assert.equal(me.totals.days, 3);
   const people = gas.rows('Participants');
-  assert.equal(people[0]['Days Logged'], 2);
+  assert.equal(people[0]['Days Logged'], 3);
 });
 
 test('every day is out of 10 however many habits someone tracks', () => {
@@ -491,7 +497,7 @@ test("purging test accounts removes their rows and nobody else's", () => {
   post({ action: 'save', token: gone.token, date: '2027-01-19', answers: { video: 1 } });
   post({ action: 'adminSetType', key: ADMIN, email: 'gone@b.co', participantType: 'Test' });
   const r = post({ action: 'adminPurgeTests', key: ADMIN });
-  assert.deepEqual(r.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 1 });
+  assert.deepEqual(r.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 1, questions: 0 });
   assert.deepEqual(gas.rows('Participants').map((p) => p.Email), ['keep@b.co']);
   assert.equal(gas.rows('Accounts').length, 1);
   assert.equal(gas.rows('Check-ins').length, 1);

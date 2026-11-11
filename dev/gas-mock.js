@@ -715,6 +715,8 @@ function createGas(options) {
       return entry.value;
     },
     put(key, value, seconds) {
+      // Like Apps Script: expirations run from 1 second to 6 hours.
+      if (seconds !== undefined && !(seconds >= 1 && seconds <= 21600)) throw new Error('Argument too large: expirationInSeconds (' + seconds + ')');
       state.cache.set(key, { value: String(value), until: clock() + (seconds === undefined ? 600 : seconds) * 1000 });
     },
     remove(key) {

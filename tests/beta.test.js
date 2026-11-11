@@ -95,7 +95,7 @@ test('the beta welcome email has the beta dates and link; a remote beta sign-up 
   const mail = gas.state.mail[gas.state.mail.length - 1];
   assert.equal(mail.to, 'remote.beta@example.com');
   assert.match(mail.subject, /You’re in the beta/);
-  for (const bit of ['Monday, November 9', 'Sunday, November 15', 'resolutions/?beta=1', 'Overdue', 'for 2 more days', 'Monday, January 18']) {
+  for (const bit of ['Monday, November 9', 'Sunday, November 15', 'resolutions/?beta=1', 'Overdue', 'until midnight on Monday', 'Monday, January 18', 'sign up again']) {
     assert.ok(mail.htmlBody.includes(bit), 'email mentions ' + bit);
   }
   assert.ok(!/venmo\.com|\$99/.test(mail.htmlBody), 'no payment in a beta email');
@@ -124,18 +124,7 @@ test('without a beta test, a beta sign-up is stopped (never quietly made real); 
   assert.equal(gas.rows('Participants')[0]['Notes'], '');
 });
 
-test('with edit_days_back 0 the beta email doesn’t promise an Overdue day', () => {
-  const { gas, post } = world(TUESDAY, Object.assign({ edit_days_back: 0 }, BETA));
-  const r = signUp(post);
-  assert.equal(r.ok, true, r.error);
-  const html = gas.state.mail[gas.state.mail.length - 1].htmlBody;
-  assert.ok(!/Overdue/.test(html), 'no Overdue promise');
-  assert.match(html, /locks at midnight/);
-  assert.match(html, /you’ll sign up again/);
-  assert.deepEqual([r.me.program.editFrom, r.me.program.editTo], ['2026-11-10', '2026-11-10']);
-});
-
-test('a missed beta day can be filled in for edit_days_back days, then it locks', () => {
+test('a missed beta day can be filled in all week and on the Monday after, then it locks (Kevin, 11/11)', () => {
   const { gas, post } = world(TUESDAY, BETA);
   const r = signUp(post);
   const monday = post({ action: 'save', token: r.token, date: '2026-11-09', answers: { video: 1, workout: 1 }, patch: true });
@@ -145,15 +134,22 @@ test('a missed beta day can be filled in for edit_days_back days, then it locks'
   assert.deepEqual([rows.length, rows[0]['Date'], Number(rows[0]['Day'])], [1, '2026-11-09', 1]);
   assert.equal(post({ action: 'save', token: r.token, date: '2026-11-11', answers: { video: 1 } }).code, 'locked_day', 'not before it happens');
 
-  gas.setNow('2026-11-11T21:00:00-07:00');
-  assert.equal(post({ action: 'save', token: r.token, date: '2026-11-09', answers: { sleep: 1 }, patch: true }).ok, true, 'Wednesday is Monday’s last day');
+  gas.setNow('2026-11-14T21:00:00-07:00'); // Saturday
+  let me = post({ action: 'me', token: r.token }).me;
+  assert.deepEqual([me.program.dayNumber, me.program.editFrom, me.program.editTo], [6, '2026-11-09', '2026-11-14'], 'the whole week so far is open');
+  assert.equal(post({ action: 'save', token: r.token, date: '2026-11-09', answers: { sleep: 1 }, patch: true }).ok, true);
 
-  gas.setNow('2026-11-12T06:00:00-07:00');
-  const me = post({ action: 'me', token: r.token }).me;
-  assert.deepEqual([me.program.dayNumber, me.program.editFrom], [4, '2026-11-10']);
-  assert.ok(!me.checklists['2026-11-09'], 'Monday is locked');
-  assert.equal(post({ action: 'save', token: r.token, date: '2026-11-09', answers: { video: 1 } }).code, 'locked_day');
-  assert.equal(post({ action: 'save', token: r.token, date: '2026-11-10', answers: { video: 1 } }).ok, true, 'Tuesday is still open');
+  gas.setNow('2026-11-16T23:59:00-07:00'); // the Monday after, just before midnight
+  me = post({ action: 'me', token: r.token }).me;
+  assert.deepEqual([me.program.phase, me.program.editFrom, me.program.editTo], ['after', '2026-11-09', '2026-11-15']);
+  assert.equal(post({ action: 'save', token: r.token, date: '2026-11-10', answers: { video: 1 }, patch: true }).ok, true, 'still open on Monday night');
+
+  gas.setNow('2026-11-17T00:01:00-07:00'); // Tuesday: the scores were pulled at midnight
+  me = post({ action: 'me', token: r.token }).me;
+  assert.deepEqual(Object.keys(me.checklists), [], 'nothing open any more');
+  const locked = post({ action: 'save', token: r.token, date: '2026-11-15', answers: { video: 1 } });
+  assert.equal(locked.code, 'locked_day');
+  assert.match(locked.error, /until midnight on the Monday after it/);
   rows = gas.rows('Check-ins');
   assert.deepEqual(rows.map((x) => x['Date']).sort(), ['2026-11-09', '2026-11-10']);
 });
@@ -189,7 +185,7 @@ test('the beta ends on its last day; turning it off puts Test accounts back on t
   assert.deepEqual([me.program.dayNumber, me.program.phase, me.program.week], [7, 'during', 1]);
   gas.setNow('2026-11-16T18:00:00-07:00');
   me = post({ action: 'me', token: r.token }).me;
-  assert.deepEqual([me.program.phase, me.program.editFrom, me.program.editTo], ['after', '2026-11-14', '2026-11-15'], 'the last two days stay open after the end');
+  assert.deepEqual([me.program.phase, me.program.editFrom, me.program.editTo], ['after', '2026-11-09', '2026-11-15'], 'the last week stays open on the Monday after it');
   assert.equal(me.totals.days, 1);
   // Over: the beta link stops making Test accounts even though beta_start is still set. A beta page
   // left open and sent now is stopped; the same person signing up normally is a real member.
@@ -236,7 +232,7 @@ test('clearing test accounts never deletes rows whose ID cell got separated from
   app.getRange(2, 1, 2, 1).setValues([ids[1], ids[0]]);
   const out = post({ action: 'adminPurgeTests', key: ADMIN, email: 'tester@example.com' });
   assert.equal(out.ok, true, out.error);
-  assert.deepEqual(out.removed, { participants: 1, accounts: 1, appdata: 0, checkins: 0 });
+  assert.deepEqual(out.removed, { participants: 1, accounts: 1, appdata: 0, checkins: 0, questions: 0 });
   assert.equal(out.skipped.length, 1);
   assert.match(out.skipped[0], /App Data row \d+/);
   const left = gas.rows('App Data').map((r) => JSON.parse(r.History)._id).sort();
@@ -251,7 +247,7 @@ test('purging one test account by email leaves everyone else', () => {
   post({ action: 'save', token: a.token, date: '2026-11-10', answers: { video: 1 }, patch: true });
   const out = post({ action: 'adminPurgeTests', key: ADMIN, email: 'A@Example.com ' });
   assert.equal(out.ok, true, out.error);
-  assert.deepEqual(out.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 1 });
+  assert.deepEqual(out.removed, { participants: 1, accounts: 1, appdata: 1, checkins: 1, questions: 0 });
   assert.deepEqual(gas.rows('Participants').map((p) => p.Email).sort(), ['b@example.com', 'm@example.com']);
   assert.equal(post({ action: 'adminPurgeTests', key: ADMIN, email: 'm@example.com' }).error, 'No Test participant with that email.', 'never a member');
   assert.equal(post({ action: 'adminPurgeTests', key: ADMIN, email: 'not-an-email' }).ok, false);

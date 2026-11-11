@@ -23,7 +23,8 @@ Columns are found by their header, so they can be moved. Don't rename headers.
 | Check-ins | One row per person per day: done, the day's score out of 10, bonus, points, every answer in words | The app |
 | Days | Day 1–42 from the 2027 video plan: title, video link, category, "About", action item, bonus task, presenter, plus filming notes and the 2026 video it can reuse (the last two columns aren't shown in the app) | Kevin and the coaches |
 | Finishers | Finisher workouts by week (shown to people tracking finishers) | Kevin |
-| Settings | Dates, price, Venmo/Zelle/card link, coaches, contact email, edit window | Kevin |
+| Settings | Dates, price, Venmo/Zelle/card link, coaches and their emails, contact email | Kevin |
+| Questions | Every "Ask a question" from the FAQs page: who, their coach, where it was emailed, the question | The app |
 | Accounts | Sign-in data: salted password hashes, never passwords | Nobody |
 | Log | Sign-ups, setup changes, errors | The app |
 
@@ -37,7 +38,8 @@ Changes to Settings and Days show in the app within about a minute.
 - **A one-day bonus:** fill `Bonus Task` (and `Bonus Points`, default 1) on that day. It shows up on
   everyone's checklist that day only and adds its points on top of the day's score out of 10.
 - **Mark a remote payment:** type `TRUE` in `Paid`. Their app stops showing "payment pending".
-- **Teams and coaches:** fill `Team` and `Coach` on Participants. They show on the person's profile.
+- **Teams and coaches:** fill `Team` and `Coach` on Participants. They show on the person's profile,
+  and the person's questions from the FAQs page go to that coach (add the coach to `coach_emails`).
 - **Remove someone:** set `Status` to `Removed`. They're signed out and can't sign back in.
 - **Close sign-ups:** set `registration_open` to FALSE in Settings. Signing in keeps working.
 - **Change the dates:** `start_date` and `length_days` in Settings. The app counts from them.
@@ -78,17 +80,26 @@ each recipe to its ingredients, directions, notes and credit, with a search box.
 git-ignored `content/private/cookbook-2026-pdf.txt`). For a new edition, save the new PDF's text
 there and run the script again.
 
-### FAQs
+### FAQs and Ask a question
 
-Profile › Help › **FAQs** opens the questions on their own page (`assets/content.js`, `faq`).
+**FAQs** is its own item in the sidebar (on phones it's under Profile › Help, because the bottom tab
+bar holds five). The questions live in `assets/content.js` (`faq`). Below them, **Ask a question**
+is a text box: the question is emailed to the person's coach (the `Coach` column on Participants,
+matched to `coach_emails` in Settings, e.g. `Riley: riley@example.com`, one per line), with
+Reply-To set to the person, so the coach just hits Reply. No coach yet, or a coach with no email
+listed: it goes to `contact_email`. Every question is also kept on the Questions tab. Five an hour
+and twenty a day per person, up to 2,000 characters. Coaches' addresses never reach the app.
 
-### Missed days (Overdue)
+### Missed days (Overdue) and the weekly window
 
-A day that hasn't been filled in (some habit still has no Yes or No) stays open for
-`edit_days_back` days after it (2 by default), then locks. While it's open the app calls it
-**Overdue**: a card at the top of Today ("Yesterday · Day 1 — Not filled in yet. You can fill it in
-through tomorrow"), an amber day in the week strip and the Progress calendar, and a count on the
-Today tab. Tapping it opens that day; the last answer says it's caught up.
+Kevin, 11/11: people can enter or change their scores for **any day of the week until midnight on
+the Monday after it**. That's when the week's scores are pulled; they're tallied Tuesday morning.
+So on a Monday, all of last week is still open; from Tuesday on, only this week (never a day
+ahead). A past day that's still open and not finished (some habit has no Yes or No) is **Overdue**:
+a card at the top of Today ("Yesterday · Day 1 — Not filled in yet. You can fill it in until Monday
+at midnight", at most three rows), an amber day in the week strip, and a count on the Today tab.
+Tapping it opens that day; the last answer says it's caught up. (The old `edit_days_back` setting
+is gone.)
 
 ### Beta test (a practice run before Jan 18)
 
@@ -149,7 +160,7 @@ page. The last page has no consent checkbox (Kevin, 11/10).
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test "tests/*.test.js" # backend tests (49)
+node --test "tests/*.test.js" # backend tests (52)
 node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
 ```
 
