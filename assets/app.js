@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.4.1';
+  var APP_VERSION = '1.4.2';
 
   /* ============================================================ small helpers */
 
@@ -43,13 +43,15 @@
     else store.set('res27.beta', true);
   })();
   /**
-   * The beta test's dates when a beta is running (not one that has ended since) and this phone came
-   * in through the beta link, or everyone who signs up joins it (beta_everyone in Settings).
+   * The beta test's dates when a beta is open and this phone came in through the beta link, or
+   * everyone who signs up joins it (beta_everyone in Settings). The server only sends a beta while
+   * it's open by its own (Mountain) date, so a fresh answer is taken as is, even on a phone whose
+   * midnight came first; the phone's date only judges a copy saved on an earlier visit.
    */
   function betaInfo() {
     var b = S.config && S.config.beta ? S.config.beta : null;
     if (!b || !(store.get('res27.beta', false) || b.everyone)) return null;
-    return b.end < localToday() ? null : b;
+    return !S.configFresh && b.end < localToday() ? null : b;
   }
   function weeksText(days) { return days % 7 ? plural(days, 'day') : plural(days / 7, 'week'); }
 
@@ -162,6 +164,7 @@
     lastPaintHash: '',
     returnToReview: false,
     configLoaded: false,
+    configFresh: false, // S.config came from the server on this visit (not a saved copy)
     board: null,
     boardAt: 0,
     boardLoading: false,
@@ -255,6 +258,7 @@
       S.config = Object.assign({}, DEFAULT_CONFIG, r.config);
       store.set('res27.config', S.config);
       S.configLoaded = true;
+      S.configFresh = true;
       if (!S.config.beta) store.del('res27.beta'); // the beta test is over: back to the real sign-up
       if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); // the landing shows on any other route
     }).catch(function () { S.configLoaded = true; if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); });
@@ -288,6 +292,7 @@
     S.loadedDay = localToday();
     S.config = Object.assign({}, DEFAULT_CONFIG, me.config);
     store.set('res27.config', S.config);
+    S.configFresh = true;
     if (!S.config.beta) store.del('res27.beta');
     S.lastLoad = Date.now();
     S.loadError = '';
@@ -323,6 +328,7 @@
     destroyPlayer();
     // Back on the landing page: fresh dates (a beta may have ended while signed in).
     S.configLoaded = false;
+    S.configFresh = false;
     loadConfig();
   }
   function hasPending() {
@@ -727,7 +733,7 @@
     var dateHtml = waiting ? '<span class="nw">' + icon('calendar') + 'Beta test</span>'
       : '<span class="nw">' + icon('calendar') + esc(fmt(start, { month: 'short', day: 'numeric' }) + ' –') + '</span> <span class="nw">' + esc(fmt(end, { month: 'short', day: 'numeric', year: 'numeric' })) + '</span>';
     var lengthText = b ? weeksText(b.days) : weeksText(Math.round(c.lengthDays / 7) * 7);
-    var betaNote = b ? '<div class="l-beta">' + icon('info') + '<span><b>This is the beta test.</b> ' + esc(weeksText(b.days)) + ' on the real dates, so you can try the app before the challenge. Everything you enter is practice and gets cleared before Day 1 on ' + esc(fmt(c.startDate, { month: 'long', day: 'numeric' })) + '.</span></div>' : '';
+    var betaNote = b ? '<div class="l-beta">' + icon('info') + '<span><b>This is the beta test.</b> ' + esc(weeksText(b.days)) + ' on the real dates, so you can try the app before the challenge. It’s all practice: beta accounts are deleted when the beta ends, so you’ll sign up again for Day 1 on ' + esc(fmt(c.startDate, { month: 'long', day: 'numeric' })) + '.</span></div>' : '';
     var choices = c.registrationOpen
       ? '<button class="choice" data-act="choose-type" data-type="member"><span class="c-icon">' + kx() .replace('class="kx"', 'class="kx" style="width:30px;height:17px;fill:#fff"') + '</span><span><span class="c-title">Current Koda Member</span><span class="c-sub">I train at Koda CrossFit Iron View</span></span><span class="chev">' + icon('chevR') + '</span></button>' +
         '<button class="choice" data-act="choose-type" data-type="remote"><span class="c-icon silver">' + icon('globe', 'ico-lg') + '</span><span><span class="c-title">Remote Participant <span class="badge badge-brand">$' + esc(c.remotePrice) + '</span></span><span class="c-sub">Join from anywhere with the full program</span></span><span class="chev">' + icon('chevR') + '</span></button>'
@@ -1135,6 +1141,7 @@
       : prog.phase === 'during' ? (prog.beta ? 'This is the beta test. ' : '') + 'Day 1 was ' + fmtLong(prog.start) + ', so today is Day ' + prog.dayNumber + '.' +
         (open ? ' You can still fill in ' + (open === 1 ? 'yesterday' : 'the last ' + open + ' days') + '.' : '')
       : 'The ' + (prog.beta ? 'beta test' : 'challenge') + ' ended ' + fmtLong(prog.end) + '.';
+    if (prog.beta) when += ' It’s all practice: beta accounts are deleted when the beta ends.';
     var btn = p.type === 'Remote' && !p.paid ? payButtons(p, false) : '';
     var how = p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle + ', with your name in the memo' : 'by card \u2014 ' + (c.cardUrl ? 'use the button below' : 'we\u2019ll email you a secure link');
     var pay = p.type === 'Remote' && !p.paid ? '<div class="callout callout-warn" style="margin-bottom:14px">' + icon('info') + '<span><b style="color:inherit">One more step:</b> send your $' + esc(c.remotePrice) + ' ' + esc(how) + '.' +
@@ -1244,9 +1251,12 @@
     // away; an overdue day's own page says what's missing and how long it stays open.
     // (After the last day, the main screen is the last day itself: it gets its own note too.)
     var note = '<div id="dayNote" data-date="' + date + '">' + dayNote(date) + '</div>';
+    // A beta account is practice: say so where testers look every day (Kevin, 11/11: beta accounts
+    // are deleted when the beta ends, and testers sign up again for the real challenge).
+    var practice = p.beta && !dateArg ? '<div class="callout callout-info beta-note" style="margin-bottom:12px">' + icon('info') + '<span><b style="color:inherit">Beta test: practice only.</b> Beta accounts are deleted when the beta ends, so you’ll sign up again for the real challenge. Day 1 is ' + esc(fmtLong(S.config.startDate)) + '.</span></div>' : '';
     var top = dateArg
       ? '<a class="btn btn-ghost btn-sm" href="#/today" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Today</a>' + note
-      : overdueCard(date) + (date !== p.today ? note : '');
+      : practice + overdueCard(date) + (date !== p.today ? note : '');
     return top +
       '<div class="with-rail"><div>' +
         '<section id="dayHero">' + dayHero(date, day) + '</section>' +
@@ -1526,7 +1536,7 @@
     return '<section class="hero">' + kx('watermark') + '<div class="kick">' + esc((p.beta ? 'Beta test · ' : '') + S.config.programName) + '</div><div class="day" style="font-size:54px;margin-top:10px">You finished!</div><div class="date">' + esc(weeksText(p.length)) + ', ' + esc(fmt(p.start, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(p.end, { month: 'short', day: 'numeric' })) + '</div>' +
       '<div class="hero-stats"><span class="hero-stat">' + icon('trophy', 'ico-sm') + '<b>' + fmtPts(t.points) + '</b> points</span><span class="hero-stat">' + icon('calendar', 'ico-sm') + '<b>' + t.days + '</b> days logged</span><span class="hero-stat">' + icon('chart', 'ico-sm') + '<b>' + fmtScore(t.average) + '</b> average out of 10</span></div></section>' +
       (p.beta
-        ? '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">Thanks for testing!</h3><p class="muted" style="margin:0 0 14px">That was the beta. Beta accounts are deleted before the real challenge starts ' + esc(fmtLong(S.config.startDate)) + ', so sign up again for that one when sign-ups open.</p><a class="btn btn-secondary" href="#/leaderboard">See the leaderboard</a></section>'
+        ? '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">Thanks for testing!</h3><p class="muted" style="margin:0 0 14px">That was the beta. Beta accounts are deleted after it, so you’ll sign up again for the real challenge. Day 1 is ' + esc(fmtLong(S.config.startDate)) + '.</p><a class="btn btn-secondary" href="#/leaderboard">See the leaderboard</a></section>'
         : '<section class="card card-pad" style="margin-top:16px"><h3 style="margin:0 0 6px">What’s next?</h3><p class="muted" style="margin:0 0 14px">Keep the habits that worked. Your videos and nutrition guides stay here for you.</p><a class="btn btn-secondary" href="#/leaderboard">See the final standings</a></section>');
   }
 

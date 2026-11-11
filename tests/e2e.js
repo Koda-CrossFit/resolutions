@@ -124,6 +124,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await page.screenshot({ path: path.join(OUT, '04-today-new.png'), fullPage: true });
   const ci = await page.$$eval('#checklistCard .ci', (els) => els.length);
   check('new member has a checklist on Day 10', ci >= 6, ci + ' items');
+  check('a member’s Today has no beta practice note', (await page.$('.beta-note')) === null);
   check('Today shows a score out of 10', /out of 10/.test(await page.textContent('#dayHero')));
 
   // ---------------------------------------------------------------- patch saves and the on-screen day
@@ -267,7 +268,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const bland = await b7.evaluate(() => ({ tag: !!document.querySelector('.l-beta-tag'), date: document.querySelector('.l-date').textContent, weeks: document.querySelector('.l-weeks').textContent, note: document.querySelector('.l-beta').textContent, overflow: document.documentElement.scrollWidth - window.innerWidth }));
   const shortDay = (key) => new Date(key + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   check('beta link: the landing page shows the beta dates, 1 week, and says it is practice',
-    bland.tag && bland.date.indexOf(shortDay(yesterday)) >= 0 && bland.date.indexOf(shortDay(shift(yesterday, 6))) >= 0 && /1 week/i.test(bland.weeks) && /practice/.test(bland.note) && bland.overflow <= 0, JSON.stringify(bland));
+    bland.tag && bland.date.indexOf(shortDay(yesterday)) >= 0 && bland.date.indexOf(shortDay(shift(yesterday, 6))) >= 0 && /1 week/i.test(bland.weeks) && /practice/.test(bland.note) && /deleted when the beta ends/.test(bland.note) && bland.overflow <= 0, JSON.stringify(bland));
   await b7.screenshot({ path: path.join(OUT, 'beta-00-landing.png'), fullPage: true });
   await b7.click('[data-type="remote"]');
   await b7.click('[data-method="venmo"]');
@@ -298,7 +299,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await b7.click('[data-act="next"]');
   await b7.waitForSelector('#sheet', { timeout: 15000 });
   const bsheet = await b7.textContent('#sheet');
-  check('beta: the welcome sheet says it is the beta and today is Day 2', /This is the beta test/.test(bsheet) && /today is Day 2/.test(bsheet), bsheet.slice(0, 200));
+  check('beta: the welcome sheet says it is the beta, today is Day 2, and beta accounts are deleted', /This is the beta test/.test(bsheet) && /today is Day 2/.test(bsheet) && /beta accounts are deleted when the beta ends/.test(bsheet), bsheet.slice(0, 260));
   await b7.click('[data-act="close-sheet"]');
   await b7.waitForSelector('#overdueCard');
   const bt = await b7.evaluate(() => ({
@@ -312,6 +313,13 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     overflow: document.documentElement.scrollWidth - window.innerWidth,
   }));
   check('beta Today: Day 2 of 7, the beta pill', /Beta · Day 2 of 7/.test(bt.pill), bt.pill);
+  // Kevin, 11/11: beta accounts are deleted after the beta, so Today says so every day (above Overdue).
+  const bnote = await b7.evaluate(() => {
+    const n = document.querySelector('.beta-note'), od = document.querySelector('#overdueCard');
+    return n ? { text: n.textContent, beforeOverdue: !!(od && (n.compareDocumentPosition(od) & Node.DOCUMENT_POSITION_FOLLOWING)), cls: n.className } : null;
+  });
+  check('beta Today: a grey practice-only note on top says beta accounts are deleted, sign up again for Jan 18',
+    !!bnote && /practice only/.test(bnote.text) && /deleted when the beta ends/.test(bnote.text) && /sign up again/.test(bnote.text) && /January 18/.test(bnote.text) && bnote.beforeOverdue && /callout-info/.test(bnote.cls), JSON.stringify(bnote));
   // The week stays open until midnight on the first day after it (Kevin, 11/11): here that's yesterday's weekday, next week.
   check('beta Today: yesterday (Day 1) is Overdue, not filled in, open until ' + longDay(yesterday) + ' at midnight',
     /Yesterday · Day 1/.test(bt.card) && /Not filled in yet/.test(bt.card) && bt.card.indexOf('You can fill it in until ' + longDay(yesterday) + ' at midnight') >= 0 && bt.href === '#/day/' + yesterday, bt.card);
@@ -376,6 +384,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await b7.click('#overdueCard a.od-row');
   await b7.waitForSelector('#dayNote .od-note');
   check('beta: tapping it opens Day 1 with an Overdue note', b7.url().endsWith('#/day/' + yesterday) && /Overdue\./.test(await b7.textContent('#dayNote')) && /Day 1/.test(await b7.textContent('#dayHero')));
+  check('beta: a past day’s own page has no practice note (Today has it)', (await b7.$('.beta-note')) === null);
   await b7.screenshot({ path: path.join(OUT, 'beta-03-day1-overdue.png'), fullPage: true });
   const keys = await b7.$$eval('#checklistCard [data-act="answer"][data-val="1"]', (els) => els.map((e) => e.dataset.key));
   await b7.click('#checklistCard [data-act="meals-all"]');
@@ -477,7 +486,26 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     /Beta · Day 2 of 7/.test(await p10e.textContent('.day-pill')) && (await p10e.$$('#checklistCard .ci')).length >= 4 && plainPerson.Type === 'Test' && /Beta test sign-up/.test(plainPerson.Notes || ''), JSON.stringify({ type: plainPerson.Type, notes: plainPerson.Notes }));
   await p10e.screenshot({ path: path.join(OUT, 'beta-08-plain-link-today.png'), fullPage: true });
   await c10e.close();
-  await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_everyone: false } });
+  // A phone whose midnight comes before Mountain time's (11/11): on the beta's last day the server
+  // still has it open (and makes the sign-up a beta one), so the page must show the beta too, not
+  // the real $99 one. A fresh answer from the server is trusted over the phone's date.
+  check('dev world: a beta whose last day is today, everyone joins', (await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: shift(todayKey, -6), beta_everyone: true } })).ok);
+  const kiriToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Pacific/Kiritimati' });
+  const c10k = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'Pacific/Kiritimati' });
+  const p10k = await c10k.newPage();
+  p10k.on('pageerror', (e) => errors.push(e.message));
+  await p10k.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/'));
+  const kiriBeta = await p10k.waitForSelector('.l-beta', { timeout: 8000 }).then(() => true, () => false);
+  if (kiriToday > todayKey) {
+    check('a phone already on tomorrow’s date still sees the beta on its last day (the server’s date counts)', kiriBeta && !!(await p10k.$('.l-beta-tag')), 'phone ' + kiriToday + ', Mountain ' + todayKey);
+    await p10k.click('[data-type="remote"]');
+    await p10k.click('[data-method="venmo"]');
+    check('…and its payment step says not to send money (no Venmo button)', /Beta test: don’t send any money/.test(await p10k.textContent('.flow-body')) && (await p10k.$('.pay-detail a')) === null);
+  } else {
+    console.log('SKIP the time-zone check: Kiritimati and Mountain time are on the same date right now (' + todayKey + ')');
+  }
+  await c10k.close();
+  await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: yesterday, beta_everyone: false } });
   await c7.close();
   await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: '' } });
   // Beta over and turned off: a beta tester's account now looks like a January sign-up, so it says it isn't one.
