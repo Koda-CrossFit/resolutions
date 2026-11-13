@@ -260,6 +260,7 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
   .sidebar {
     display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; height: 100dvh;
     background: var(--surface); border-right: 1px solid var(--border); padding: 20px 14px;
+    overflow-y: auto; /* seven items since 11/12: short windows scroll the sidebar on its own */
   }
   .sidebar .brand { padding: 4px 10px 18px; }
   .nav-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--subtle); padding: 14px 12px 8px; }
@@ -363,8 +364,8 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
 .yn-btn.yes.is-on { background: var(--yes); border-color: var(--yes); color: var(--on-yes); }
 /* A chosen No is as plain to see as a chosen Yes (Kevin, 11/11: the light grey was hard to tell). */
 .yn-btn.no.is-on { background: var(--on-no); border-color: var(--on-no); color: var(--surface); }
-/* On the daily checklist a No is a miss: red, with an ✕ (meal chips already draw their own). */
-.ci .yn-btn.no.is-on, .meal.is-off { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
+/* On the daily checklist a No is a miss: red, with an ✕. */
+.ci .yn-btn.no.is-on { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
 .ci .yn-btn.no.is-on::before {
   content: ''; width: 13px; height: 13px; flex: none; background: currentColor;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
@@ -372,12 +373,29 @@ button.list-row:hover, a.list-row:hover { background: var(--surface-2); }
 }
 .yn-btn .ico-sm { width: 15px; height: 15px; }
 .yn[aria-disabled='true'] { opacity: .55; pointer-events: none; }
-.ci-meals { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
-.meal { height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed var(--border-strong); background: var(--surface); font-weight: 600; font-size: 13.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-.meal.is-on { background: var(--yes); color: var(--on-yes); border: 1px solid var(--yes); }
-.meal.is-off { border-style: solid; }
-.meal .ico-sm { width: 14px; height: 14px; }
-.meals-all { height: 36px; padding: 0 10px; border: 0; background: none; color: var(--brand-2); font-weight: 700; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+/* Meals (Kevin, 11/12): a big checkbox for each, two across on phones, four in a row when there's room. */
+.ci-meals { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
+.ci-meals[aria-disabled='true'] { opacity: .55; pointer-events: none; }
+.meal-box { min-height: 52px; padding: 8px 12px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); font-weight: 600; font-size: 15px; line-height: 1.2; text-align: left; display: flex; align-items: center; gap: 10px; transition: background .15s, border-color .15s; }
+.meal-box:hover { border-color: var(--silver-400); }
+/* The empty box needs 3:1 against the tile to read as a checkbox (--subtle: about 4.9:1 in both themes). */
+.mb-box { width: 28px; height: 28px; flex: none; border-radius: 8px; border: 2px solid var(--subtle); background: var(--surface); display: grid; place-items: center; transition: background .15s, border-color .15s; }
+.mb-check { width: 19px; height: 19px; stroke-width: 3; }
+.meal-box.is-on { border-color: var(--yes); background: var(--surface-2); }
+.meal-box.is-on .mb-box { background: var(--yes); border-color: var(--yes); color: var(--on-yes); }
+.meal-box:focus-visible { outline: 2px solid var(--brand-2); outline-offset: 2px; }
+@media (min-width: 640px) { .ci-meals { grid-column: 2 / -1; } }
+/* Four across only when the checklist card is wide enough for "Breakfast" in each tile (the card's
+   width, not the window's: the sidebar and the rail take room on bigger screens). */
+#checklistCard { container-type: inline-size; }
+@container (min-width: 680px) { .ci-meals { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 340px) {
+  .meal-box { padding: 8px 10px; gap: 8px; font-size: 14px; }
+  .mb-box { width: 24px; height: 24px; }
+  .mb-check { width: 17px; height: 17px; }
+}
+/* The meal row's empty third cell would otherwise take a row of its own on the narrowest phones. */
+.ci-meal-row > span:empty { display: none; }
 .ci .ci-wide { grid-column: 1 / -1; }
 @media (max-width: 420px) {
   .ci { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; padding: 12px 16px; }
@@ -773,7 +791,7 @@ a.wk-d:hover { border-color: var(--silver-400); }
 .cb-sec-body { padding: 4px 0 8px; background: var(--surface-2); }
 .cb-intro { margin: 0; padding: 12px 20px 6px; font-size: 14px; color: var(--muted); font-style: italic; }
 .cb-recipe { margin: 8px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
-.cb-recipe > summary { list-style: none; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 13px 14px; cursor: pointer; }
+.cb-recipe > summary { list-style: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 13px 14px; cursor: pointer; }
 .cb-recipe > summary::-webkit-details-marker { display: none; }
 .cb-recipe > summary:hover { background: var(--surface-2); }
 .cb-recipe[open] > summary { border-bottom: 1px solid var(--border); }
@@ -797,6 +815,17 @@ a.wk-d:hover { border-color: var(--silver-400); }
 .cb-ol li { position: relative; padding: 6px 0 6px 36px; font-size: 15px; line-height: 1.5; }
 .cb-ol li::before { content: attr(value); position: absolute; left: 0; top: 5px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--yes); color: var(--on-yes); font-size: 12.5px; font-weight: 800; }
 .cb-credit { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--muted); font-style: italic; }
+/* Dish photos (Kevin, 11/12): a thumbnail beside each recipe's name, a large one at the top of the recipe. */
+.cb-recipe > summary { padding: 10px 14px 10px 10px; }
+.cb-thumb { display: block; width: 56px; height: 56px; border-radius: 12px; object-fit: cover; background: var(--surface-3); }
+/* At most 570px wide: the photo stays 3:2 (no extra crop) and isn't stretched on big screens. */
+.cb-photo { margin: 14px 0 4px; max-width: 570px; }
+.cb-photo img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 14px; background: var(--surface-3); }
+.cb-photo figcaption { margin-top: 6px; font-size: 12px; line-height: 1.4; color: var(--subtle); overflow-wrap: anywhere; }
+.cb-photo figcaption a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* The Nutrition tab's way to the Koda Cookbook, which has its own page. */
+.tab-chip-link { display: inline-flex; align-items: center; gap: 6px; }
+.tab-chip-link .ico-sm { width: 15px; height: 15px; }
 @media (min-width: 640px) { .cb-hero { padding: 32px 30px 26px; } .cb-recipe { margin: 10px 16px; } .cb-body { padding: 4px 24px 20px; } }
 
 /* Dark mode: the navy initials circle needs a lighter navy to show on a navy card. */

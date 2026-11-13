@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.4.3';
+  var APP_VERSION = '1.4.4';
 
   /* ============================================================ small helpers */
 
@@ -289,6 +289,12 @@
       if (session !== S.session) return;
       S.loadingMe = false;
       if (!quiet && !S.me) { S.loadError = e.message; render(); }
+      else if (S.me && hasPending() && S.saveState !== 'error' && !savingNow()) {
+        // Answers from before a reload are still unsent and the server can't be reached: say so, and keep trying.
+        S.saveState = 'error';
+        repaintChecklist();
+        scheduleRetry();
+      }
     });
   }
 
@@ -392,6 +398,9 @@
     // The Progress tab became the Leaderboard (11/10); old #/progress links still land there.
     if (r.name === 'leaderboard' || r.name === 'progress') { tab = 'leaderboard'; inner = viewLeaderboard(); }
     else if (r.name === 'faqs') { tab = 'faqs'; inner = viewFaqs(); }
+    // The Koda Cookbook has its own page (11/12); old links to the Nutrition tab of it land there.
+    else if (r.name === 'nutrition' && r.args[0] === 'cookbook') { location.replace('#/cookbook'); return; }
+    else if (r.name === 'cookbook') { tab = 'cookbook'; inner = viewCookbook(); }
     else if (r.name === 'nutrition') { tab = 'nutrition'; inner = viewNutrition(r.args[0] || 'mine'); }
     else if (r.name === 'videos') { tab = 'videos'; inner = viewVideos(); }
     else if (r.name === 'profile') { tab = 'profile'; inner = viewProfile(); }
@@ -407,7 +416,7 @@
     S.renderedDay = dayKey;
     afterRender(r);
     if (tab === 'leaderboard') loadBoard(false);
-    if (tab === 'nutrition' && r.args[0] === 'cookbook') loadCookbook();
+    if (tab === 'cookbook') loadCookbook();
   }
 
   /** Replaces the page. On a re-render of the same page, the field being typed in keeps focus and caret. */
@@ -452,6 +461,7 @@
       ['today', 'Today', 'today', '#/today'],
       ['leaderboard', 'Leaderboard', 'trophy', '#/leaderboard'],
       ['nutrition', 'Nutrition', 'plate', '#/nutrition'],
+      ['cookbook', 'Koda Cookbook', 'book', '#/cookbook', 'side'],
       ['videos', 'Videos', 'video', '#/videos'],
       ['faqs', 'FAQs', 'help', '#/faqs', 'side'],
       ['profile', 'Profile', 'user', '#/profile'],
@@ -469,8 +479,9 @@
     var nav = navItems().map(function (n) {
       return '<a class="nav-item' + (active === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (active === n[0] ? ' aria-current="page"' : '') + '>' + icon(n[2]) + '<span>' + n[1] + '</span>' + (n[0] === 'today' ? badge : '') + '</a>';
     }).join('');
-    // The phone tab bar has room for five: sidebar-only items (FAQs) live under Profile there.
-    var tabActive = active === 'faqs' ? 'profile' : active;
+    // The phone tab bar has room for five: sidebar-only items live under Profile (FAQs) or
+    // Nutrition (the Koda Cookbook) there.
+    var tabActive = active === 'faqs' ? 'profile' : active === 'cookbook' ? 'nutrition' : active;
     var tabs = navItems().filter(function (n) { return n[4] !== 'side'; }).map(function (n) {
       return '<a class="tab' + (tabActive === n[0] ? ' is-on' : '') + '" href="' + n[3] + '"' + (tabActive === n[0] ? ' aria-current="page"' : '') + '><span class="tab-ico">' + icon(n[2]) + (n[0] === 'today' ? badge : '') + '</span>' + n[1] + '</a>';
     }).join('');
@@ -621,13 +632,17 @@
 
   /* ============================================================ overdue days */
 
-  /** Everyday habits on a day's list with no Yes or No yet (the finisher and a bonus task are optional). Null when the day has no list. */
+  /**
+   * Everyday habits on a day's list with no Yes or No yet (the finisher and a bonus task are
+   * optional, and meals are checkboxes: an unchecked meal is an answer, "not on plan"). Null when
+   * the day has no list.
+   */
   function habitsLeft(date) {
     var items = itemsForDate(date);
     if (!items) return null;
     var a = answersFor(date), n = 0;
     items.forEach(function (it) {
-      if (it.bonus || it.units.some(function (u) { return Number(u[2]) !== 0; })) return;
+      if (it.kind === 'meals' || it.bonus || it.units.some(function (u) { return Number(u[2]) !== 0; })) return;
       if (it.units.some(function (u) { return a[u[0]] !== 1 && a[u[0]] !== 0; })) n++;
     });
     return n;
@@ -1408,13 +1423,13 @@
     if (it.kind === 'meals') {
       var yes = it.units.filter(function (u) { return a[u[0]] === 1; }).length;
       var cls = yes === it.units.length ? ' is-done' : '';
-      var chips = it.units.map(function (u) {
-        var v = a[u[0]];
-        return '<button class="meal' + (v === 1 ? ' is-on' : v === 0 ? ' is-off' : '') + '" data-act="meal" data-date="' + date + '" data-key="' + esc(u[0]) + '" aria-pressed="' + (v === 1) + '"' + (can ? '' : ' disabled') + '>' + (v === 1 ? icon('check', 'ico-sm') : v === 0 ? icon('x', 'ico-sm') : '') + esc(u[3] || 'Meal') + '</button>';
+      // Kevin, 11/12: a big checkbox for each meal. Checked = on plan; unchecked = not (no "All on plan").
+      var boxes = it.units.map(function (u) {
+        var on = a[u[0]] === 1;
+        return '<button class="meal-box' + (on ? ' is-on' : '') + '" role="checkbox" aria-checked="' + on + '" data-act="meal" data-date="' + date + '" data-key="' + esc(u[0]) + '"' + (can ? '' : ' disabled') + '><span class="mb-box">' + (on ? icon('check', 'mb-check') : '') + '</span><span class="mb-label">' + esc(u[3] || 'Meal') + '</span></button>';
       }).join('');
-      return '<li class="ci' + cls + '"><span class="ci-icon">' + (yes === it.units.length ? icon('check') : icon(it.icon || 'plate')) + '</span><div><div class="ci-label">' + esc(it.label) + '</div><div class="ci-sub">' + esc(it.sub || '') + (it.sub ? ' · ' : '') + yes + ' of ' + it.units.length + ' on plan</div></div>' +
-        (can ? '<button class="meals-all" data-act="meals-all" data-date="' + date + '">All on plan</button>' : '<span></span>') +
-        '<div class="ci-meals"' + dis + '>' + chips + '</div></li>';
+      return '<li class="ci ci-meal-row' + cls + '"><span class="ci-icon">' + (yes === it.units.length ? icon('check') : icon(it.icon || 'plate')) + '</span><div><div class="ci-label">' + esc(it.label) + '</div><div class="ci-sub">' + esc(it.sub || '') + (it.sub ? ' · ' : '') + yes + ' of ' + it.units.length + ' on plan</div></div><span></span>' +
+        '<div class="ci-meals" role="group" aria-label="' + esc(it.label) + ': meals on plan"' + dis + '>' + boxes + '</div></li>';
     }
     var k = it.units[0][0];
     var v = a[k];
@@ -1538,7 +1553,7 @@
     var getReady = '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Get ready for Day 1</h3><span class="badge">' + C.getReady.filter(function (x, i) { return ready[i]; }).length + ' of ' + C.getReady.length + '</span></div><ul class="checklist">' +
       C.getReady.map(function (g, i) {
         var on = !!ready[i];
-        var more = g.cookbook ? ' <a href="#/nutrition/cookbook">Open the cookbook</a>' : g.link ? ' <a href="' + g.link + '">Open</a>' : '';
+        var more = g.cookbook ? ' <a href="#/cookbook">Open the cookbook</a>' : g.link ? ' <a href="' + g.link + '">Open</a>' : '';
         return '<li class="ci' + (on ? ' is-done' : '') + '"><span class="ci-icon">' + icon(on ? 'check' : 'calendar') + '</span><div><div class="ci-label">' + esc(g.title) + '</div><div class="ci-sub">' + esc(g.text) + more + '</div></div>' +
           '<button class="yn-btn yes' + (on ? ' is-on' : '') + '" data-act="ready" data-i="' + i + '" aria-pressed="' + on + '">' + (on ? icon('check', 'ico-sm') + 'Done' : 'Done?') + '</button></li>';
       }).join('') + '</ul></section>';
@@ -1636,8 +1651,9 @@
   /* ============================================================ saving answers */
 
   /**
-   * wasLeft: habits still unanswered before this tap, when the caller already changed some (All on
-   * plan). Returns true when this answer finished an earlier day (and says so unless quiet).
+   * wasLeft: habits still unanswered before this tap, if the caller already changed some (no caller
+   * does since All on plan went, 11/12). Returns true when this answer finished an earlier day (and
+   * says so unless quiet).
    */
   function setAnswer(date, key, val, wasLeft, quiet) {
     if (!editable(date)) return false;
@@ -1651,7 +1667,8 @@
     var caughtUp = date !== S.me.program.today && before > 0 && habitsLeft(date) === 0;
     if (caughtUp && !quiet) toast(dayName(date) + ' is all caught up.');
     clearTimeout(S.saveTimers[date]);
-    S.saveTimers[date] = setTimeout(function () { flushSave(date); }, 650);
+    // A save that's only scheduled still counts as saving (see flushSave), so it never reads as failed.
+    S.saveTimers[date] = setTimeout(function () { delete S.saveTimers[date]; flushSave(date); }, 650);
     return caughtUp;
   }
 
@@ -1661,7 +1678,11 @@
    */
   function flushSave(date) {
     var pend = S.pending[date];
-    if (!pend || !Object.keys(pend).length) return Promise.resolve();
+    if (!pend || !Object.keys(pend).length) {
+      // Nothing left to send (an earlier save already carried it): settle the label unless another save is on its way.
+      if (S.saveState === 'saving' && !savingNow()) { S.saveState = hasPending() ? 'error' : 'saved'; repaintChecklist(); }
+      return Promise.resolve();
+    }
     if (S.inflight[date]) { S.again[date] = true; return Promise.resolve(); }
     if (!S.me || !S.token) return Promise.resolve();
     var session = S.session;
@@ -1692,10 +1713,19 @@
       if (session !== S.session) return;
       S.inflight[date] = false;
       if (S.again[date]) { S.again[date] = false; flushSave(date); return; }
-      var busy = Object.keys(S.inflight).some(function (d) { return S.inflight[d]; });
-      S.saveState = busy ? 'saving' : hasPending() ? 'error' : 'saved';
+      S.saveState = savingNow() ? 'saving' : hasPending() ? 'error' : 'saved';
       updateChecklistOnly(date);
     });
+  }
+
+  /** A save on its way or scheduled (a tap's 650 ms timer counts), so the label should say "Saving…". */
+  function savingNow() {
+    return Object.keys(S.inflight).some(function (d) { return S.inflight[d]; }) || Object.keys(S.saveTimers).length > 0;
+  }
+  /** Repaints the checklist on screen, whichever day it shows (its header carries the save label). */
+  function repaintChecklist() {
+    var card = document.getElementById('checklistCard');
+    if (card) updateChecklistOnly(card.getAttribute('data-date'));
   }
 
   /** Failed saves (no signal, server busy) try again on their own: 5 s, 15 s, 45 s, then every 2 minutes. */
@@ -1716,7 +1746,11 @@
       flushSave(date);
     });
     persistPending();
-    if (dropped) toast('Some answers for a day that’s now locked couldn’t be saved.', true);
+    if (dropped) {
+      toast('Some answers for a day that’s now locked couldn’t be saved.', true);
+      // Nothing is left to retry, so a "Not saved" from before would only mislead.
+      if (S.saveState === 'error' && !hasPending() && !savingNow()) { S.saveState = 'idle'; repaintChecklist(); }
+    }
   }
 
   /* ============================================================ leaderboard */
@@ -1836,15 +1870,16 @@
   function viewNutrition(tab) {
     var s = S.me.person.setup, t = s.track || {};
     var plan = t.nutrition ? s.plan : 'recommended';
-    var tabs = [['mine', 'My plan'], ['recommended', 'Recommended'], ['plant', 'Plant Based'], ['other', 'Other plans'], ['cookbook', 'Koda Cookbook'], ['resources', 'More']];
+    var tabs = [['mine', 'My plan'], ['recommended', 'Recommended'], ['plant', 'Plant Based'], ['other', 'Other plans'], ['resources', 'More']];
+    // The Koda Cookbook is its own page now (11/12); on phones, with no sidebar, this chip is the way in.
     var head = '<h1 class="page-title">Nutrition</h1><p class="page-sub">Your food rules and resources for all six weeks.</p>' +
-      '<div class="tabs-scroll" role="tablist">' + tabs.map(function (x) { return '<a class="tab-chip' + (tab === x[0] ? ' is-on' : '') + '" role="tab" aria-selected="' + (tab === x[0]) + '" href="#/nutrition/' + x[0] + '">' + x[1] + '</a>'; }).join('') + '</div>';
+      '<div class="tabs-scroll" role="tablist">' + tabs.map(function (x) { return '<a class="tab-chip' + (tab === x[0] ? ' is-on' : '') + '" role="tab" aria-selected="' + (tab === x[0]) + '" href="#/nutrition/' + x[0] + '">' + x[1] + '</a>'; }).join('') +
+      '<a class="tab-chip tab-chip-link" role="tab" aria-selected="false" href="#/cookbook">' + icon('book', 'ico-sm') + 'Koda Cookbook</a></div>';
     var body;
     if (tab === 'recommended') body = guideHtml('recommended');
     else if (tab === 'plant') body = guideHtml('plant');
     else if (tab === 'other') body = otherPlansHtml();
     else if (tab === 'resources') body = resourcesHtml();
-    else if (tab === 'cookbook') body = cookbookHtml();
     else {
       var info = planInfo(plan) || {};
       var label = plan === 'other' && s.planOther ? s.planOther : info.label;
@@ -1909,7 +1944,7 @@
 
   function resourcesHtml() {
     var c = S.config;
-    return '<a class="card list-row" style="border-radius:var(--radius-lg)" href="#/nutrition/cookbook"><span class="avatar silver">' + icon('book') + '</span><span class="grow"><span class="title">Koda Cookbook</span><span class="meta" style="display:block">Recipes from the Koda community, right here in the app.</span></span>' + icon('chevR') + '</a>' +
+    return '<a class="card list-row" style="border-radius:var(--radius-lg)" href="#/cookbook"><span class="avatar silver">' + icon('book') + '</span><span class="grow"><span class="title">Koda Cookbook</span><span class="meta" style="display:block">Recipes from the Koda community, right here in the app.</span></span>' + icon('chevR') + '</a>' +
       '<section class="card card-pad prose" style="margin-top:16px"><div class="plan-hero" style="margin-bottom:12px"><span class="icon-tile">' + icon('scale', 'ico-lg') + '</span><span><span style="display:block;font-size:19px;font-weight:800">InBody scan</span><span class="muted" style="font-size:14px">Optional, at the start and end of the challenge</span></span></div>' +
         '<p><b>Before your scan:</b></p><ul><li>No eating or exercise for 3 hours before.</li><li>Be hydrated (water alongside any coffee).</li><li>No alcohol or flying the night before.</li><li>Light clothes, with arms and thighs not touching.</li><li>Not for anyone with a pacemaker or who is pregnant.</li></ul>' +
         '<p><b>Taking it:</b> download the InBody app, connect to the scanner over Bluetooth, enter your height, stand barefoot with heels on the back edge, and hold the handles out at about 45°.</p></section>' +
@@ -1922,7 +1957,7 @@
   function loadCookbook(force) {
     if (S.cookbook || S.cookbookLoading || (!force && S.cookbookError)) return;
     S.cookbookLoading = true;
-    var onTab = function () { var r = route(); return r.name === 'nutrition' && r.args[0] === 'cookbook'; };
+    var onTab = function () { return route().name === 'cookbook'; };
     fetch('content/cookbook.json?v=' + APP_VERSION).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
@@ -1936,6 +1971,12 @@
       S.cookbookError = 'The cookbook didn’t load. Check your connection and try again.';
       if (onTab()) render();
     });
+  }
+
+  /** The Koda Cookbook's own page (Kevin, 11/12: its own sidebar item). On phones it sits under Nutrition. */
+  function viewCookbook() {
+    return '<a class="btn btn-ghost btn-sm phone-only" href="#/nutrition" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Nutrition</a>' +
+      '<h1 class="sr-only">Koda Cookbook</h1>' + cookbookHtml();
   }
 
   /**
@@ -2006,8 +2047,21 @@
       return '<div class="cb-block">' + (b.heading ? '<h4>' + esc(b.heading) + '</h4>' : '') + cookbookLines(b.lines || []) + '</div>';
     }).join('');
     var tags = (r.tags || []).length ? '<span class="cb-tags">' + r.tags.map(function (t) { return '<span class="cb-tag-chip">' + esc(t) + '</span>'; }).join('') + '</span>' : '';
-    return '<details class="cb-recipe" id="r-' + esc(r.id) + '"><summary><span class="cb-num">' + esc(r.n) + '</span><span class="cb-rt"><b>' + esc(r.title) + '</b>' + tags + '</span>' + icon('chevR', 'ico-sm acc-chev') + '</summary>' +
-      '<div class="cb-body">' + body + (credit ? '<p class="cb-credit">Recipe from ' + esc(credit) + '</p>' : '') + '</div></details>';
+    // Kevin, 11/12: a picture of each dish (an example photo with its licence credit; see content/cookbook-photos.json).
+    var ph = r.photo;
+    var lead = ph && ph.thumb ? '<img class="cb-thumb" src="' + esc(ph.thumb) + '" alt="" width="56" height="56" loading="lazy" decoding="async">' : '<span class="cb-num">' + esc(r.n) + '</span>';
+    var hero = ph && ph.src ? '<figure class="cb-photo"><img src="' + esc(ph.src) + '" alt="' + esc(ph.alt || r.title) + '" width="960" height="640" loading="lazy" decoding="async"><figcaption>' + photoCredit(ph) + '</figcaption></figure>' : '';
+    return '<details class="cb-recipe" id="r-' + esc(r.id) + '"><summary>' + lead + '<span class="cb-rt"><b>' + esc(r.title) + '</b>' + tags + '</span>' + icon('chevR', 'ico-sm acc-chev') + '</summary>' +
+      '<div class="cb-body">' + hero + body + (credit ? '<p class="cb-credit">Recipe from ' + esc(credit) + '</p>' : '') + '</div></details>';
+  }
+
+  /** The credit a Creative Commons photo needs: its title, who took it, where it's from, its licence, and that it was cropped (CC0 and public domain say so too). */
+  function photoCredit(ph) {
+    var link = function (url, text) { return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(text) + '</a>' : esc(text); };
+    var lic = ph.license === 'cc0' ? 'CC0' : ph.license === 'pdm' ? 'public domain' : 'CC ' + String(ph.license || '').toUpperCase() + (ph.licenseVersion ? ' ' + ph.licenseVersion : '');
+    var title = String(ph.title || '').replace(/\s+/g, ' ').trim();
+    var lead = title ? 'Example photo: ' + link(ph.landing, '“' + title + '”') : link(ph.landing, 'Example photo');
+    return lead + (ph.creator ? ' by ' + link(ph.creatorUrl, ph.creator) : '') + ' · ' + link(ph.licenseUrl, lic) + ', cropped';
   }
 
   /* ============================================================ videos */
@@ -2421,15 +2475,10 @@
         setAnswer(date, key, cur === val ? null : val);
         break;
       case 'meal':
+        // A checkbox: on plan (1), or unchecked = no answer (null clears it), so ticking and
+        // unticking leaves the day exactly as it was (not logged, not a 0).
         var md = el.dataset.date, mk = el.dataset.key, mv = answersFor(md)[mk];
-        setAnswer(md, mk, mv === 1 ? 0 : 1);
-        break;
-      case 'meals-all':
-        var ad = el.dataset.date, items = itemsForDate(ad) || [];
-        if (!editable(ad)) break;
-        var wasLeft = habitsLeft(ad);
-        items.forEach(function (it) { if (it.kind === 'meals') it.units.forEach(function (u) { S.pending[ad] = S.pending[ad] || {}; S.pending[ad][u[0]] = 1; }); });
-        setAnswer(ad, 'nutrition:m1', 1, wasLeft);
+        setAnswer(md, mk, mv === 1 ? null : 1);
         break;
       case 'play': playVideo(el.dataset.date); break;
       case 'ext-video': setTimeout(function () { markWatched(el.dataset.date); }, 1500); break;

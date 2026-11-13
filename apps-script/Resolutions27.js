@@ -22,7 +22,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.7.0 (2026-11-11)';
+var RES27_VERSION = '1.7.1 (2026-11-12)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -1316,10 +1316,8 @@ function res27AnswersText_(items, answers) {
         var yes = item.units.filter(function (u) {
           return answers[u[0]] === 1;
         }).length;
-        var answered = item.units.filter(function (u) {
-          return answers[u[0]] === 1 || answers[u[0]] === 0;
-        }).length;
-        return 'Meals ' + (answered ? yes + '/4' : '–');
+        // Meals are checkboxes since 11/12: unchecked means not on plan, so always a count ("Meals 0/4").
+        return 'Meals ' + yes + '/' + item.units.length;
       }
       var a = answers[item.units[0][0]];
       var mark = a === 1 ? '✓' : a === 0 ? '✗' : '–';

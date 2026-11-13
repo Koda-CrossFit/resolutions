@@ -590,15 +590,51 @@ function toJson(book) {
   return json + '\n';
 }
 
+/**
+ * Kevin, 11/12/2026: a picture of each dish. The PDF has none, so each recipe gets a free-licensed
+ * example photo picked to match it (content/cookbook-photos.json, by recipe id; the files are in
+ * assets/cookbook/ and assets/cookbook/thumbs/). Returns problems; a recipe without a photo is fine.
+ */
+function attachPhotos(book, photos, root) {
+  const problems = [];
+  const ids = new Set();
+  const used = new Map();
+  for (const s of book.sections) for (const r of s.recipes) {
+    ids.add(r.id);
+    const p = photos[r.id];
+    if (!p) continue;
+    for (const k of ['src', 'thumb', 'landing', 'license', 'licenseUrl']) if (!p[k]) problems.push(r.id + ': photo has no ' + k);
+    if (p.license && !['cc0', 'pdm', 'by', 'by-sa'].includes(p.license)) problems.push(r.id + ': licence ' + p.license + ' is not one we can use');
+    if (['by', 'by-sa'].includes(p.license) && !p.creator) problems.push(r.id + ': a CC BY photo needs its creator for the credit');
+    for (const k of ['landing', 'licenseUrl', 'creatorUrl']) {
+      if (p[k] && !/^https:\/\/[^\s"'<>]+$/.test(p[k])) problems.push(r.id + ': ' + k + ' must be an https link');
+      else if (p[k] && /&amp;|[?&](action=edit|redlink=1)(&|$)/.test(p[k])) problems.push(r.id + ': ' + k + ' is an escaped or "create this page" link');
+    }
+    if (p.src && !/^assets\/cookbook\/[a-z0-9-]+\.jpg$/.test(p.src)) problems.push(r.id + ': src must be assets/cookbook/<name>.jpg');
+    if (p.thumb && !/^assets\/cookbook\/thumbs\/[a-z0-9-]+\.jpg$/.test(p.thumb)) problems.push(r.id + ': thumb must be assets/cookbook/thumbs/<name>.jpg');
+    for (const f of [p.src, p.thumb]) if (f && root && !fs.existsSync(path.join(root, f))) problems.push(r.id + ': missing file ' + f);
+    if (p.landing && used.has(p.landing)) problems.push(r.id + ': same photo as ' + used.get(p.landing));
+    used.set(p.landing, r.id);
+    // title: the photo's own title on its page (CC 2.0 and 3.0 credits name it when the author gave one).
+    r.photo = { src: p.src, thumb: p.thumb, alt: p.alt || r.title, title: p.title || '', landing: p.landing, creator: p.creator || '', creatorUrl: p.creatorUrl || '', license: p.license, licenseVersion: p.licenseVersion || '', licenseUrl: p.licenseUrl };
+  }
+  for (const id of Object.keys(photos)) if (!ids.has(id)) problems.push('photo for unknown recipe ' + id);
+  return problems;
+}
+
 function main() {
   const source = process.argv[2] || DEFAULT_SOURCE;
   const { book, notes, removed, multiPage } = parse(fs.readFileSync(source, 'utf8'));
   const problems = check(book);
+  const photosFile = path.join(__dirname, '..', 'content', 'cookbook-photos.json');
+  if (fs.existsSync(photosFile)) problems.push(...attachPhotos(book, JSON.parse(fs.readFileSync(photosFile, 'utf8')), path.join(__dirname, '..')));
   if (problems.length) {
     console.error('Not written:\n  ' + problems.join('\n  '));
     process.exit(1);
   }
   fs.writeFileSync(OUTPUT, toJson(book));
+  const withPhoto = book.sections.reduce((n, s) => n + s.recipes.filter((r) => r.photo).length, 0);
+  console.log('photos: ' + withPhoto + ' of ' + book.count + ' recipes');
   const headings = {};
   for (const s of book.sections) for (const r of s.recipes) {
     for (const h of new Set(r.blocks.map((b) => b.heading || '(text before the first heading)'))) headings[h] = (headings[h] || 0) + 1;
@@ -612,4 +648,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { parse, check, unescape, textWidth, OVERRIDES };
+module.exports = { parse, check, unescape, textWidth, OVERRIDES, attachPhotos };

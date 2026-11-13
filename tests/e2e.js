@@ -129,11 +129,61 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ---------------------------------------------------------------- patch saves and the on-screen day
   await page.click('[data-act="answer"][data-key="workout"][data-val="1"]');
-  await page.click('[data-act="meals-all"]');
+  // Kevin, 11/12: each meal is a big checkbox (no "All on plan").
+  const mealsBefore = await page.evaluate(() => ({ boxes: Array.from(document.querySelectorAll('#checklistCard .meal-box')).map((b) => [b.getAttribute('role'), b.getAttribute('aria-checked'), b.textContent.trim(), Math.round(b.getBoundingClientRect().height)]), allOnPlan: !!document.querySelector('[data-act="meals-all"]') }));
+  check('meals: four big checkboxes, unchecked, and no "All on plan"', mealsBefore.boxes.length === 4 && mealsBefore.boxes.every((b) => b[0] === 'checkbox' && b[1] === 'false' && b[3] >= 48) && !mealsBefore.allOnPlan && /Breakfast/.test(mealsBefore.boxes[0][2]), JSON.stringify(mealsBefore));
+  for (let i = 0; i < 4; i++) {
+    await page.click('#checklistCard .meal-box:not(.is-on)');
+    await wait(80);
+  }
+  check('meals: each tap checks its box', (await page.$$eval('#checklistCard .meal-box[aria-checked="true"]', (els) => els.length)) === 4);
+  await page.screenshot({ path: path.join(OUT, '04b-meal-checkboxes.png') });
   await wait(1500);
   let rows = await get('/dev/rows?tab=Check-ins');
   let mine = rows.filter((r) => r.Name === 'Taylor Brooks');
   check('taps saved to the sheet', mine.length === 1 && /Meals 4\/4/.test(mine[0].Answers) && /Daily workout ✓/.test(mine[0].Answers), mine[0] && mine[0].Answers);
+  // Review 11/12: the four boxes are one labelled group, and unticking leaves no answer (not a 0),
+  // so tick + untick puts a meal back exactly as it was.
+  const mealGroup = await page.getAttribute('#checklistCard .ci-meals', 'aria-label');
+  check('meals: the checkboxes are a labelled group', await page.getAttribute('#checklistCard .ci-meals', 'role') === 'group' && /meals on plan/.test(mealGroup || ''), mealGroup);
+  const firstMeal = await page.getAttribute('#checklistCard .meal-box', 'data-key');
+  await page.click('#checklistCard .meal-box[data-key="' + firstMeal + '"]');
+  await wait(1500);
+  const unticked = await page.evaluate((k) => { const c = JSON.parse(localStorage.getItem('res27.me')); const a = (c.me.history[c.me.program.today] || {}).a || {}; return { has: Object.prototype.hasOwnProperty.call(a, k), v: a[k], label: document.querySelector('#checklistCard .save-state') && document.querySelector('#checklistCard .save-state').textContent }; }, firstMeal);
+  rows = await get('/dev/rows?tab=Check-ins');
+  mine = rows.filter((r) => r.Name === 'Taylor Brooks');
+  check('meals: unticking saves no answer for that meal (not a 0), and the sheet counts 3/4', !unticked.has && /Meals 3\/4/.test(mine[0].Answers) && /Saved/.test(unticked.label || ''), JSON.stringify(unticked) + ' ' + (mine[0] && mine[0].Answers));
+  await page.click('#checklistCard .meal-box[data-key="' + firstMeal + '"]');
+  await wait(1500);
+  // Review 11/12: a tap landing while an earlier save is still on its way must read "Saving…", never
+  // a red "Not saved" (its save is only scheduled, not failed).
+  await get('/dev/slow?ms=1200');
+  const states = [];
+  const sampler = setInterval(() => { page.textContent('#checklistCard .save-state').then((t) => states.push(t), () => {}); }, 100);
+  const mealKeys = await page.$$eval('#checklistCard .meal-box', (els) => els.map((e) => e.dataset.key));
+  await page.click('#checklistCard .meal-box[data-key="' + mealKeys[1] + '"]');
+  await wait(1500);
+  await page.click('#checklistCard .meal-box[data-key="' + mealKeys[2] + '"]');
+  await wait(3600);
+  clearInterval(sampler);
+  await get('/dev/slow?ms=0');
+  check('saving: quick taps during a slow save never show "Not saved", and end on "Saved"', states.length > 20 && !states.some((s) => /Not saved/.test(s || '')) && /Saved/.test(states[states.length - 1] || ''), JSON.stringify(Array.from(new Set(states))));
+  for (const k of [mealKeys[1], mealKeys[2]]) { await page.click('#checklistCard .meal-box[data-key="' + k + '"]'); await wait(100); }
+  await wait(1500);
+  // Final review 11/12: flipping one box back to what's already being saved leaves nothing to send;
+  // the label must still settle on "Saved" (it used to stay on "Saving…").
+  await get('/dev/slow?ms=1200');
+  await page.click('#checklistCard .meal-box[data-key="' + mealKeys[3] + '"]'); // untick: its save goes out
+  await wait(900);
+  await page.click('#checklistCard .meal-box[data-key="' + mealKeys[3] + '"]'); // tick…
+  await wait(120);
+  await page.click('#checklistCard .meal-box[data-key="' + mealKeys[3] + '"]'); // …and untick again, as being saved
+  await wait(3500);
+  const settled = await page.textContent('#checklistCard .save-state');
+  await get('/dev/slow?ms=0');
+  check('saving: flipping a box back to the value being saved still ends on "Saved"', /Saved/.test(settled || ''), settled);
+  await page.click('#checklistCard .meal-box[data-key="' + mealKeys[3] + '"]');
+  await wait(1500);
   await page.click('[data-act="answer"][data-key="sleep"][data-val="1"]');
   await page.goto(BASE + '/#/day/2027-01-26');
   await wait(1500);
@@ -387,7 +437,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check('beta: a past day’s own page has no practice note (Today has it)', (await b7.$('.beta-note')) === null);
   await b7.screenshot({ path: path.join(OUT, 'beta-03-day1-overdue.png'), fullPage: true });
   const keys = await b7.$$eval('#checklistCard [data-act="answer"][data-val="1"]', (els) => els.map((e) => e.dataset.key));
-  await b7.click('#checklistCard [data-act="meals-all"]');
+  for (let i = 0; i < 4; i++) {
+    await b7.click('#checklistCard .meal-box:not(.is-on)');
+    await wait(60);
+  }
   await wait(150);
   check('beta: halfway through, the note counts the habits still open', /still need/.test(await b7.textContent('#dayNote')), await b7.textContent('#dayNote'));
   for (const k of keys) {
@@ -432,7 +485,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await p9.click('.sidebar a.nav-item[href="#/faqs"]');
   await p9.waitForSelector('.ask-card');
   const faqDesk = await p9.evaluate(() => ({ on: (document.querySelector('.sidebar .nav-item.is-on') || {}).textContent, back: getComputedStyle(document.querySelector('.phone-only')).display }));
-  check('desktop sidebar: FAQs is its own item (before Profile), highlighted on its page, no "‹ Profile" link', side.join(',') === 'Today1,Leaderboard,Nutrition,Videos,FAQs,Profile' && /FAQs/.test(faqDesk.on) && faqDesk.back === 'none', side.join(',') + ' ' + JSON.stringify(faqDesk));
+  check('desktop sidebar: FAQs is its own item (before Profile), highlighted on its page, no "‹ Profile" link', side.join(',') === 'Today1,Leaderboard,Nutrition,Koda Cookbook,Videos,FAQs,Profile' && /FAQs/.test(faqDesk.on) && faqDesk.back === 'none', side.join(',') + ' ' + JSON.stringify(faqDesk));
   await p9.screenshot({ path: path.join(OUT, 'faqs-desktop.png'), fullPage: true });
   await c9.close();
   // A phone without the beta link (e.g. a home-screen app opened first) can still join the beta.
@@ -652,10 +705,13 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await p12.waitForSelector('.plan-hero');
   const otherFirst = (await p12.textContent('.plan-hero')).trim();
   check('Nutrition › Other plans: Macros is first, above Whole30', /^Macros/.test(otherFirst), otherFirst.slice(0, 40));
-  const ntabs = await p12.$$eval('.tab-chip', (els) => els.map((e) => e.textContent.trim()));
-  check('Nutrition tabs: a Koda Cookbook tab', ntabs.indexOf('Koda Cookbook') >= 0, ntabs.join(','));
+  const ntabs = await p12.$$eval('.tab-chip', (els) => els.map((e) => [e.textContent.trim(), e.getAttribute('href')]));
+  check('Nutrition: a Koda Cookbook chip that opens its own page', ntabs.some((t) => t[0] === 'Koda Cookbook' && t[1] === '#/cookbook'), JSON.stringify(ntabs));
+  // Old links to the cookbook's Nutrition tab land on its own page (11/12).
   await p12.goto(BASE + '/#/nutrition/cookbook');
   await p12.waitForSelector('.cb-sec', { timeout: 15000 });
+  const cbPage = await p12.evaluate(() => ({ hash: location.hash, tab: (document.querySelector('.tabbar .tab.is-on') || {}).textContent, back: (document.querySelector('a.phone-only[href="#/nutrition"]') || {}).textContent }));
+  check('Cookbook: its own page (#/cookbook); on phones the Nutrition tab stays lit, with a ‹ Nutrition link', cbPage.hash === '#/cookbook' && /Nutrition/.test(cbPage.tab || '') && /Nutrition/.test(cbPage.back || ''), JSON.stringify(cbPage));
   const cb = await p12.evaluate(() => ({
     sections: Array.from(document.querySelectorAll('.cb-sec .cb-sec-name b')).map((b) => b.textContent),
     recipes: document.querySelectorAll('.cb-recipe').length,
@@ -670,6 +726,19 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     return { open: r.open, title: r.querySelector('.cb-rt b').textContent, heads: Array.from(r.querySelectorAll('.cb-block h4')).map((h) => h.textContent), items: r.querySelectorAll('.cb-ul li').length, steps: r.querySelectorAll('.cb-ol li').length };
   });
   check('Cookbook: Breakfast opens to its recipes; a recipe opens to ingredients and directions', r1.open && r1.title === 'Banana Pancakes' && r1.heads.indexOf('INGREDIENTS') >= 0 && r1.heads.indexOf('DIRECTIONS') >= 0 && r1.items >= 3 && r1.steps >= 3, JSON.stringify(r1));
+  // Kevin, 11/12: a picture of each dish (thumbnail on the list, photo + licence credit in the recipe).
+  await p12.waitForFunction(() => { const i = document.querySelector('#cb-breakfast .cb-recipe[open] .cb-photo img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 }).catch(() => {});
+  const ph = await p12.evaluate(() => {
+    const r = document.querySelector('#cb-breakfast .cb-recipe');
+    const img = r.querySelector('.cb-photo img');
+    const cap = r.querySelector('.cb-photo figcaption');
+    return { thumbs: document.querySelectorAll('#cb-breakfast .cb-thumb').length, recipes: document.querySelectorAll('#cb-breakfast .cb-recipe').length, hero: img ? [img.naturalWidth, img.getAttribute('alt')] : null, credit: cap ? cap.textContent : '', links: cap ? Array.from(cap.querySelectorAll('a')).map((a) => a.getAttribute('href')) : [], overflow: document.documentElement.scrollWidth - window.innerWidth };
+  });
+  // A recipe no photo matched shows its number instead (a wrong or off-plan photo would be worse).
+  const cbData = await (await fetch(BASE + '/content/cookbook.json')).json();
+  const bfPhotos = cbData.sections.find((s) => s.id === 'breakfast').recipes.filter((r) => r.photo).length;
+  ph.expectedThumbs = bfPhotos;
+  check('Cookbook photos: every Breakfast recipe with a photo has its thumbnail; the open recipe shows its photo with a licence credit', bfPhotos >= ph.recipes - 3 && ph.thumbs === bfPhotos && ph.hero && ph.hero[0] >= 900 && /^Example photo/.test(ph.credit) && /CC|public domain/.test(ph.credit) && ph.links.some((h) => /creativecommons\.org/.test(h)) && ph.overflow <= 0, JSON.stringify(ph));
   await p12.screenshot({ path: path.join(OUT, 'cookbook-01-recipe.png'), fullPage: true });
   await p12.fill('[data-cbsearch]', 'salmon');
   await wait(200);
@@ -683,7 +752,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: scheme });
     const p2 = await c2.newPage();
     p2.on('pageerror', (e) => errors.push(e.message));
-    for (const [name, hash] of [['today', '#/today'], ['leaderboard', '#/leaderboard'], ['nutrition', '#/nutrition'], ['cookbook', '#/nutrition/cookbook'], ['videos', '#/videos'], ['profile', '#/profile'], ['faqs', '#/faqs']]) {
+    for (const [name, hash] of [['today', '#/today'], ['leaderboard', '#/leaderboard'], ['nutrition', '#/nutrition'], ['cookbook', '#/cookbook'], ['videos', '#/videos'], ['profile', '#/profile'], ['faqs', '#/faqs']]) {
       await p2.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent(hash));
       await wait(1200);
       await p2.screenshot({ path: path.join(OUT, `phone-${scheme}-${name}.png`), fullPage: true });
@@ -692,11 +761,14 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   }
   const c3 = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const p3 = await c3.newPage();
-  for (const [name, hash] of [['today', '#/today'], ['leaderboard', '#/leaderboard'], ['cookbook', '#/nutrition/cookbook']]) {
+  for (const [name, hash] of [['today', '#/today'], ['leaderboard', '#/leaderboard'], ['cookbook', '#/cookbook']]) {
     await p3.goto(BASE + '/dev/as?email=demo%40koda.test&password=koda2027&to=' + encodeURIComponent(hash));
     await wait(1200);
     await p3.screenshot({ path: path.join(OUT, `desktop-${name}.png`), fullPage: true });
   }
+  // Desktop sidebar (11/12): the Koda Cookbook is its own item, right after Nutrition, lit on its page.
+  const deskNav = await p3.evaluate(() => ({ items: Array.from(document.querySelectorAll('.sidebar .nav-item span:not(.od-badge)')).map((s) => s.textContent.trim()), on: (document.querySelector('.sidebar .nav-item.is-on') || {}).textContent }));
+  check('desktop sidebar: Koda Cookbook is its own item after Nutrition, lit on its page', deskNav.items.join(',') === 'Today,Leaderboard,Nutrition,Koda Cookbook,Videos,FAQs,Profile' && /Koda Cookbook/.test(deskNav.on || ''), JSON.stringify(deskNav));
   await c3.close();
   await browser.close();
 

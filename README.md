@@ -73,12 +73,25 @@ person's total. If a change is needed, make several at once.
 
 ### Koda Cookbook
 
-Nutrition › **Koda Cookbook** is the 2026 Koda Resolutions Cookbook (the PDF in the gym's Drive):
-its six sections (Breakfast, Lunch, Dinner, Soups & Chili, Snacks, Sides) open to their recipes,
-each recipe to its ingredients, directions, notes and credit, with a search box. The data is
-`content/cookbook.json`, built from the PDF's text by `node dev/build-cookbook.js` (it reads the
-git-ignored `content/private/cookbook-2026-pdf.txt`). For a new edition, save the new PDF's text
-there and run the script again.
+**Koda Cookbook** is its own page (`#/cookbook`; its own sidebar item since 11/12/2026; on phones a
+chip on the Nutrition tab, which stays lit there). It's the 2026 Koda Resolutions Cookbook (the PDF
+in the gym's Drive): its six sections (Breakfast, Lunch, Dinner, Soups & Chili, Snacks, Sides) open
+to their recipes, each recipe to its photo, ingredients, directions, notes and credit, with a search
+box. The data is `content/cookbook.json`, built from the PDF's text by `node dev/build-cookbook.js`
+(it reads the git-ignored `content/private/cookbook-2026-pdf.txt`). For a new edition, save the new
+PDF's text there and run the script again.
+
+**Photos.** The PDF has none, so each recipe has a free-licensed example photo picked to match it
+(Kevin's choice, 11/12/2026): Creative Commons photos from Flickr, Wikimedia and stock sites, found
+through Openverse, each licence then checked on the photo's own page. `content/cookbook-photos.json`
+lists them by recipe id with each one's alt text, title, creator, source page and licence; the files
+are `assets/cookbook/<id>.jpg` (960×640) and `assets/cookbook/thumbs/<id>.jpg` (160×160), crops of
+the original. The build merges them in and refuses a missing file, a photo used twice, a licence we
+can't use (only CC0, public domain, CC BY and CC BY-SA), or a CC BY photo with no creator. Each
+recipe shows the credit the licence asks for (`Example photo: "Title" by … · CC BY 2.0, cropped`,
+linked to the source page, the creator and the licence), so keep it. The cropped copies of CC BY-SA
+photos are shared under the same licence. To swap a photo, replace both files and its entry, then
+run the build again.
 
 ### FAQs and Ask a question
 
@@ -214,8 +227,8 @@ page. The last page has no consent checkbox (Kevin, 11/10).
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test "tests/*.test.js" # backend tests (71)
-node tests/e2e.js             # browser walkthrough + screenshots (needs the dev server)
+node --test "tests/*.test.js" # backend + cookbook tests (75)
+node tests/e2e.js             # browser walkthrough (100 checks) + screenshots (needs the dev server)
 node tests/endbeta-cli.js     # live.js end-beta / purge-tests against the dev server (resets it)
 ```
 

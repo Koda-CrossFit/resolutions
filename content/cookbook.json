@@ -38,7 +38,19 @@
                 { "t": "p", "text": "236 cals, 8g protein, 6g fat,35g carbs, 3 g fiber" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/banana-pancakes.jpg",
+            "thumb": "assets/cookbook/thumbs/banana-pancakes.jpg",
+            "alt": "Small banana pancakes topped with fresh banana slices on a white plate",
+            "title": "Breakfast Pancakes",
+            "landing": "https://stocksnap.io/photo/breakfast-pancakes-RLOLDF9IQ4",
+            "creator": "Marcin Milewski",
+            "creatorUrl": "https://stocksnap.io/author/7558",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 2,
@@ -75,7 +87,19 @@
                 { "t": "p", "text": "Erin Eastwood" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/banana-protein-muffins.jpg",
+            "thumb": "assets/cookbook/thumbs/banana-protein-muffins.jpg",
+            "alt": "Banana chocolate chip muffins on a white plate, one broken open",
+            "title": "Banana Chocolate Chip Muffins",
+            "landing": "https://www.flickr.com/photos/72547033@N06/52909495839",
+            "creator": "anaxmedia",
+            "creatorUrl": "https://www.flickr.com/photos/72547033@N06",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 3,
@@ -111,7 +135,19 @@
                 { "t": "li", "text": "Protein: 36g (29%)" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/beet-green-smoothie-breakfast-lunch-snack.jpg",
+            "thumb": "assets/cookbook/thumbs/beet-green-smoothie-breakfast-lunch-snack.jpg",
+            "alt": "Overhead view of a thick deep-red smoothie in a glass topped with a raspberry and mint, with fresh berries below",
+            "title": "Healthy Red Smoothie",
+            "landing": "https://www.rawpixel.com/image/5970612/healthy-red-smoothie",
+            "creator": "",
+            "creatorUrl": "",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 4,
@@ -136,7 +172,19 @@
                 { "t": "p", "text": "Blend all ingredients in blender and serve cold." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/blended-breakfast-coffee.jpg",
+            "thumb": "assets/cookbook/thumbs/blended-breakfast-coffee.jpg",
+            "alt": "A tall glass of tan blended drink on a wooden cafe table beside a small vase of dried flowers",
+            "title": "Free smoothie glass vase wooden",
+            "landing": "https://www.rawpixel.com/image/5916397/image-public-domain-wooden-glass",
+            "creator": "",
+            "creatorUrl": "",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 5,
@@ -171,7 +219,19 @@
                 { "t": "p", "text": "Serve with fruit topping or chopped dates" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/chocolate-chia-pudding.jpg",
+            "thumb": "assets/cookbook/thumbs/chocolate-chia-pudding.jpg",
+            "alt": "Oat and chia pudding in a white ramekin topped with fresh fig halves and raspberries on a sunlit wooden table",
+            "title": "A bowl of overnight oats topped with fig and raspberries",
+            "landing": "https://wordpress.org/photos/photo/97361d40ac/",
+            "creator": "Anariel Design",
+            "creatorUrl": "https://www.anarieldesign.com/",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 6,
@@ -198,7 +258,19 @@
                 { "t": "p", "text": "For 20 cookies macros are: C 17g, P 6g, F 6.5g" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/elissas-banana-breakfast-cookies.jpg",
+            "thumb": "assets/cookbook/thumbs/elissas-banana-breakfast-cookies.jpg",
+            "alt": "Chunky homemade oatmeal cookies with raisins spread across a white plate",
+            "title": "Oatmeal cookies on a plate",
+            "landing": "https://commons.wikimedia.org/wiki/File:Oatmeal_cookies_on_a_plate.jpg",
+            "creator": "Evan Prodromou",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:EvanProdromou",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 7,
@@ -248,7 +320,19 @@
                 { "t": "p", "text": "169. Calories, 8.5g Fat, 13g Carbs, 10g Protein" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/gf-cinnamon-apple-waffles.jpg",
+            "thumb": "assets/cookbook/thumbs/gf-cinnamon-apple-waffles.jpg",
+            "alt": "A waffle on a white plate with strawberries, raspberries, blackberries and blueberries",
+            "title": "Waffle with fresh fruit and real maple syrup",
+            "landing": "https://www.flickr.com/photos/89060048@N03/15957048689",
+            "creator": "City Foodsters",
+            "creatorUrl": "https://www.flickr.com/photos/89060048@N03",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 8,
@@ -300,7 +384,19 @@
                 { "t": "p", "text": "Muffins firm up as they cool - avoid overbaking." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/high-protein-banana-oatmeal-muffins.jpg",
+            "thumb": "assets/cookbook/thumbs/high-protein-banana-oatmeal-muffins.jpg",
+            "alt": "A single muffin on a wooden board against a teal background",
+            "title": "Muffin Breakfast",
+            "landing": "https://stocksnap.io/photo/muffin-breakfast-EAVVUDGIFJ",
+            "creator": "Piotr Lohunko",
+            "creatorUrl": "https://stocksnap.io/author/5678",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 9,
@@ -331,7 +427,19 @@
                 { "t": "p", "text": "Add your choice of fruit and enjoy." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/high-protein-oats.jpg",
+            "thumb": "assets/cookbook/thumbs/high-protein-oats.jpg",
+            "alt": "Square bowl of oatmeal topped with blueberries and sliced almonds",
+            "title": "Oatmeal Blueberries",
+            "landing": "https://stocksnap.io/photo/oatmeal-blueberries-F7TE35CV6D",
+            "creator": "Andrew Pons",
+            "creatorUrl": "https://be.net/ahpons",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 10,
@@ -374,7 +482,19 @@
                 { "t": "p", "text": "(I like to switch it up to make it taste different)" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/kevins-paleo-breakfast-scramble.jpg",
+            "thumb": "assets/cookbook/thumbs/kevins-paleo-breakfast-scramble.jpg",
+            "alt": "Scrambled eggs mixed with chunks of green pepper on a white plate",
+            "title": "Scrambled egg on plate",
+            "landing": "https://commons.wikimedia.org/wiki/File:Scrambled_egg_on_plate.jpg",
+            "creator": "Chammy17",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:Chammy17",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 11,
@@ -405,7 +525,19 @@
                 { "t": "li", "text": "Bake 15 min" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/oatmeal-protein-cookies.jpg",
+            "thumb": "assets/cookbook/thumbs/oatmeal-protein-cookies.jpg",
+            "alt": "A pile of golden oatmeal cookies",
+            "title": "Bread Fairy: Oatmeal Cookies Reference #1",
+            "landing": "https://www.flickr.com/photos/189561381@N07/51333282851",
+            "creator": "claralieu",
+            "creatorUrl": "https://www.flickr.com/photos/189561381@N07",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 12,
@@ -427,7 +559,19 @@
                 { "t": "p", "text": "Grease a muffin pan with butter or cooking spray. In a bowl, mix the large egg and egg whites in a bowl. Cut the chicken sausage, I use the Amylu Breakfast Time Mini Sausages, and add to bowl. Add veggies and spices and mix in. Transfer from the bowl to the muffin tin and bake for 20 mins at 350 degrees." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/paleo-breakfast-chicken-sausage-egg-bites.jpg",
+            "thumb": "assets/cookbook/thumbs/paleo-breakfast-chicken-sausage-egg-bites.jpg",
+            "alt": "Muffin-tin egg and sausage cup with green pepper and onion, topped with red chili sauce on a white plate",
+            "title": "Egg & Sausage Cups",
+            "landing": "https://commons.wikimedia.org/wiki/File:Egg_%26_Sausage_Cups.jpg",
+            "creator": "Kelly Sue DeConnick",
+            "creatorUrl": "",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 13,
@@ -453,7 +597,19 @@
                 { "t": "p", "text": "Literally put it all together in a pan and bake until it's done. Don't overthink it. Sub any proteins of choice." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/paleo-breakfast-quiche.jpg",
+            "thumb": "assets/cookbook/thumbs/paleo-breakfast-quiche.jpg",
+            "alt": "Crustless spinach quiche baked golden brown in a glass baking dish, seen from above",
+            "title": "Crustless Spinach + Cheese + Onion Quiche",
+            "landing": "https://www.flickr.com/photos/48889115061@N01/54344390029",
+            "creator": "Howdy, I'm HMK",
+            "creatorUrl": "https://www.flickr.com/photos/48889115061@N01",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 14,
@@ -530,7 +686,19 @@
                 { "t": "p", "text": "https://cookingforpeanuts.com/baked-red-lentil-protein-pancakes/" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/plant-based-breakfast-red-lentil-sheet-pan-pancakes.jpg",
+            "thumb": "assets/cookbook/thumbs/plant-based-breakfast-red-lentil-sheet-pan-pancakes.jpg",
+            "alt": "Golden pancakes with fresh strawberry halves and blueberries on a white plate",
+            "title": "Cottage cheese pancakes with berries (KETO, LCHF, Low Carb, Gluten free, FIT)",
+            "landing": "https://commons.wikimedia.org/wiki/File:Cottage_cheese_pancakes_with_berries_(KETO,_LCHF,_Low_Carb,_Gluten_free,_FIT)_-_52774785114.jpg",
+            "creator": "Ewelina Podrez-Siama",
+            "creatorUrl": "https://ms-fox.pl/",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 15,
@@ -559,7 +727,19 @@
                 { "t": "li", "text": "can substitute any frozen fruit you want, I use a bag of frozen blueberries, strawberries and mango." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/protein-berry-smoothie.jpg",
+            "thumb": "assets/cookbook/thumbs/protein-berry-smoothie.jpg",
+            "alt": "Purple berry smoothie in a glass, topped with blueberries and a green leaf",
+            "title": "Berry smoothie",
+            "landing": "https://www.flickr.com/photos/199323835@N06/53395686936",
+            "creator": "Marly @ Simply Living Happy",
+            "creatorUrl": "https://www.flickr.com/photos/199323835@N06",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 16,
@@ -607,7 +787,19 @@
                 { "t": "p", "text": "STEP 4: Assemble your burritos - Slice into equally sized rectangles, add to a burrito sized tortilla along with any sauce or garnishes of choice - Roll your burritos, and enjoy!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/sheet-pan-breakfast-burritos.jpg",
+            "thumb": "assets/cookbook/thumbs/sheet-pan-breakfast-burritos.jpg",
+            "alt": "A breakfast burrito cut open to show egg, ham and spinach",
+            "title": "Breakfast burrito at Tod Mountain Cafe",
+            "landing": "https://www.flickr.com/photos/95142644@N00/52152008426",
+            "creator": "Ruth Hartnup",
+            "creatorUrl": "https://www.flickr.com/photos/95142644@N00",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 17,
@@ -646,7 +838,19 @@
                 { "t": "p", "text": "Spoon the batter into the muffin cups filling each to the brim. Bake until the muffins are nicely browned on top and a toothpick inserted in the center of a muffin comes out clean, about 25 to 35 minutes ." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/superhero-muffins.jpg",
+            "thumb": "assets/cookbook/thumbs/superhero-muffins.jpg",
+            "alt": "A basket of muffins topped with pumpkin seeds",
+            "title": "Baked Muffins",
+            "landing": "https://stocksnap.io/photo/baked-muffins-YQEORLHPYG",
+            "creator": "Foodie Girl",
+            "creatorUrl": "https://stocksnap.io/author/121423",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         }
       ]
     },
@@ -703,7 +907,19 @@
                 { "t": "p", "text": "Serve with roasted sweet potatoes, white rice or quinoa, and fresh fruit." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/asian-style-turkey-lettuce-wraps.jpg",
+            "thumb": "assets/cookbook/thumbs/asian-style-turkey-lettuce-wraps.jpg",
+            "alt": "Romaine lettuce cups filled with ground meat, diced red pepper and green onion, beside a cup of dipping sauce",
+            "title": "Slow Cooker Asian Chicken Lettuce Wraps",
+            "landing": "https://commons.wikimedia.org/wiki/File:Slow_Cooker_Asian_Chicken_Lettuce_Wraps_(36167537862).jpg",
+            "creator": "A Healthier Michigan",
+            "creatorUrl": "https://www.flickr.com/people/54781600@N05",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 19,
@@ -729,7 +945,19 @@
                 { "t": "p", "text": "Top with kimchi, lime, and whatever veg you like. I like to make a cilantro, carrot, cabbage, bell pepper slaw with a sesame ginger dressing." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/asian-tacos.jpg",
+            "thumb": "assets/cookbook/thumbs/asian-tacos.jpg",
+            "alt": "Soft tacos topped with glazed Korean barbecue mock duck, pickled carrot and fresh greens",
+            "title": "Reverie Cafe & Bar -- Korean BBQ Mock Duck Tacos",
+            "landing": "https://www.flickr.com/photos/29313544@N05/52506747643",
+            "creator": "Compassionate Action for Animals",
+            "creatorUrl": "https://www.flickr.com/photos/29313544@N05",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 20,
@@ -769,7 +997,19 @@
                 { "t": "p", "text": "Serving Tip Serve tacos alongside coconut rice for a balanced, clean meal with bold flavor and a little comfort-food energy." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/clean-thai-tacos-with-coconut-rice.jpg",
+            "thumb": "assets/cookbook/thumbs/clean-thai-tacos-with-coconut-rice.jpg",
+            "alt": "Two tacos piled with spinach, red cabbage and carrot slaw",
+            "title": "Fish Tacos Dressed",
+            "landing": "https://www.flickr.com/photos/37996646802@N01/51432206929",
+            "creator": "cogdogblog",
+            "creatorUrl": "https://www.flickr.com/photos/37996646802@N01",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 21,
@@ -804,7 +1044,19 @@
                 { "t": "p", "text": "Brown ground beef and toss in taco seasoning. Assemble ingredients into bowl and enjoy!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/easy-paleo-taco-bowl.jpg",
+            "thumb": "assets/cookbook/thumbs/easy-paleo-taco-bowl.jpg",
+            "alt": "Taco rice with seasoned ground beef and white rice under shredded lettuce, topped with diced tomato",
+            "title": "Taco rice",
+            "landing": "https://commons.wikimedia.org/wiki/File:Taco_rice_(9504116057).jpg",
+            "creator": "pelican",
+            "creatorUrl": "https://www.flickr.com/people/85936780@N00",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 22,
@@ -849,7 +1101,19 @@
                 { "t": "step", "n": 3, "text": "Pour the dressing over the salad and mix well to evenly coat. Serve immediately." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/green-goddess-salad-baked-by-melissa.jpg",
+            "thumb": "assets/cookbook/thumbs/green-goddess-salad-baked-by-melissa.jpg",
+            "alt": "Finely diced cucumber salad with fresh dill in a white fluted bowl on a dark wood table",
+            "title": "Liat Portal for Foodie Disorder - Cucumber salad with dill",
+            "landing": "https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Cucumber_salad_with_dill.jpg",
+            "creator": "HaJunkiyada",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/Special:ListFiles/HaJunkiyada",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 23,
@@ -889,7 +1153,19 @@
                 { "t": "li", "text": "For 6 blocks: Add a small portion of rice (2 oz) to boost carbs" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/healthy-chipotle-on-the-go-meal.jpg",
+            "thumb": "assets/cookbook/thumbs/healthy-chipotle-on-the-go-meal.jpg",
+            "alt": "Black bean fajita plate with roasted peppers, onions and zucchini, chickpeas, diced avocado and lime",
+            "title": "Cilantro black bean fajitas lunch",
+            "landing": "https://commons.wikimedia.org/wiki/File:Cilantro_black_bean_fajitas_lunch_(31138228297).jpg",
+            "creator": "Ella Olsson",
+            "creatorUrl": "https://www.flickr.com/people/155807330@N05",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 24,
@@ -938,7 +1214,19 @@
                 { "t": "step", "n": 7, "text": "Leftovers will keep in an airtight container refrigerated for at least 5 days." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/easy-buffalo-chicken-meatballs.jpg",
+            "thumb": "assets/cookbook/thumbs/easy-buffalo-chicken-meatballs.jpg",
+            "alt": "Rows of baked meatballs on a foil-lined sheet pan",
+            "title": "Meatballs",
+            "landing": "https://www.flickr.com/photos/27874898@N00/52236580699",
+            "creator": "MattCC716",
+            "creatorUrl": "https://www.flickr.com/photos/27874898@N00",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 25,
@@ -970,7 +1258,19 @@
                 { "t": "step", "n": 5, "text": "Add all the other stuff and mix it all up. Chickpeas roasted in the oven are tasty in this recipe, but not compliant with Resolutions :)" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/kale-salad-side-dish-whole-30-compliant.jpg",
+            "thumb": "assets/cookbook/thumbs/kale-salad-side-dish-whole-30-compliant.jpg",
+            "alt": "A large bowl of chopped kale salad",
+            "title": "Kale Salad",
+            "landing": "https://stocksnap.io/photo/kale-salad-WPKEJRMC8D",
+            "creator": "Dan Gold",
+            "creatorUrl": "https://www.danielcgold.com",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 26,
@@ -1005,7 +1305,19 @@
                 { "t": "step", "n": 6, "text": "Enjoy!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/lunch-tuna-seaweed-wraps.jpg",
+            "thumb": "assets/cookbook/thumbs/lunch-tuna-seaweed-wraps.jpg",
+            "alt": "Seaweed hand roll filled with rice, raw salmon slices and cucumber sticks on a pale blue plate",
+            "title": "Salmon Sushi Temaki",
+            "landing": "https://www.flickr.com/photos/34128007@N04/53745694342",
+            "creator": "prayitnophotography",
+            "creatorUrl": "https://www.flickr.com/photos/34128007@N04",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 27,
@@ -1048,7 +1360,19 @@
                 { "t": "step", "n": 5, "text": "Finish: Get the gains." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/salmon-tuna-poke-bowls.jpg",
+            "thumb": "assets/cookbook/thumbs/salmon-tuna-poke-bowls.jpg",
+            "alt": "Poke bowl with salmon, edamame, cucumber, avocado, radishes and carrot ribbons",
+            "title": "Poke bowl de salmón",
+            "landing": "https://www.flickr.com/photos/156111741@N07/53143174335",
+            "creator": "Delia Lorente / Foodisea",
+            "creatorUrl": "https://www.foodisea.com/",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 28,
@@ -1088,7 +1412,19 @@
                 { "t": "p", "text": "Note: I cooked this with about 14 oz of salmon instead of 12 oz, and enjoyed this as a big dinner calling it 2 servings instead of 4. - Andy" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/warm-rice-salad-with-salmon-and-arugula.jpg",
+            "thumb": "assets/cookbook/thumbs/warm-rice-salad-with-salmon-and-arugula.jpg",
+            "alt": "Rice tossed with chunks of cooked salmon, green onion, peas, carrot and corn on a blue-patterned plate",
+            "title": "Salmon Fried Rice with Green Onion",
+            "landing": "https://commons.wikimedia.org/wiki/File:Salmon_Fried_Rice_with_Green_Onion_(29001066661).jpg",
+            "creator": "Sharon Chen",
+            "creatorUrl": "https://www.flickr.com/people/142840472@N04",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 29,
@@ -1137,7 +1473,19 @@
                 { "t": "p", "text": "Assemble lettuce wraps by spooning meat into center of lettuce and garnish with sesame seeds/onions if desired, and serve immediately with prepared sauce." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/whole30-chicken-pork-lettuce-wraps.jpg",
+            "thumb": "assets/cookbook/thumbs/whole30-chicken-pork-lettuce-wraps.jpg",
+            "alt": "Close-up of an iceberg lettuce cup holding a browned diced mushroom filling topped with sliced green onions",
+            "title": "Lettuce Wraps",
+            "landing": "https://commons.wikimedia.org/wiki/File:Lettuce_Wraps_(4104199873).jpg",
+            "creator": "Vegan Feast Catering",
+            "creatorUrl": "https://www.flickr.com/people/25128194@N02",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         }
       ]
     },
@@ -1184,7 +1532,19 @@
                 { "t": "p", "text": "Rest 5 minutes → juices redistribute Final temp lands around 145 deg F (perfectly safe + juicy)" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/air-fryer-pork-tenderloin.jpg",
+            "thumb": "assets/cookbook/thumbs/air-fryer-pork-tenderloin.jpg",
+            "alt": "Two browned, pepper-crusted pork tenderloins on a bamboo cutting board, one end sliced, beside a carving fork",
+            "title": "Pork Tenderloin on cutting board",
+            "landing": "https://commons.wikimedia.org/wiki/File:Pork_Tenderloin_on_cutting_board.jpg",
+            "creator": "Taylorderek",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/Special:ListFiles/Taylorderek",
+            "license": "by",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+          }
         },
         {
           "n": 31,
@@ -1234,7 +1594,19 @@
                 { "t": "p", "text": "I place about 3-4 ribs over a mound of mashed potatoes, top with plenty of the sauce and decoratively arrange the carrots." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/braised-short-ribs.jpg",
+            "thumb": "assets/cookbook/thumbs/braised-short-ribs.jpg",
+            "alt": "Braised beef with carrots and sauce beside red cabbage, greens and potato gratin in a blue-rimmed bowl",
+            "title": "Main Course - Andrew Edmunds - Slow-Braised Beef Dinner via Dispatch",
+            "landing": "https://www.flickr.com/photos/54549113@N00/51914233718",
+            "creator": "Haydn Blackey",
+            "creatorUrl": "https://www.flickr.com/photos/54549113@N00",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 32,
@@ -1270,7 +1642,19 @@
                 { "t": "p", "text": "Crisp up in skillet before serving if desired." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/crockpot-carnitas.jpg",
+            "thumb": "assets/cookbook/thumbs/crockpot-carnitas.jpg",
+            "alt": "Shredded pork carnitas with Mexican rice, refried beans and lime on a white plate",
+            "title": "Carnitas Michoacan",
+            "landing": "https://www.flickr.com/photos/7633518@N08/52663691107",
+            "creator": "Sarah Stierch",
+            "creatorUrl": "https://www.flickr.com/photos/7633518@N08",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 33,
@@ -1323,7 +1707,19 @@
                 { "t": "p", "text": "Calories: 405kcal | Carbohydrates: 12g | Protein: 21g | Fat: 31g | Cholesterol: 7mg | Fiber: 3g | Sugar: 4g" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/fish-in-veracruz-sauce.jpg",
+            "thumb": "assets/cookbook/thumbs/fish-in-veracruz-sauce.jpg",
+            "alt": "Pan-roasted white fish with tomatoes, black olives and artichoke hearts, with a fork",
+            "title": "2024 Home Cookin' 3",
+            "landing": "https://www.flickr.com/photos/8563790@N08/53452365318",
+            "creator": "anoldent",
+            "creatorUrl": "https://www.flickr.com/photos/8563790@N08",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 34,
@@ -1384,7 +1780,19 @@
                 { "t": "p", "text": "Nutrition information is automatically calculated, so should only be used as an approximation." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/garlic-butter-chicken-with-zucchini-noodles.jpg",
+            "thumb": "assets/cookbook/thumbs/garlic-butter-chicken-with-zucchini-noodles.jpg",
+            "alt": "Chicken with zucchini noodles, fresh herbs, chopped peanuts and lime wedges in a skillet",
+            "title": "Spicy Chicken Street Zucchini Noodles Recipe-1",
+            "landing": "https://commons.wikimedia.org/wiki/File:Spicy_Chicken_Street_Zucchini_Noodles_Recipe-1_(31618161413).jpg",
+            "creator": "Sharon Chen",
+            "creatorUrl": "https://www.flickr.com/people/142840472@N04",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 35,
@@ -1419,7 +1827,19 @@
                 { "t": "step", "n": 6, "text": "Sprinkle with parsley and serve with lemon wedges." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/greek-chicken-potatoes.jpg",
+            "thumb": "assets/cookbook/thumbs/greek-chicken-potatoes.jpg",
+            "alt": "Roast chicken leg with golden roasted potatoes and red cabbage on a white plate",
+            "title": "Haydn's Main Course - Roast Chicken with Thyme, Roast Potatoes and Red Cabagge - Prague…",
+            "landing": "https://www.flickr.com/photos/54549113@N00/54438056961",
+            "creator": "Haydn Blackey",
+            "creatorUrl": "https://www.flickr.com/photos/54549113@N00",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 36,
@@ -1483,7 +1903,19 @@
                 { "t": "p", "text": "Sweet potatoes on the bottom → turkey & veg → avocado → squeeze of lime → cilantro if using." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/ground-turkey-mexican-bowls.jpg",
+            "thumb": "assets/cookbook/thumbs/ground-turkey-mexican-bowls.jpg",
+            "alt": "Skillet of seasoned ground meat with diced yellow potato and red pepper, a black spoon resting in it",
+            "title": "Picadillo a la habanera (edit)",
+            "landing": "https://commons.wikimedia.org/wiki/File:Picadillo_a_la_habanera_(edit).jpg",
+            "creator": "El Mono Español",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:El_Mono_Espa%C3%B1ol",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 37,
@@ -1544,7 +1976,19 @@
                 { "t": "p", "text": "https://realsimplegood.com/korean-beef-bowl/" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/korean-beef-bowl-recipe.jpg",
+            "thumb": "assets/cookbook/thumbs/korean-beef-bowl-recipe.jpg",
+            "alt": "Two bowls of ground beef with carrots and parsley beside white rice, seen from above",
+            "title": "Free ground beef rice bowl",
+            "landing": "https://www.rawpixel.com/image/5928212/photo-image-public-domain-wooden-table",
+            "creator": "",
+            "creatorUrl": "",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 38,
@@ -1590,7 +2034,19 @@
                 { "t": "li", "text": "Turn off the heat, sprinkle with more cilantro and squeeze in lemon or lime juice. Serve hot with any kind of bread (roti, naan, sliced bread), or rice." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/minced-beef-lamb-with-green-peas.jpg",
+            "thumb": "assets/cookbook/thumbs/minced-beef-lamb-with-green-peas.jpg",
+            "alt": "A pan of spiced minced meat with peas, topped with fresh cilantro",
+            "title": "Mowgli House Keema - Mowgli Street Food, Cardiff",
+            "landing": "https://www.flickr.com/photos/54549113@N00/52621574298",
+            "creator": "Haydn Blackey",
+            "creatorUrl": "https://www.flickr.com/photos/54549113@N00",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 39,
@@ -1642,7 +2098,19 @@
                 { "t": "p", "text": "https://www.paleorunningmomma.com/one-skillet-chicken-pot-pie-paleo/#wprm-recipe-container-31655" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/one-skillet-chicken-pot-pie-paleo.jpg",
+            "thumb": "assets/cookbook/thumbs/one-skillet-chicken-pot-pie-paleo.jpg",
+            "alt": "Chicken pot pie with a flaky crust, a spoonful of creamy chicken and carrot filling showing",
+            "title": "The Saga of the Chicken Pot Pie",
+            "landing": "https://www.flickr.com/photos/97651299@N00/51936800553",
+            "creator": "vanhookc",
+            "creatorUrl": "https://www.flickr.com/photos/97651299@N00",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 40,
@@ -1687,7 +2155,19 @@
                 { "t": "p", "text": "Step 3 Remove from heat and place sheet of parchment paper on surface for 10 minutes. Remove parchment, scatter parsley on top and serve, making sure to include any crusty bits that cling to pan with each portion." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/paella.jpg",
+            "thumb": "assets/cookbook/thumbs/paella.jpg",
+            "alt": "Yellow saffron rice with peas, carrots and green beans, garnished with basil and lemon",
+            "title": "Paella Rice",
+            "landing": "https://stocksnap.io/photo/paella-rice-T3JTA2VN26",
+            "creator": "Patryk Dziejma",
+            "creatorUrl": "https://stocksnap.io/author/5623",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 41,
@@ -1719,7 +2199,19 @@
                 { "t": "step", "n": 4, "text": "Put the hot chicken preparation in a large bowl and let the people prepare their own fajitas on top of lettuce leaves with their favorite toppings." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/paleo-chicken-fajitas.jpg",
+            "thumb": "assets/cookbook/thumbs/paleo-chicken-fajitas.jpg",
+            "alt": "Sliced grilled chicken on peppers and onions in a cast-iron fajita skillet, with lime",
+            "title": "Dining Out - On The Border Mexican Grill & Cantina In Columbia, Maryland - Chicken…",
+            "landing": "https://www.flickr.com/photos/51764518@N02/53697600292",
+            "creator": "France1978",
+            "creatorUrl": "https://www.flickr.com/photos/51764518@N02",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 42,
@@ -1749,7 +2241,19 @@
                 { "t": "p", "text": "Remove and serve hot." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/paleo-game-day-chicken-tenders.jpg",
+            "thumb": "assets/cookbook/thumbs/paleo-game-day-chicken-tenders.jpg",
+            "alt": "Spiced chicken tenders on a plate with celery sticks, avocado slices and a small bowl of dip",
+            "title": "Sriracha Chicken Tenders",
+            "landing": "https://commons.wikimedia.org/wiki/File:Sriracha_Chicken_Tenders_(10508545344).jpg",
+            "creator": "Michele Frazier",
+            "creatorUrl": "https://www.flickr.com/people/85153112@N03",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 43,
@@ -1788,7 +2292,19 @@
                 { "t": "step", "n": 10, "text": "Remove the pan from the burner and add in 1/4 cup of the herb butter and whisk until melted. Reserve the remaining in the freezer for a later date." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/pan-seared-scallops-with-lemon-herb-butter.jpg",
+            "thumb": "assets/cookbook/thumbs/pan-seared-scallops-with-lemon-herb-butter.jpg",
+            "alt": "Seared scallops around a nest of noodles with snow peas on a white plate",
+            "title": "Scallops With Asian Heart of Palm Spaghetti 5",
+            "landing": "https://www.flickr.com/photos/58003213@N00/51811916755",
+            "creator": "Cayobo",
+            "creatorUrl": "https://www.flickr.com/photos/58003213@N00",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 44,
@@ -1820,7 +2336,19 @@
                 { "t": "step", "n": 9, "text": "Enjoy!!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/quick-grilled-lemon-salmon.jpg",
+            "thumb": "assets/cookbook/thumbs/quick-grilled-lemon-salmon.jpg",
+            "alt": "Grilled salmon fillet with broccoli and a lemon wedge on a white plate",
+            "title": "Atlantic Salmon - Today's Catch",
+            "landing": "https://www.flickr.com/photos/164188154@N05/53582341533",
+            "creator": "Red Lobster Lover Joe twitter:RLLoverJoe",
+            "creatorUrl": "https://www.flickr.com/photos/164188154@N05",
+            "license": "pdm",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+          }
         },
         {
           "n": 45,
@@ -1865,7 +2393,19 @@
                 { "t": "li", "text": "Can be used for steak tacos, layered on top of baked sweet potatoes, or added as a protein to a salad" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/reverse-seared-tri-tip.jpg",
+            "thumb": "assets/cookbook/thumbs/reverse-seared-tri-tip.jpg",
+            "alt": "Whole spice-rubbed tri-tip roast with a dark seared crust resting on a wooden cutting board",
+            "title": "Tri tip",
+            "landing": "https://commons.wikimedia.org/wiki/File:Tri_tip.JPG",
+            "creator": "Mark Miller",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:Mark_Miller",
+            "license": "by-sa",
+            "licenseVersion": "3.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+          }
         },
         {
           "n": 46,
@@ -1899,7 +2439,19 @@
                 { "t": "p", "text": "I like to pair this with an arugula salad with avocado and lemon, olive oil and salt dressing and oven baked white sweet potatoes." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/rosemary-lemon-chicken-thighs.jpg",
+            "thumb": "assets/cookbook/thumbs/rosemary-lemon-chicken-thighs.jpg",
+            "alt": "Crispy browned chicken thighs with pickled red onions and a small bowl of beans",
+            "title": "Smoked Chicken Thighs",
+            "landing": "https://www.flickr.com/photos/58003213@N00/52348636716",
+            "creator": "Cayobo",
+            "creatorUrl": "https://www.flickr.com/photos/58003213@N00",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 47,
@@ -1954,7 +2506,19 @@
                 { "t": "step", "n": 7, "text": "When the vegetables are caramelized and the meatballs have browned, remove from the oven and drizzle with the salsa verde. Enjoy!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/sheet-pan-paleo-meatballs-with-root-vegetables.jpg",
+            "thumb": "assets/cookbook/thumbs/sheet-pan-paleo-meatballs-with-root-vegetables.jpg",
+            "alt": "Browned meatballs on diced carrots and peas with pan-roasted potato halves on a white plate",
+            "title": "02023 0181 meatballs and potatoes with peas and carrots stew",
+            "landing": "https://commons.wikimedia.org/wiki/File:02023_0181_meatballs_and_potatoes_with_peas_and_carrots_stew.jpg",
+            "creator": "Silar",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/Special:ListFiles/Silar",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 48,
@@ -1994,7 +2558,19 @@
                 { "t": "p", "text": "Serve with the garlic aioli and enjoy!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/sheet-pan-sausage-with-brussels-sprouts-squash.jpg",
+            "thumb": "assets/cookbook/thumbs/sheet-pan-sausage-with-brussels-sprouts-squash.jpg",
+            "alt": "Two browned sausages with Brussels sprouts, boiled potatoes, cucumber salad and a dab of mustard",
+            "title": "Simple Dutch meal",
+            "landing": "https://commons.wikimedia.org/wiki/File:Simple_Dutch_meal.JPG",
+            "creator": "Takeaway",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:Takeaway",
+            "license": "by-sa",
+            "licenseVersion": "3.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+          }
         },
         {
           "n": 49,
@@ -2039,7 +2615,19 @@
                 { "t": "p", "text": "Link to original recipe: https://lillieeatsandtells.com/brown-sugar-spiced-pork-tenderloin-with-chimichurri/#wprm-recipe-container-2480" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/spiced-pork-tenderloin-with-chimichurri.jpg",
+            "thumb": "assets/cookbook/thumbs/spiced-pork-tenderloin-with-chimichurri.jpg",
+            "alt": "Herb-crusted pork tenderloin sliced on a wooden cutting board, showing a rosy center, with a knife beside it",
+            "title": "Garin's pork tenderloin 2007",
+            "landing": "https://commons.wikimedia.org/wiki/File:Garin%27s_pork_tenderloin_2007.jpg",
+            "creator": "Timothy Vollmer",
+            "creatorUrl": "",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 50,
@@ -2071,7 +2659,19 @@
                 { "t": "li", "text": "Red onion" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/sweet-potato-bun-burgers.jpg",
+            "thumb": "assets/cookbook/thumbs/sweet-potato-bun-burgers.jpg",
+            "alt": "Six grilled burger patties with grill marks on a smoking charcoal kettle grill",
+            "title": "Free burger patty grill image",
+            "landing": "https://www.rawpixel.com/image/5905938/photo-image-background-public-domain-food",
+            "creator": "",
+            "creatorUrl": "",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 51,
@@ -2110,7 +2710,19 @@
                 { "t": "p", "text": "Server with rice." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/vegan-insta-pot-nepali-chickpea-dinner.jpg",
+            "thumb": "assets/cookbook/thumbs/vegan-insta-pot-nepali-chickpea-dinner.jpg",
+            "alt": "Chickpeas in a spiced tomato sauce, garnished with a cherry tomato and green onion",
+            "title": "Chana Masala - Rani's Indian Dining, Yaxham",
+            "landing": "https://www.flickr.com/photos/54549113@N00/51387000475",
+            "creator": "Haydn Blackey",
+            "creatorUrl": "https://www.flickr.com/photos/54549113@N00",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 52,
@@ -2157,7 +2769,19 @@
                 { "t": "li", "text": "*Highly recommend doubling this recipe for leftovers. I usually use 1 lb bison and 1 lb ground turkey in an 9 x 13 pan." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/whole30-shepherds-pie.jpg",
+            "thumb": "assets/cookbook/thumbs/whole30-shepherds-pie.jpg",
+            "alt": "Shepherd's pie with a golden potato topping in a cast-iron skillet",
+            "title": "Skillet of shepherd’s pie",
+            "landing": "https://wordpress.org/photos/photo/554624b775/",
+            "creator": "mdburnette",
+            "creatorUrl": "https://mburnette.com",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         }
       ]
     },
@@ -2212,7 +2836,19 @@
                 { "t": "p", "text": "Serving count is in grams (500g is a big bowl)" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/high-protein-dinner-chili.jpg",
+            "thumb": "assets/cookbook/thumbs/high-protein-dinner-chili.jpg",
+            "alt": "Ground beef chili in a black Dutch oven",
+            "title": "J. Kenji López-Alt's everyday ground beef chili",
+            "landing": "https://www.flickr.com/photos/7633518@N08/52688572533",
+            "creator": "Sarah Stierch",
+            "creatorUrl": "https://www.flickr.com/photos/7633518@N08",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         },
         {
           "n": 54,
@@ -2262,7 +2898,19 @@
                 { "t": "p", "text": "If more spicy \"heat\" is desired, add hot pepper sauce to the pot or to individual servings at the table." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/paleo-dinner-chili.jpg",
+            "thumb": "assets/cookbook/thumbs/paleo-dinner-chili.jpg",
+            "alt": "Wooden spoon lifting thick ground beef chili with onion and tomato out of a black pot",
+            "title": "Chili - Feburary 2023 - Sarah Stierch 02",
+            "landing": "https://commons.wikimedia.org/wiki/File:Chili_-_Feburary_2023_-_Sarah_Stierch_02.jpg",
+            "creator": "Sarah Stierch",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:Missvain",
+            "license": "by",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+          }
         },
         {
           "n": 55,
@@ -2298,7 +2946,19 @@
                 { "t": "p", "text": "We like to add some bacon and/or chicken thighs for extra richness and protein!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/vitamix-mushroom-and-thyme-cashew-cream-soup.jpg",
+            "thumb": "assets/cookbook/thumbs/vitamix-mushroom-and-thyme-cashew-cream-soup.jpg",
+            "alt": "Creamy mushroom soup with mushroom pieces and a sprig of parsley in a white bowl",
+            "title": "Cream of mushroom soup",
+            "landing": "https://commons.wikimedia.org/wiki/File:Cream_of_mushroom_soup.jpg",
+            "creator": "MichalPL",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/Special:ListFiles/MichalPL",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 56,
@@ -2351,7 +3011,19 @@
                 { "t": "p", "text": "Portion soup into serving bowls. If desired, top each serving with fresh avocado slices, thinly sliced red onions, chopped fresh cilantro, and fresh lime juice, then serve hot." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/whole30-instant-pot-chicken-tortilla-less-soup.jpg",
+            "thumb": "assets/cookbook/thumbs/whole30-instant-pot-chicken-tortilla-less-soup.jpg",
+            "alt": "Red Mexican-style soup with avocado slices and diced carrot in a metal bowl",
+            "title": "Caldo Tlalpeño vegano",
+            "landing": "https://commons.wikimedia.org/wiki/File:Caldo_Tlalpe%C3%B1o_vegano.jpg",
+            "creator": "Luisalvaz",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/User:Luisalvaz",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 57,
@@ -2397,7 +3069,19 @@
                 { "t": "p", "text": "Macros include homemade elk Italian sausage." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/whole30-sweet-potato-kale-soup.jpg",
+            "thumb": "assets/cookbook/thumbs/whole30-sweet-potato-kale-soup.jpg",
+            "alt": "Sweet potato, kale and sausage soup in a white bowl with a spoon",
+            "title": "Sweet potato, kale and sausage soup",
+            "landing": "https://commons.wikimedia.org/wiki/File:Sweet_potato,_kale_and_sausage_soup_(11120085684).jpg",
+            "creator": "Ruth Hartnup",
+            "creatorUrl": "https://www.flickr.com/people/95142644@N00",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         }
       ]
     },
@@ -2506,7 +3190,19 @@
                 { "t": "li", "text": "With a grain-free mustard dip" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/bacon-wrapped-date-variations.jpg",
+            "thumb": "assets/cookbook/thumbs/bacon-wrapped-date-variations.jpg",
+            "alt": "Bacon-wrapped pineapple bites held together with toothpicks",
+            "title": "•Turkey bacon wrapped pineapple• This is my second attempt to make this dish and it…",
+            "landing": "https://www.flickr.com/photos/32031278@N03/23336270623",
+            "creator": "debbietingzon",
+            "creatorUrl": "https://www.flickr.com/photos/32031278@N03",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 59,
@@ -2531,7 +3227,19 @@
                 { "t": "p", "text": "Shake in mason jar and put in fridge overnight." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/chia-pudding.jpg",
+            "thumb": "assets/cookbook/thumbs/chia-pudding.jpg",
+            "alt": "Bowl of chia pudding topped with banana slices, mango and seeds",
+            "title": "Brunch",
+            "landing": "https://www.flickr.com/photos/81269484@N00/54405770138",
+            "creator": "JuliaC2006",
+            "creatorUrl": "https://www.flickr.com/photos/81269484@N00",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 60,
@@ -2564,7 +3272,19 @@
                 { "t": "p", "text": "Allow to cool and serve with your favorite sauce! These are made for dipping, so pair them with guacamole, ketchup, mustard, etc!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/chicken-sweet-potato-poppers.jpg",
+            "thumb": "assets/cookbook/thumbs/chicken-sweet-potato-poppers.jpg",
+            "alt": "Six golden baked chicken meatballs flecked with herbs in a glass baking dish",
+            "title": "Chicken Meatballs",
+            "landing": "https://commons.wikimedia.org/wiki/File:Chicken_Meatballs_(8366981596).jpg",
+            "creator": "Mack Male",
+            "creatorUrl": "https://www.flickr.com/people/24311648@N00",
+            "license": "by-sa",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+          }
         },
         {
           "n": 61,
@@ -2590,7 +3310,19 @@
                 { "t": "p", "text": "Drain the egg(s) and peel under cool running water." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/perfect-easy-peel-hard-boiled-eggs.jpg",
+            "thumb": "assets/cookbook/thumbs/perfect-easy-peel-hard-boiled-eggs.jpg",
+            "alt": "Hard-boiled egg halves with bright yellow yolks, one in an egg cup",
+            "title": "Breakfast Egg",
+            "landing": "https://www.flickr.com/photos/28077296@N02/52338523983",
+            "creator": "ThomasKohler",
+            "creatorUrl": "https://www.flickr.com/photos/28077296@N02",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 62,
@@ -2627,7 +3359,19 @@
                 { "t": "step", "n": 9, "text": "Finally, remove from oven and garnish with desired toppings *" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/pizza-potato-skins.jpg",
+            "thumb": "assets/cookbook/thumbs/pizza-potato-skins.jpg",
+            "alt": "Potato skins filled with a red, saucy filling, topped with shredded cheese and jalapeño slices on a white platter",
+            "title": "Potato Skins",
+            "landing": "https://commons.wikimedia.org/wiki/File:Potato_Skins.jpg",
+            "creator": "Anirudhr1",
+            "creatorUrl": "https://commons.wikimedia.org/wiki/Special:ListFiles/Anirudhr1",
+            "license": "by-sa",
+            "licenseVersion": "4.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
         },
         {
           "n": 63,
@@ -2664,7 +3408,19 @@
                 { "t": "p", "text": "Keep them on hand for when you need something fast but nourishing." }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/taylors-paleo-energy-bars.jpg",
+            "thumb": "assets/cookbook/thumbs/taylors-paleo-energy-bars.jpg",
+            "alt": "Four pale nut energy balls on pastel spoons, with pink flowers and orange slices on white boards",
+            "title": "Energy Balls",
+            "landing": "https://commons.wikimedia.org/wiki/File:Energy_Balls_(Unsplash).jpg",
+            "creator": "Toa Heftiba",
+            "creatorUrl": "https://unsplash.com/@heftiba",
+            "license": "cc0",
+            "licenseVersion": "1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+          }
         }
       ]
     },
@@ -2708,7 +3464,19 @@
                 { "t": "step", "n": 7, "text": "Enjoy!!!!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/creamy-mashed-potatoes.jpg",
+            "thumb": "assets/cookbook/thumbs/creamy-mashed-potatoes.jpg",
+            "alt": "A mound of creamy mashed potatoes with shredded beet and carrot salad",
+            "title": "Mashed potatoes.",
+            "landing": "https://www.flickr.com/photos/14759783@N04/23601737479",
+            "creator": "young shanahan",
+            "creatorUrl": "https://www.flickr.com/photos/14759783@N04",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         },
         {
           "n": 65,
@@ -2759,7 +3527,19 @@
                 { "t": "p", "text": "They are also awesome Japanese \"sandwiches\" for being on the go!" }
               ]
             }
-          ]
+          ],
+          "photo": {
+            "src": "assets/cookbook/onigiri-balls-tuna-but-can-be-any-type-of-fish-or-chicken.jpg",
+            "thumb": "assets/cookbook/thumbs/onigiri-balls-tuna-but-can-be-any-type-of-fish-or-chicken.jpg",
+            "alt": "Two triangle rice balls wrapped in seaweed with fish on top, on a green plate",
+            "title": "Tokyo Gohan Onigiri",
+            "landing": "https://www.flickr.com/photos/12505664@N00/53728134493",
+            "creator": "illustir",
+            "creatorUrl": "https://www.flickr.com/photos/12505664@N00",
+            "license": "by",
+            "licenseVersion": "2.0",
+            "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+          }
         }
       ]
     }
