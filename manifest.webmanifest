@@ -1,12 +1,12 @@
 {
   "name": "Koda Resolutions 2027",
   "short_name": "Resolutions",
-  "description": "Koda CrossFit Iron View's six-week nutrition and lifestyle challenge.",
+  "description": "Koda CrossFit's six-week nutrition and lifestyle challenge: your goal, your plan, your daily checklist, and the Koda community behind you.",
   "start_url": "./#/today",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0c1a2b",
-  "theme_color": "#0c1a2b",
+  "background_color": "#111114",
+  "theme_color": "#111114",
   "icons": [
     { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },

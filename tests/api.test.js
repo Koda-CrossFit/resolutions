@@ -42,6 +42,7 @@ const SETUP = {
 function register(post, extra) {
   return post(Object.assign({
     action: 'register',
+    gym: 'ironview',
     memberType: 'remote',
     payment: 'venmo',
     first: 'Casey',
@@ -303,7 +304,8 @@ test('an empty Check-ins tab drops Max Points for the new columns; other tabs ke
   people.getRange(1, people.getLastColumn() + 1).setValue('Phone'); // no participants yet
   assert.equal(post({ action: 'adminSetup', key: ADMIN }).ok, true);
   const now = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].filter(Boolean);
-  assert.deepEqual(now, ['Key', 'ID', 'Name', 'Team', 'Date', 'Day', 'Done', 'Of', 'Score', 'Bonus', 'Points', 'Answers', 'Updated', 'Coach Notes']);
+  // (Gym after Team since the six gyms, 11/23/2026.)
+  assert.deepEqual(now, ['Key', 'ID', 'Name', 'Team', 'Gym', 'Date', 'Day', 'Done', 'Of', 'Score', 'Bonus', 'Points', 'Answers', 'Updated', 'Coach Notes']);
   const head = people.getRange(1, 1, 1, people.getLastColumn()).getValues()[0].filter(Boolean);
   assert.ok(head.includes('Phone'), 'an added column on an empty tab survives setup');
   register(post);
@@ -475,11 +477,18 @@ test('setup twice keeps Kevin\'s settings and days', () => {
   const values = settings.getDataRange().getValues();
   const row = values.findIndex((r) => r[0] === 'remote_price') + 1;
   settings.getRange(row, 2).setValue(109);
+  // Since the six gyms (11/23/2026) each gym's price is on the Gyms tab; Iron View's row started
+  // from Settings, and a blank one there means the Settings price.
+  const gyms = gas.sheet('Gyms');
+  const head = gyms.getRange(1, 1, 1, gyms.getLastColumn()).getValues()[0];
+  gyms.getRange(2, head.indexOf('Remote Price') + 1).setValue(119);
   const again = post({ action: 'adminSetup', key: ADMIN, days: [{ day: 1, title: 'should not overwrite' }] });
   assert.equal(again.ok, true);
   assert.equal(again.seededDays, 0);
   gas.state.cache.clear();
-  assert.equal(post({ action: 'config' }).config.remotePrice, 109);
+  const cfg = post({ action: 'config' }).config;
+  assert.equal(cfg.remotePrice, 119, 'Iron View’s own price, kept by setup');
+  assert.equal(cfg.gyms.find((g) => g.id === 'okc').remotePrice, 109, 'a gym with no price of its own: the one in Settings, kept by setup');
 });
 
 test('unknown actions and health check', () => {

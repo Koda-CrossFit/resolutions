@@ -47,7 +47,7 @@ const SETUP = {
   sleepHours: 7,
   coaches: [],
 };
-const join = (email, extra) => api(Object.assign({ action: 'register', memberType: 'member', first: email.split('@')[0], last: 'Tester', email, password: 'secret1', shirt: 'tee', size: 'L', setup: SETUP }, extra || {}));
+const join = (email, extra) => api(Object.assign({ action: 'register', gym: 'ironview', memberType: 'member', first: email.split('@')[0], last: 'Tester', email, password: 'secret1', shirt: 'tee', size: 'L', setup: SETUP }, extra || {}));
 const testers = async () => (await rows('Participants')).filter((p) => p.Type === 'Test').map((p) => p.Email).sort().join(',');
 
 (async () => {
@@ -98,13 +98,14 @@ const testers = async () => (await rows('Participants')).filter((p) => p.Type ==
     [['seed-days', '--overwrite=false'], /--overwrite takes no value/, 'seed-days --overwrite=false (it would have overwritten)'],
     [['end-beta', 'kevin@example.com', '--force=false'], /--force takes no value/, '--force=false (it would have forced)'],
     [['setup', '--welcome'], /--welcome needs =true or =false/, 'a bare --welcome'],
+    [['beta', '2026-11-30'], /There are 3 Test account\(s\) on Participants[^\n]*End the old one first: node dev\/live\.js end-beta <your email>/, 'a new beta while the last one’s testers are still there (they’d all be pulled into it)'],
     [['summary'], /^RES27_ADMIN_KEY is set but RES27_URL isn’t|FAILED RES27_ADMIN_KEY is set but RES27_URL isn’t/m, 'a test key without a test URL (would go to live)', { RES27_URL: undefined, RES27_ADMIN_KEY: KEY }],
   ];
   for (const [args, want, name, env] of mistakes) {
     r = cli(args, env);
     check('refused: ' + name, r.code === 1 && want.test(r.out), r.out);
   }
-  check('…and still nothing changed', (await testers()).split(',').length === 3 && (await rows('Check-ins')).length === 3);
+  check('…and still nothing changed', (await testers()).split(',').length === 3 && (await rows('Check-ins')).length === 3 && String((await rows('Settings')).find((s) => s.Setting === 'beta_start').Value).startsWith('2026-11-09'));
   r = cli(['purge-tests']);
   check('purge-tests alone only lists (all 3, Kevin included, "moved to Test") with its own code', r.code === 0 && /3 test account/.test(r.out) && /kevin Tester <kevin@example.com> · moved to Test/.test(r.out) && !!codeIn(r.out) && codeIn(r.out) !== code, r.out);
 
@@ -140,6 +141,23 @@ const testers = async () => (await rows('Participants')).filter((p) => p.Type ==
   check('purge-tests flags someone who is neither a beta sign-up nor moved to Test', r.code === 0 && /sam Tester <sam@example.com> · how they became Test is unknown[^\n]*\n\s+<-- not a beta sign-up, and the Log has no move to Test/.test(r.out), r.out);
   r = cli(['purge-tests', '--yes=' + codeIn(r.out)]);
   check('…and purge-tests --yes=<code> deletes exactly that list', r.code === 0 && /Deleted 1 test account/.test(r.out) && (await testers()) === '', r.out);
+
+  // With no Test accounts left, a new beta starts (and goes off again with --force while it's open).
+  r = cli(['beta', '2026-11-30']);
+  check('a new beta starts once no Test accounts are left', r.code === 0 && /"ok": true/.test(r.out) && /"start": "2026-11-30"/.test(r.out), r.out);
+  // The running beta can be changed with its own testers on it (11/24 review: that was refused, and
+  // the message pointed to end-beta, which deletes them).
+  const tess = await join('tess@example.com', { beta: true });
+  check('a tester joins the new beta', tess.ok && tess.me.person.type === 'Test', JSON.stringify(tess.error || ''));
+  r = cli(['beta', '2026-11-30', '14']);
+  check('…and the running beta can be made 14 days long with her on it', r.code === 0 && /"ok": true/.test(r.out) && /"beta_days": 14/.test(r.out) && !/There are/.test(r.out), r.out);
+  r = cli(['beta', '2026-12-07']);
+  check('…or moved to a new start while it’s still open', r.code === 0 && /"start": "2026-12-07"/.test(r.out), r.out);
+  r = cli(['beta', 'off', '--force']);
+  check('…and beta off --force turns it off', r.code === 0 && /"ok": true/.test(r.out), r.out);
+  r = cli(['beta', '2026-12-14']);
+  check('with no beta running, her leftover Test account stops a new one, and the message says so (not "an earlier beta" while one runs)',
+    r.code === 1 && /There are 1 Test account\(s\) on Participants, and no beta is running \(they’re left from one that’s over, or were moved to Test\)\. A new beta would put every one of them on it/.test(r.out) && /End the old one first: node dev\/live\.js end-beta <your email>/.test(r.out), r.out);
 
   await get('/dev/time?clear=1');
   console.log('\n' + passed + ' passed, ' + failed + ' failed.');

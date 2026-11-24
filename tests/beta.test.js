@@ -41,7 +41,7 @@ const SETUP = {
 
 function signUp(post, extra) {
   return post(Object.assign({
-    action: 'register', memberType: 'member', first: 'Kevin', last: 'Beta', email: 'beta@example.com', password: 'secret1',
+    action: 'register', gym: 'ironview', memberType: 'member', first: 'Kevin', last: 'Beta', email: 'beta@example.com', password: 'secret1',
     shirt: 'tee', size: 'L', setup: SETUP, beta: true,
   }, extra || {}));
 }
@@ -106,6 +106,17 @@ test('the beta welcome email has the beta dates and link; a remote beta sign-up 
   assert.equal(row['Payment'], '');
   assert.match(row['Notes'], /chose Remote · Venmo/);
   assert.equal(row['Welcome Email'], 'Sent');
+  // A card at a gym with no checkout link yet (Kevin, 11/23/2026: "put a placeholder for the card
+  // link, we'll add one later"): still nothing to pay in a beta, so no secure link is promised.
+  const card = signUp(post, { memberType: 'remote', payment: 'card', gym: 'tulsa', email: 'card.beta@example.com' });
+  assert.equal(card.ok, true, card.error);
+  const cardMail = gas.state.mail[gas.state.mail.length - 1];
+  assert.equal(cardMail.to, 'card.beta@example.com');
+  assert.match(cardMail.subject, /You’re in the beta/);
+  assert.ok(!/secure link|by card|\$99/.test(cardMail.htmlBody), 'no payment in a beta email');
+  const cardRow = gas.rows('Participants').find((p) => p.Email === 'card.beta@example.com');
+  assert.deepEqual([cardRow.Type, cardRow.Gym, cardRow.Payment, cardRow.Paid], ['Test', 'Tulsa', '', 'n/a']);
+  assert.match(cardRow.Notes, /chose Remote · Credit Card/);
 });
 
 test('without a beta test, a beta sign-up is stopped (never quietly made real); a normal one goes through', () => {

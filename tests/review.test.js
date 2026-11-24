@@ -33,7 +33,7 @@ const SETUP = {
 
 function register(post, extra) {
   return post(Object.assign({
-    action: 'register', memberType: 'remote', payment: 'venmo', first: 'Casey', last: 'Lane',
+    action: 'register', gym: 'ironview', memberType: 'remote', payment: 'venmo', first: 'Casey', last: 'Lane',
     email: 'casey.lane@example.com', password: 'secret1', shirt: 'tank', size: 'S', setup: SETUP,
   }, extra || {}));
 }

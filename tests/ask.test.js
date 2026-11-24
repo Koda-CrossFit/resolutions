@@ -29,7 +29,7 @@ function world(settings) {
 
 function join(post, first, extra) {
   const r = post(Object.assign({
-    action: 'register', memberType: 'member', first, last: 'Asker', email: first.toLowerCase() + '@example.com', password: 'secret1',
+    action: 'register', gym: 'ironview', memberType: 'member', first, last: 'Asker', email: first.toLowerCase() + '@example.com', password: 'secret1',
     shirt: 'tee', size: 'M', setup: SETUP,
   }, extra || {}));
   assert.equal(r.ok, true, r.error);
@@ -79,7 +79,8 @@ test('coach_emails formats, first-name matches, and the gym when there’s no co
     assert.equal(mail.to, to, first + ' → ' + to);
     assert.equal(out.to, to === 'kodaironview@gmail.com' ? 'gym' : 'coach');
     if (first === 'Eve') assert.match(mail.htmlBody, /No coach is assigned yet, so this came to the gym/);
-    if (first === 'Fay') assert.match(mail.htmlBody, /Coach Nate has no email in coach_emails/);
+    // Coach emails are each gym's (Gyms tab) since 11/23/2026; Iron View's row started from coach_emails.
+    if (first === 'Fay') assert.match(mail.htmlBody, /Coach Nate has no email in Coach Emails on the Gyms tab \(Iron View\)/);
   }
   assert.equal(gas.rows('Questions').length, 6, 'Maggie Smith is not Maggie Kerr');
 });

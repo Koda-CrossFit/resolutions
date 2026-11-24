@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Koda Resolutions 2027</title>
-  <meta name="description" content="Koda CrossFit Iron View's six-week nutrition and lifestyle challenge: your goal, your plan, your daily checklist, and the Koda community behind you.">
+  <meta name="description" content="Koda CrossFit's six-week nutrition and lifestyle challenge: your goal, your plan, your daily checklist, and the Koda community behind you.">
   <meta name="theme-color" content="#0c1a2b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,20 +15,38 @@
   <meta property="og:description" content="Six weeks. Your goal, your nutrition plan and your own daily checklist, with the Koda community in your corner.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://koda-crossfit.github.io/resolutions/">
-  <meta property="og:image" content="https://koda-crossfit.github.io/resolutions/assets/og.png?v=4">
+  <!-- One picture for all six gyms' links (no gym's name or colors: link previews don't run the app). -->
+  <meta property="og:image" content="https://koda-crossfit.github.io/resolutions/assets/og.png?v=5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Koda Resolutions 2027: a six-week challenge, January 18 to February 28, 2027">
   <meta name="twitter:card" content="summary_large_image">
+  <script>
+    // Each gym has its own colors (11/23/2026). Set them before the first paint, so the page doesn't
+    // flash Iron View's navy first: signed in, the gym this phone last showed; signed out, the link's
+    // ?gym=, else that one. app.js works it out properly once it runs.
+    (function () {
+      try {
+        var ids = /^(ironview|okc|native|norman|downtown|tulsa)$/, g = '';
+        var m = /[?&]gym=([a-z]+)(?:&|#|$)/i.exec(location.search);
+        if (m && !localStorage.getItem('res27.token')) g = m[1].toLowerCase();
+        if (!ids.test(g)) g = String(JSON.parse(localStorage.getItem('res27.gym') || '""'));
+        if (ids.test(g)) document.documentElement.setAttribute('data-gym', g);
+      } catch (e) { /* no storage: app.js sets it */ }
+    })();
+  </script>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/app.css?v=13">
 </head>
 <body>
   <div id="app"><div class="loading-screen"><svg class="mark" viewBox="0 0 2000 1118" aria-hidden="true"><polygon points="19,20 335,20 874,559 335,1098 19,1098 558,559"/><polygon points="585,20 901,20 1282,401 1664,20 1980,20 1440,559 1980,1098 1664,1098 1282,717 901,1098 585,1098 1125,559"/></svg></div></div>
   <noscript><p style="padding:24px;font-family:sans-serif">Koda Resolutions needs JavaScript turned on.</p></noscript>
-  <script src="assets/content.js?v=12"></script>
-  <script src="assets/app.js?v=12"></script>
+  <script src="assets/content.js?v=13"></script>
+  <script src="assets/app.js?v=13"></script>
 </body>
 </html>

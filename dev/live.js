@@ -10,9 +10,30 @@
  *   node dev/live.js purge-tests [--yes=<code>]       (every Test account: lists them with a code; --yes=<code> deletes that list)
  *   node dev/live.js purge-test <email>               (just that Test account)
  *   node dev/live.js setting <key> <value|--clear>    (one Settings value, via adminSetup)
- *   node dev/live.js beta <yyyy-mm-dd> [days]         (start a beta test; end one with end-beta)
+ *   node dev/live.js beta <yyyy-mm-dd> [days] [--force]   (start a beta test, or change the running one;
+ *                                                      a new one is refused while Test accounts from an
+ *                                                      earlier one are left: run end-beta first)
  *   node dev/live.js beta off                         (turn it off; refused while testers can still catch up)
  *   node dev/live.js end-beta <keep-email> [--yes=<code>]   (after the beta: see README "Ending the beta")
+ * Six gyms and the daily email (1.8.0, 11/23/2026):
+ *   node dev/live.js gyms                             (each gym's details, people and daily email counts)
+ *   node dev/live.js set-gym <email> <gym>            (move someone to a gym: okc, OKC or Koda OKC all work;
+ *                                                      clears their Team and Coach, which were the old gym's)
+ *   node dev/live.js email-preview <gym> [email] [--date=yyyy-mm-dd]
+ *                                                     (that day's email, not sent: saved as a page under
+ *                                                      dev/screenshots/email-previews/, which git ignores)
+ *   node dev/live.js email-send <gym> [--date=yyyy-mm-dd]   (who would get what, and what --yes would do; nothing is sent)
+ *   node dev/live.js email-send <gym> --yes [--date=…] [--force]
+ *                                                     (sends it now: today's to everyone, or once it has gone
+ *                                                      out, to just the ones waiting on that day's list (it
+ *                                                      failed for them, or got no answer); an earlier day's
+ *                                                      only to the ones waiting on its list; --force: everyone
+ *                                                      again. A later day is refused: that morning's run sends it)
+ *   node dev/live.js email-send <gym> --to=<email> [--date=…] [--yes]
+ *                                                     (that one address only, any day, marking nothing: their
+ *                                                      own email, or the gym's common one: for a test send)
+ *   node dev/live.js email-triggers [on|off]          (the hourly trigger: each gym's goes on the first run
+ *                                                      past email_hour in its own time zone)
  * Exits 1 when the backend says no (ok: false), so a failed step stops anything chained after it.
  * Tests point it at a local dev server with RES27_URL=http://localhost:8790/api and RES27_ADMIN_KEY.
  */
@@ -125,7 +146,38 @@ const COMMANDS = {
   setting: { words: [1, 2], flags: ['--clear'] },
   beta: { words: [1, 2], flags: ['--force'] },
   'end-beta': { words: [1, 1], flags: ['--yes', '--force'] },
+  gyms: { words: [0, 0], flags: [] },
+  'set-gym': { words: [2, 2], flags: [] },
+  'email-preview': { words: [1, 2], flags: ['--date'] },
+  'email-send': { words: [1, 1], flags: ['--yes', '--date', '--force', '--to'] },
+  'email-triggers': { words: [0, 1], flags: [] },
 };
+
+// Since 11/23/2026 each gym has these on the Gyms tab; the Settings values only started Iron View's row.
+const MOVED_TO_GYMS = { venmo: 'Venmo', zelle: 'Zelle', card_url: 'Card URL', coaches: 'Coaches', coach_emails: 'Coach Emails' };
+const PROVIDERS = ['resend', 'brevo', 'mailapp', 'off'];
+
+/** Where email-preview saves its page: under dev/screenshots, which git ignores (a preview can hold someone's stop link). */
+function previewFile(gym, date, email) {
+  const dir = path.join(__dirname, 'screenshots', 'email-previews');
+  fs.mkdirSync(dir, { recursive: true });
+  const who = email ? '-' + email.replace(/[^a-z0-9]+/gi, '_') : '';
+  return path.join(dir, 'email-' + gym + '-' + date + who + '.html');
+}
+
+/**
+ * One gym's line in `gyms`: what people at that gym see, and how many there are. A card is offered
+ * at every gym (Kevin, 11/23/2026: "put a placeholder for the card link, we'll add one later"):
+ * until the gym's Card URL is in, its card payers are told we'll email them a secure link.
+ */
+function printGym(g, counts) {
+  const pay = [g.venmo ? 'Venmo ' + g.venmo : '', g.zelle ? 'Zelle ' + g.zelle : '', g.cardUrl ? 'card (checkout link)' : 'card (NO LINK YET: email card payers a secure link)'].filter(Boolean);
+  const c = counts || {};
+  console.log('  ' + g.short + ' (' + g.id + ') · ' + g.name + ' · ' + (g.city || '?') + (g.address ? ' · ' + g.address : ' · NO ADDRESS'));
+  console.log('      ' + (c.people || 0) + ' people' + (c.test ? ' + ' + c.test + ' test' : '') + ' · daily email on ' + (c.dailyOn || 0) + ', off ' + (c.dailyOff || 0) + (c.badEmail ? ', ' + c.badEmail + ' skipped (address not valid)' : '') +
+    ' · $' + g.remotePrice + ' remote · pays by ' + pay.join(', ') +
+    ' · coaches: ' + (g.coaches.length ? g.coaches.join(', ') : 'none (no ranking step)') + ' · questions to ' + (g.contactEmail || '?'));
+}
 
 (async () => {
   const cmd = process.argv[2];
@@ -142,7 +194,11 @@ const COMMANDS = {
     // A switch is on by being there: --overwrite=false would read as "on", so a value is refused.
     if (['--overwrite', '--force', '--clear'].indexOf(name) >= 0 && value !== undefined) throw new Error(name + ' takes no value: leave it out for "no"');
     if (name === '--welcome' && !/^(true|false)$/i.test(value || '')) throw new Error('--welcome needs =true or =false');
+    // email-send's --yes is a plain switch (sending can't be undone either way, so there's no list code).
+    if (name === '--yes' && cmd === 'email-send' && value !== undefined) throw new Error('--yes takes no value here: email-send <gym> --yes');
     if (name === '--yes' && value !== undefined && !/^[0-9a-f]{6}$/.test(value)) throw new Error('--yes needs the 6-letter code the list printed, like --yes=1a2b3c');
+    if (name === '--date' && !realDay(value || '')) throw new Error('--date needs a real day, like --date=2027-01-20');
+    if (name === '--to' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value || '')) throw new Error('--to needs the one address to send it to, like --to=you@example.com');
     flags[name] = value === undefined ? true : value;
   });
   if (words.length < spec.words[0] || words.length > spec.words[1]) {
@@ -153,6 +209,10 @@ const COMMANDS = {
   console.error('(' + WHERE + ')');
   let out;
   if (cmd === 'setup') {
+    // The deploy step before the front end: an older backend still live (update-deployment pointed
+    // at the wrong version) would say ok here without adding the Gym column, and the six-gym page
+    // would then go out against it.
+    await needVersion(1, 8, 'setup for this front end (the six gyms)');
     const settings = flags['--welcome'] !== undefined ? { welcome_email: /^true$/i.test(flags['--welcome']) } : undefined;
     out = await post({ action: 'adminSetup', key, settings });
   } else if (cmd === 'setting') {
@@ -161,8 +221,13 @@ const COMMANDS = {
     if (b !== undefined && flags['--clear']) throw new Error('setting takes a value or --clear, not both');
     let value = flags['--clear'] ? '' : b;
     if (/^(true|false)$/i.test(value)) value = /true/i.test(value);
+    if (a === 'email_provider' && PROVIDERS.indexOf(String(value).toLowerCase()) < 0) throw new Error('email_provider is one of ' + PROVIDERS.join(', '));
+    if (a === 'email_hour' && !(Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 11)) throw new Error('email_hour is a whole hour from 0 to 11 (3 = 3 AM)');
+    if (a === 'email_hour') value = Number(value);
     out = await post({ action: 'adminSetup', key, settings: { [a]: value } });
     if (out.ok && out.unknown && out.unknown.length) out = { ok: false, error: 'No setting is called ' + out.unknown.join(', ') + '; nothing was stored. Check the Settings tab for the exact name.' };
+    if (out.ok && MOVED_TO_GYMS[a]) console.log('Note: the app no longer reads ' + a + ' from Settings. Each gym’s ' + MOVED_TO_GYMS[a] + ' is on the Gyms tab: change it there.');
+    if (out.ok && a === 'email_hour') console.log('Note: from now on each gym’s email goes on the first hourly run past ' + value + ':00 in its own time zone. Nothing else needs changing.');
   } else if (cmd === 'seed-days') {
     const full = path.join(__dirname, '..', 'content', 'private', 'days-2027-full.json');
     const days = JSON.parse(fs.readFileSync(fs.existsSync(full) ? full : path.join(__dirname, '..', 'content', 'days-2027.json'), 'utf8'));
@@ -201,6 +266,19 @@ const COMMANDS = {
     if (b && (a === 'off' || !(Number.isInteger(Number(b)) && Number(b) >= 1 && Number(b) <= 42))) throw new Error(a === 'off' ? 'beta off takes nothing else' : 'beta days must be a whole number from 1 to 42');
     // Starting one works on 1.3.0+; turning one off checks its dates, which 1.7.0 reports.
     await needVersion(1, a === 'off' ? 7 : 3, a === 'off' ? 'beta off' : 'beta');
+    if (a !== 'off') {
+      // Every Test account goes through whatever beta is set, daily emails included, so Test
+      // accounts left from an earlier beta (the 11/9 testers) would be pulled into this one. A change
+      // to the beta that's running (a new length, or a new start while it's still open) keeps its
+      // own testers, so that's not refused (11/24/2026 review: it pointed Kevin to end-beta, which
+      // deletes them).
+      const sum = await post({ action: 'adminSummary', key });
+      if (!sum.ok) throw new Error('summary failed: ' + sum.error);
+      const running = sum.settings.beta_start === a || !!(sum.beta && sum.today <= sum.beta.lastOpen);
+      if (sum.testAccounts > 0 && !running && !flags['--force']) {
+        throw new Error('There are ' + sum.testAccounts + ' Test account(s) on Participants, and no beta is running (they’re left from one that’s over, or were moved to Test). A new beta would put every one of them on it, with its daily emails. End the old one first: node dev/live.js end-beta <your email> (or add --force to start this one with them on it). Nothing was changed.');
+      }
+    }
     if (a === 'off') {
       // Turning it off flips Test accounts to January at once, so not while testers can still
       // catch up its last week. (After a beta, end-beta does this with the rest of the cleanup.)
@@ -272,6 +350,118 @@ const COMMANDS = {
         if (!out.ok) out.error = 'Not finished: testAccounts should be 0, beta_start blank and beta_everyone false. Run end-beta again to see what’s left.';
       }
     }
+  }
+  if (cmd === 'gyms') {
+    await needVersion(1, 8, 'gyms');
+    const cfg = await post({ action: 'config' });
+    if (!cfg.ok) throw new Error('config failed: ' + cfg.error);
+    const sum = await post({ action: 'adminSummary', key });
+    if (!sum.ok) throw new Error('summary failed: ' + sum.error);
+    const counts = Object.fromEntries((sum.gyms || []).map((g) => [g.id, g]));
+    console.log(cfg.config.gyms.length + ' gyms (details from the Gyms tab):');
+    cfg.config.gyms.forEach((g) => printGym(g, counts[g.id]));
+    if (sum.unknownGym && sum.unknownGym.length) {
+      console.log('These Gym cells aren’t a gym, so they count as Iron View until fixed (Participants, or set-gym):');
+      sum.unknownGym.forEach((u) => console.log('  ! ' + u));
+    }
+    if (sum.badEmail && sum.badEmail.length) {
+      console.log('These addresses aren’t ones an email service takes, so the daily email skips them until Email is fixed on both Participants and Accounts:');
+      sum.badEmail.forEach((u) => console.log('  ! ' + u));
+    }
+    const e = sum.email || {};
+    console.log('Daily email: ' + (e.daily_email ? 'ON' : 'off') + ' · provider ' + e.email_provider + (e.email_from ? ' from ' + e.email_from : '') + ' · API key ' + (e.apiKey ? 'set' : 'not set') +
+      ' · ' + e.triggers + ' trigger(s) at ' + e.email_hour + ':00 local' + (e.problem ? ' · not sending: ' + e.problem : ''));
+    console.log('Last sent: ' + Object.keys(e.lastSent || {}).map((g) => g + ' ' + (e.lastSent[g] || 'never')).join(', '));
+    // A list per gym per day (11/24/2026): each day's own command reaches just the people on it.
+    Object.keys(e.retry || {}).forEach((g) => [].concat(e.retry[g]).forEach((r) => {
+      const who = [r.count ? r.count + ' whose email failed' : '', r.unconfirmed ? r.unconfirmed + ' unconfirmed (no answer from Resend: they may have it)' : ''].filter(Boolean).join(' and ');
+      console.log('  ! ' + g + ' ' + r.date + ': ' + who + ', waiting to be sent again (node dev/live.js email-send ' + g + ' --date=' + r.date + ' shows them)');
+    }));
+    out = { ok: true, gyms: cfg.config.gyms.length, people: sum.total, unknownGym: (sum.unknownGym || []).length, badEmail: (sum.badEmail || []).length };
+  } else if (cmd === 'set-gym') {
+    await needVersion(1, 8, 'set-gym');
+    out = await post({ action: 'adminSetGym', key, email: a, gym: b });
+    // Their Team and Coach were for the old gym, so the move clears them: Kevin sets the new ones.
+    const left = [out.teamCleared ? 'Team ' + out.teamCleared : '', out.coachCleared ? 'Coach ' + out.coachCleared : ''].filter(Boolean);
+    if (out.ok && left.length) console.log('Cleared ' + left.join(' and ') + ' (they were for the old gym): set the new ones on Participants.');
+  } else if (cmd === 'email-preview') {
+    await needVersion(1, 8, 'email-preview');
+    const r = await post({ action: 'adminEmailPreview', key, gym: a, email: b, date: flags['--date'] });
+    if (r.ok && r.html) {
+      const file = previewFile(r.gym, r.date, b);
+      fs.writeFileSync(file, '<!doctype html><meta charset="utf-8"><title>' + r.subject.replace(/</g, '&lt;') + '</title>' + r.html);
+      console.log('Subject: ' + r.subject);
+      console.log('Saved the email as ' + file + ' (open it in a browser).');
+      console.log('\n' + r.text + '\n');
+      out = { ok: true, gym: r.gym, date: r.date, subject: r.subject, recipients: r.recipients, overdue: r.overdue, person: r.person, file };
+    } else {
+      out = r.ok ? { ok: true, gym: r.gym, date: r.date, recipients: r.recipients, note: r.note, person: r.person } : r;
+    }
+  } else if (cmd === 'email-send') {
+    await needVersion(1, 8, 'email-send');
+    if (flags['--force'] && !flags['--yes']) throw new Error('--force only goes with --yes');
+    if (flags['--force'] && flags['--to']) throw new Error('--force doesn’t go with --to: a send to one address never marks the day, so there’s nothing to force');
+    const to = flags['--to'];
+    const date = flags['--date'];
+    // Every command it prints names the day (--date=, the backend's own date when none was given),
+    // so one copied later still means that day (11/24/2026 review: without it, the next morning
+    // the same command meant the next day's email).
+    const again = (day) => 'node dev/live.js email-send ' + a + ' --date=' + day + (to ? ' --to=' + to : '');
+    if (!flags['--yes']) {
+      const r = await post({ action: 'adminEmailSend', key, gym: a, date, email: to, dryRun: true });
+      if (r.ok && to) {
+        console.log(r.to.email + ' would get ' + (r.to.onList ? 'their own email' + (r.to.overdue ? ' (with the Overdue box)' : '') : 'the gym’s common email (they aren’t on the list that day: ' + r.to.why + ')') + ': "' + r.subject + '" (' + r.gym + ', ' + r.date + ').');
+        if (r.problem) console.log('A real send would be refused right now: ' + r.problem + '.');
+        out = { ok: true, dryRun: true, gym: r.gym, date: r.date, to: r.to, note: 'Nothing sent. To send it to that one address (nothing is marked): ' + again(r.date) + ' --yes' };
+      } else if (r.ok) {
+        console.log((r.count ? r.count + ' would get "' + r.subject + '"' : 'Nobody would get an email') + ' (' + r.gym + ', ' + r.date + '), ' + r.overdue + ' with the Overdue box:');
+        r.recipients.forEach((p) => console.log('  - ' + p.email + (p.overdue ? '  (overdue)' : '')));
+        if (r.retry) {
+          console.log(r.retry + ' of them are waiting for it to be sent again (their send that day failed):');
+          r.retryRecipients.forEach((e) => console.log('  - ' + e));
+        }
+        if (r.unconfirmed) {
+          console.log(r.unconfirmed + ' of them are unconfirmed: their send that day got no answer from Resend, so they may have it. Check Resend’s log first (a resend within 24 hours of the first goes out only to a batch Resend never took):');
+          (r.unconfirmedRecipients || []).forEach((e) => console.log('  - ' + e));
+        }
+        if (r.skipped && r.skipped.length) console.log(r.skipped.length + ' skipped, address not valid (fix Email on Participants and Accounts): ' + r.skipped.join(', '));
+        if (r.problem) console.log('A real send would be refused right now: ' + r.problem + '.');
+        // What --yes would do, so the hint never offers a send to the whole gym it shouldn't.
+        const waiting = (r.retry || 0) + (r.unconfirmed || 0);
+        let note = 'Nothing sent.';
+        if (r.count && r.send === 'all') note += ' To send it to all ' + r.count + ': ' + again(r.date) + ' --yes';
+        else if (r.count && r.send === 'retry') note += ' To send it to just the ' + waiting + ' waiting: ' + again(r.date) + ' --yes (with --force it goes to all ' + r.count + ' again)';
+        else if (r.count && r.code === 'future') note += ' ' + r.date + ' hasn’t come yet: that morning’s run sends it. To try it on one address now: ' + again(r.date) + ' --to=<email> --yes';
+        else if (r.count && r.code === 'already_sent') note += ' Today’s has already gone out, and nobody is waiting for it to be sent again. To send it to all ' + r.count + ' again anyway: ' + again(r.date) + ' --yes --force';
+        else if (r.count) note += ' That’s an earlier day’s: everyone who got it then would get it again. To send it anyway: ' + again(r.date) + ' --yes --force';
+        out = { ok: true, dryRun: true, gym: r.gym, date: r.date, count: r.count, overdue: r.overdue, retry: r.retry, unconfirmed: r.unconfirmed || 0, note };
+      } else {
+        out = r;
+      }
+    } else {
+      out = await post({ action: 'adminEmailSend', key, gym: a, date, email: to, dryRun: false, force: !!flags['--force'] });
+      const counts = (o) => 'Sent ' + o.sent + ', failed ' + o.failed + (o.unconfirmed ? ', unconfirmed ' + o.unconfirmed : '');
+      if (out.ok && to) {
+        console.log(counts(out) + ' (' + out.gym + ', ' + out.date + ', only to ' + out.to.email + (out.to.onList ? '' : ': the gym’s common email') + '; nothing was marked).');
+      } else if (out.ok) {
+        // After noon (or for an earlier day) no run is left to send it, so it says to send it by hand.
+        const byHand = again(out.date) + ' --yes';
+        const next = [];
+        if (out.superseded) {
+          next.push('A forced send went to everyone meanwhile, so nobody is kept for a resend.');
+        } else {
+          if (out.released) next.push('None of it went out, so the day is open again: ' + (out.nextRun ? 'the next run before noon sends it.' : 'send it by hand: ' + byHand));
+          else if (out.failed) next.push('The ' + out.failed + ' it failed for are kept: ' + (out.nextRun ? 'the next run before noon sends it to them (or ' + byHand + ' now).' : 'send it by hand: ' + byHand));
+          if (out.unconfirmed) next.push('The ' + out.unconfirmed + ' unconfirmed got no answer from Resend, so they may have it: check Resend’s log, then ' + byHand);
+        }
+        console.log(counts(out) + ' (' + out.gym + ', ' + out.date + (out.send === 'retry' ? ', to the ones waiting' : '') + ').' + (next.length ? ' ' + next.join(' ') : ''));
+      }
+    }
+  } else if (cmd === 'email-triggers') {
+    await needVersion(1, 8, 'email-triggers');
+    if (a !== undefined && a !== 'on' && a !== 'off') throw new Error('email-triggers takes on, off, or nothing (to list them)');
+    out = await post({ action: 'adminEmailTriggers', key, on: a === 'on' ? true : a === 'off' ? false : undefined });
+    if (out.ok && out.on) console.log('The daily email runs every hour: each gym’s goes on the first run past ' + out.hour + ':00 in its own time zone (' + (out.zones || []).join(', ') + ').');
   }
   console.log(JSON.stringify(out, null, 1));
   if (out && out.ok === false) process.exitCode = 1;

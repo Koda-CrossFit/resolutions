@@ -38,7 +38,7 @@ const SETUP = {
 
 function join(post, email, extra) {
   const r = post(Object.assign({
-    action: 'register', memberType: 'member', first: email.split('@')[0], last: 'Tester', email, password: 'secret1',
+    action: 'register', gym: 'ironview', memberType: 'member', first: email.split('@')[0], last: 'Tester', email, password: 'secret1',
     shirt: 'tee', size: 'L', setup: SETUP,
   }, extra || {}));
   assert.equal(r.ok, true, r.error);

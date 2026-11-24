@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.4.4';
+  var APP_VERSION = '1.5.0';
 
   /* ============================================================ small helpers */
 
@@ -16,15 +16,17 @@
   }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function localToday() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-  /** Today in Mountain time: the server's day, which decides when a beta is over. */
-  function mountainToday() {
+  /** The date in a time zone (America/Chicago, say) now, or at the time `ms`. */
+  function zoneToday(tz, ms) {
     try {
       var v = {};
-      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).forEach(function (p) { v[p.type] = p.value; });
+      new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(ms ? new Date(ms) : new Date()).forEach(function (p) { v[p.type] = p.value; });
       if (v.year && v.month && v.day) return v.year + '-' + v.month + '-' + v.day;
     } catch (e) { /* an old browser: the phone's own date */ }
     return localToday();
   }
+  /** Today in Mountain time (or the day of the time `ms`): the server's day, which decides when a beta is over. */
+  function mountainToday(ms) { return zoneToday('America/Denver', ms); }
   function keyDate(k) { var p = String(k).split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
   function addDays(k, n) { var d = keyDate(k); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function diffDays(a, b) { return Math.round((keyDate(b) - keyDate(a)) / 86400000); }
@@ -36,7 +38,25 @@
   function goalLabel(id) { var g = C.goals.filter(function (x) { return x.id === id; })[0]; return g ? g.label : ''; }
   function planInfo(id) { return C.plans.filter(function (x) { return x.id === id; })[0] || null; }
   function trackInfo(id) { return C.tracking.filter(function (x) { return x.id === id; })[0] || null; }
-  function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || '').trim()); }
+  /**
+   * An address a sign-up can use: the server's rule for new addresses (res27CleanEmail_), so a typo
+   * like "jess@gmail.com." or "john@gmail.com>" is caught here instead of getting in and making the
+   * email service turn down that gym's whole morning email (review, 11/23/2026). One @, printable
+   * ASCII only, none of , ; : < > ( ) [ ] \ ", no dot at the start or end of the name or two in a
+   * row, and a domain of letters, digits and hyphens that ends in letters (.com, not .c0m).
+   */
+  function validEmail(e) {
+    var email = String(e || '').trim().toLowerCase(), at = email.indexOf('@');
+    if (email.length > 120 || !/^[^@]+@[^@]+$/.test(email) || /[^\x21-\x7e]|[,;:<>()[\]\\"]/.test(email)) return false;
+    if (/^\.|\.\.|\.$/.test(email.slice(0, at))) return false;
+    return /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(email.slice(at + 1));
+  }
+  /**
+   * An address typed to find an account that's already there (sign-in, Forgot password): the looser
+   * check from before 11/23/2026, as on the server (res27LookupEmail_), so someone whose address got
+   * in then can still sign in.
+   */
+  function emailLike(e) { var email = String(e || '').trim(); return email.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email); }
 
   var store = {
     get: function (k, fallback) { try { var v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
@@ -63,6 +83,107 @@
     return b.end < mountainToday() ? null : b;
   }
   function weeksText(days) { return days % 7 ? plural(days, 'day') : plural(days / 7, 'week'); }
+
+  /* ============================================================ the six gyms (11/23/2026) */
+
+  // Kevin, 11/23/2026: the challenge runs at all six Koda gyms, "at least" each in its own colors, with
+  // leaderboards within each gym and between them. One app: the person's gym picks their colors,
+  // coaches, ways to pay, videos and leaderboard. Ids are the keys; "The current website should be
+  // Iron View's colors", so Iron View is the default.
+  var GYM_DEFAULT = 'ironview';
+  function gymDef(id) { return C.gyms.filter(function (g) { return g.id === id; })[0] || C.gyms[0]; }
+  function lettersOf(v) { return String(v === null || v === undefined ? '' : v).toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+  /** A gym's id from a link or a cell, as the server reads it: the id, short name or full name, any case ("okc", "OKC", "Koda OKC"). '' if it isn't one. */
+  function gymIdOf(value) {
+    var key = lettersOf(value), bare = key.replace(/^koda(?:crossfit)?/, '');
+    if (!key) return '';
+    var hit = C.gyms.filter(function (g) {
+      var names = [lettersOf(g.id), lettersOf(g.short), lettersOf(g.name)];
+      return names.indexOf(key) >= 0 || (bare && names.indexOf(bare) >= 0);
+    })[0];
+    return hit ? hit.id : '';
+  }
+  /** The gym in this page's link (…/resolutions/?gym=okc: Kevin shares one link per gym); '' when there's none or it isn't a gym. */
+  function linkGym() {
+    try {
+      var m = /[?&]gym=([^&#]*)/.exec(location.search);
+      return m ? gymIdOf(decodeURIComponent(m[1].replace(/\+/g, ' '))) : '';
+    } catch (e) { return ''; }
+  }
+  // The link's gym is remembered on this phone (a later visit without it opens in the same colors).
+  (function () { var id = linkGym(); if (id) store.set('res27.gym', id); })();
+  /** The gym this phone remembers: the last link's, the one picked at sign-up, or the signed-in person's. */
+  function rememberedGym() { return gymIdOf(store.get('res27.gym', '')); }
+  /** Signed out, the gym someone came for: the link's, else the remembered one. '' on the plain link with nothing remembered. */
+  function chosenGym() { return linkGym() || rememberedGym(); }
+  /** After a pick on the sign-up, a ?gym= in the link follows it, so a reload or a home-screen copy opens in the same gym. */
+  function setLinkGym(id) {
+    if (!/[?&]gym=/.test(location.search) || !window.history || !history.replaceState) return;
+    try { history.replaceState(history.state, '', location.pathname + location.search.replace(/([?&]gym=)[^&#]*/, '$1' + encodeURIComponent(id)) + location.hash); } catch (e) {}
+  }
+
+  /**
+   * A gym: its colors and label from content.js, its details from the server's config (the Gyms tab:
+   * name, address, coaches, ways to pay, price, contact email). A saved config from before the six
+   * gyms only has Iron View's details: they were the top-level ones, and still are.
+   */
+  function gymInfo(id) {
+    var def = gymDef(gymIdOf(id) || GYM_DEFAULT), c = (S && S.config) || DEFAULT_CONFIG;
+    var live = (c.gyms || []).filter(function (g) { return g && g.id === def.id; })[0] || null;
+    if (!live && def.id === GYM_DEFAULT) live = { coaches: c.coaches, venmo: c.venmo, zelle: c.zelle, cardUrl: c.cardUrl, remotePrice: c.remotePrice, contactEmail: c.contactEmail };
+    live = live || {};
+    return {
+      id: def.id, short: def.short, label: def.label || def.name, swatch: def.swatch, tz: def.tz,
+      name: live.name || def.name,
+      city: live.city || def.city,
+      address: typeof live.address === 'string' ? live.address : def.address || '',
+      coaches: Array.isArray(live.coaches) ? live.coaches : [],
+      venmo: live.venmo || '', zelle: live.zelle || '', cardUrl: live.cardUrl || '',
+      remotePrice: live.remotePrice || c.remotePrice || 99,
+      contactEmail: live.contactEmail || c.contactEmail || '',
+    };
+  }
+  /**
+   * The ways to pay a gym offers, in the app's order: its own Venmo and Zelle when it has them (never
+   * another gym's, Kevin's rule for money), then a card at every gym. Kevin, 11/23/2026: "put a
+   * placeholder for the card link, we'll add one later": until a gym's Card URL is in, its card
+   * payers are told we'll email them a secure link (as Iron View's were before it had one).
+   */
+  function payMethods(g) { var out = []; if (g.venmo) out.push('venmo'); if (g.zelle) out.push('zelle'); out.push('card'); return out; }
+  /** A gym's address for a footer, without the ZIP; the city when there's none yet (Downtown). */
+  function gymPlace(g) { return String(g.address || '').replace(/,?\s+\d{5}(?:-\d{4})?$/, '') || g.city; }
+  /** A gym's two colors as a round chip (decorative: its name is always written next to it). */
+  function swatchHtml(id, cls) {
+    var s = gymDef(id).swatch || ['#0c1a2b', '#c9d1da'];
+    return '<span class="gym-swatch' + (cls ? ' ' + cls : '') + '" style="--sw-a:' + esc(s[0]) + ';--sw-b:' + esc(s[1]) + '" aria-hidden="true"></span>';
+  }
+
+  /**
+   * Whose colors the page shows. Signed in: the person's gym (on the Profile's gym picker, the one
+   * being picked, as a preview). Signing up: the gym picked on its first step, which switches the
+   * colors live. Otherwise the link's ?gym=, then the one this phone remembers, then Iron View.
+   */
+  function pageGym() {
+    var r = route();
+    if (S.token && S.me && S.me.person) {
+      if (r.name === 'edit' && r.args[0] === 'gym' && S.edit && S.edit.d && gymIdOf(S.edit.d.gym)) return gymIdOf(S.edit.d.gym);
+      return gymIdOf(S.me.person.gym) || GYM_DEFAULT;
+    }
+    if (S.token) return rememberedGym() || GYM_DEFAULT; // until the person loads: the gym this phone last showed them
+    if (r.name === 'join' && gymIdOf(S.draft.gym)) return gymIdOf(S.draft.gym);
+    return chosenGym() || GYM_DEFAULT;
+  }
+  /** Puts a gym's colors on the page (<html data-gym>, read by app.css), the browser bar and the tab title. */
+  function applyGym(id) {
+    var g = gymDef(id), root = document.documentElement;
+    if (root.getAttribute('data-gym') !== g.id) root.setAttribute('data-gym', g.id);
+    var color = (g.light && g.light['--navy-900']) || '#0c1a2b';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && meta.getAttribute('content') !== color) meta.setAttribute('content', color);
+    // Iron View keeps its title; the other gyms' tabs and bookmarks say whose challenge it is.
+    var title = g.id === GYM_DEFAULT ? 'Koda Resolutions 2027' : g.name + ' · Resolutions 2027';
+    if (document.title !== title) document.title = title;
+  }
 
   /* ============================================================ icons */
 
@@ -172,6 +293,7 @@
     lastRouteKey: '',
     lastPaintHash: '',
     returnToReview: false,
+    resumeStep: '', // a sign-up saved before the gym step: where it goes after the gym is picked
     configLoaded: false, // the server answered, or couldn't be reached
     configOk: false, // the server answered (S.config is its answer, not a saved copy or the defaults)
     board: null,
@@ -180,7 +302,12 @@
     boardTriedAt: 0,
     boardError: '',
     boardView: 'overall',
+    boardScope: 'gym', // the Leaderboard's My gym / All gyms
+    boardGen: 0, // bumped by a gym change: a leaderboard answer asked for before it is dropped
     myTeam: '',
+    myGym: '', // the gym the leaderboard is for (the server's answer)
+    dailyBusy: false,
+    emailOff: null, // the "Stop the daily emails?" page: { key, busy, done, error }
     cookbook: null,
     cookbookLoading: false,
     cookbookError: '',
@@ -195,6 +322,8 @@
 
   function newDraft() {
     return {
+      // The gym (11/23/2026): the sign-up's first step, picked from the link's or remembered gym.
+      gym: '',
       memberType: '', payment: '', first: '', last: '', email: '', shirt: '', size: '',
       // Recommended habits start on Yes; the rest need a Yes or No before Continue.
       goal: '', track: { nutrition: true, workout: true, sleep: true, protein: null, hydration: null, finishers: null, skill: null, mobility: null, recovery: null, other: null },
@@ -225,6 +354,7 @@
     d.sleepHours = sleepValue(d);
     d.finishersPerWeek = finisherValue(d);
     d.other = [String((Array.isArray(d.other) && d.other[0]) || '')];
+    d.gym = gymIdOf(d.gym);
     delete d.agree;
     return d;
   }
@@ -305,6 +435,8 @@
         var mine = S.me.history[d], theirs = me.history[d];
         if (mine && (!theirs || (Number(mine.t) || 0) > (Number(theirs.t) || 0))) me.history[d] = mine;
       });
+      // A new gym (from the Profile, or Kevin's change on the sheet): nothing from the old one stays.
+      if (gymIdOf(S.me.person.gym) !== gymIdOf(me.person.gym)) forgetGymViews();
     }
     S.me = me;
     S.loadedDay = localToday();
@@ -342,6 +474,8 @@
     S.boardLoading = false;
     S.boardError = '';
     S.myTeam = '';
+    S.myGym = '';
+    S.dailyBusy = false;
     S.askText = ''; S.askBusy = false; S.askError = ''; S.askSent = null;
     destroyPlayer();
     // Back on the landing page: fresh dates (a beta may have ended while signed in).
@@ -373,7 +507,17 @@
     S.errors = S.errors || {};
     var signedIn = !!S.token;
     var html;
+    // The gym's colors first (signed in, the person's gym is also the one this phone remembers).
+    if (signedIn && S.me && S.me.person && gymIdOf(S.me.person.gym) && rememberedGym() !== gymIdOf(S.me.person.gym)) store.set('res27.gym', gymIdOf(S.me.person.gym));
+    applyGym(pageGym());
     if (r.name !== 'today' && r.name !== 'day' && r.name !== '') { destroyPlayer(); S.renderedDay = null; }
+    // "Stop these daily emails" from an email works signed in or out (it needs no account data).
+    if (r.name === 'email-off') {
+      paint(viewEmailOff(r));
+      S.renderedDay = null;
+      afterRender(r);
+      return;
+    }
     if (!signedIn) {
       if (r.name === 'join') html = viewJoin(r.args[0] || 'about');
       else if (r.name === 'signin') html = viewSignIn();
@@ -468,6 +612,13 @@
     ];
   }
 
+  /** The app's name, with the gym's short name in a pill next to it (every gym's, 11/23/2026). */
+  function brandHtml(href, gymId) {
+    var id = gymIdOf(gymId);
+    return '<a class="brand" href="' + href + '"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span>' +
+      (id ? '<span class="gym-pill">' + esc(gymDef(id).short) + '</span>' : '') + '</a>';
+  }
+
   function shell(active, inner) {
     var p = S.me.program;
     var person = S.me.person;
@@ -488,13 +639,13 @@
     var who = person.team ? teamLabel(person.team) : person.type === 'Remote' ? 'Remote participant' : person.type === 'Test' ? (p.beta ? 'Beta tester' : 'Test account') : 'Koda member';
     return '<div class="shell">' +
       '<aside class="sidebar" aria-label="Main">' +
-        '<a class="brand" href="#/today"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a>' +
+        brandHtml('#/today', person.gym || GYM_DEFAULT) +
         '<nav>' + nav + '</nav>' +
-        '<div class="side-progress"><div class="kicker" style="color:#aeb7c2">' + esc(p.beta ? 'Beta test' : p.preview ? 'Preview' : 'Your challenge') + '</div><div class="big">' + esc(dayText) + '</div><div class="bar"><span style="width:' + pct + '%"></span></div></div>' +
+        '<div class="side-progress"><div class="kicker" style="color:var(--hero-dim)">' + esc(p.beta ? 'Beta test' : p.preview ? 'Preview' : 'Your challenge') + '</div><div class="big">' + esc(dayText) + '</div><div class="bar"><span style="width:' + pct + '%"></span></div></div>' +
         '<a class="side-user" href="#/profile"><span class="avatar">' + esc(initials(person)) + '</span><span><b style="display:block;font-size:14px">' + esc(person.first + ' ' + person.last) + '</b><span class="subtle" style="font-size:12.5px">' + esc(who) + '</span></span></a>' +
       '</aside>' +
       '<div class="col">' +
-        '<header class="topbar"><a class="brand" href="#/today"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a><span class="day-pill' + (p.beta ? ' is-beta' : '') + '">' + icon('calendar', 'ico-sm') + esc((p.beta ? 'Beta · ' : '') + dayText) + '</span></header>' +
+        '<header class="topbar">' + brandHtml('#/today', person.gym || GYM_DEFAULT) + '<span class="day-pill' + (p.beta ? ' is-beta' : '') + '">' + icon('calendar', 'ico-sm') + esc((p.beta ? 'Beta · ' : '') + dayText) + '</span></header>' +
         '<main class="main" id="main">' + inner + '</main>' +
         '<nav class="tabbar" aria-label="Main">' + tabs + '</nav>' +
       '</div>' +
@@ -751,6 +902,9 @@
 
   function viewLanding() {
     var c = S.config;
+    // The gym the link (or this phone) is for. The plain link with none is Iron View's page, as it
+    // always was, but it doesn't know the visitor's gym, so it doesn't claim one for them.
+    var chosen = chosenGym(), g = gymInfo(chosen || GYM_DEFAULT);
     // Through the beta link: the beta test's dates. Until the first answer from the server, no dates
     // at all rather than the real ones flashing first.
     var b = betaInfo();
@@ -762,17 +916,19 @@
     var lengthText = b ? weeksText(b.days) : weeksText(Math.round(c.lengthDays / 7) * 7);
     var betaNote = b ? '<div class="l-beta">' + icon('info') + '<span><b>This is the beta test.</b> ' + esc(weeksText(b.days)) + ' on the real dates, so you can try the app before the challenge. It’s all practice: beta accounts are deleted when the beta ends, so you’ll sign up again for Day 1 on ' + esc(fmt(c.startDate, { month: 'long', day: 'numeric' })) + '.</span></div>' : '';
     var choices = c.registrationOpen
-      ? '<button class="choice" data-act="choose-type" data-type="member"><span class="c-icon">' + kx() .replace('class="kx"', 'class="kx" style="width:30px;height:17px;fill:#fff"') + '</span><span><span class="c-title">Current Koda Member</span><span class="c-sub">I train at Koda CrossFit Iron View</span></span><span class="chev">' + icon('chevR') + '</span></button>' +
-        '<button class="choice" data-act="choose-type" data-type="remote"><span class="c-icon silver">' + icon('globe', 'ico-lg') + '</span><span><span class="c-title">Remote Participant <span class="badge badge-brand">$' + esc(c.remotePrice) + '</span></span><span class="c-sub">Join from anywhere with the full program</span></span><span class="chev">' + icon('chevR') + '</span></button>'
-      : '<div class="card card-pad" style="grid-column:1/-1;box-shadow:var(--shadow-lg)"><b>Sign-ups are closed for now.</b><p class="muted" style="margin:6px 0 0">Already signed up? <a href="#/signin">Sign in</a>. Questions? Email <a href="mailto:' + esc(c.contactEmail) + '">' + esc(c.contactEmail) + '</a>.</p></div>';
+      ? '<button class="choice" data-act="choose-type" data-type="member"><span class="c-icon">' + kx() .replace('class="kx"', 'class="kx" style="width:30px;height:17px;fill:#fff"') + '</span><span><span class="c-title">Current Koda Member</span><span class="c-sub">' + esc(chosen ? 'I train at ' + g.label : 'I train at a Koda gym') + '</span></span><span class="chev">' + icon('chevR') + '</span></button>' +
+        '<button class="choice" data-act="choose-type" data-type="remote"><span class="c-icon silver">' + icon('globe', 'ico-lg') + '</span><span><span class="c-title">Remote Participant <span class="badge badge-brand">$' + esc(g.remotePrice) + '</span></span><span class="c-sub">Join from anywhere with the full program</span></span><span class="chev">' + icon('chevR') + '</span></button>'
+      : '<div class="card card-pad" style="grid-column:1/-1;box-shadow:var(--shadow-lg)"><b>Sign-ups are closed for now.</b><p class="muted" style="margin:6px 0 0">Already signed up? <a href="#/signin">Sign in</a>. Questions? Email <a href="mailto:' + esc(g.contactEmail) + '">' + esc(g.contactEmail) + '</a>.</p></div>';
+    // With a gym chosen, its name is in the hero ("Koda OKC · Resolutions 2027"); Iron View's stays as it was.
+    var titleGym = chosen && chosen !== GYM_DEFAULT ? ' ' + esc(g.short) : '';
     return '<div class="landing">' +
       '<section class="l-hero">' + kx('watermark') +
         '<div class="l-inner">' +
-          '<div class="l-top"><a class="l-logo" href="#/">' + kx() + '<span>Koda CrossFit Iron View</span></a><a class="btn btn-sm btn-secondary l-signin" href="#/signin">Sign in</a></div>' +
+          '<div class="l-top"><a class="l-logo" href="#/">' + kx() + '<span>' + esc(g.label) + '</span></a><a class="btn btn-sm btn-secondary l-signin" href="#/signin">Sign in</a></div>' +
           '<div class="l-copy">' +
             (b || waiting ? '<span class="l-beta-tag">Beta test</span>' : '') +
             '<div class="l-when"><span class="l-date">' + dateHtml + '</span>' + (waiting ? '' : '<span class="l-weeks">' + esc(lengthText) + '</span>') + '</div>' +
-            '<h1 class="l-title">Koda<br><span class="silver">Resolutions 2027</span></h1>' +
+            '<h1 class="l-title">Koda' + titleGym + '<br><span class="silver">Resolutions 2027</span></h1>' +
             '<p class="l-sub">Six weeks. Your goal, your nutrition plan and your own daily checklist — with the whole Koda community in your corner.</p>' +
             betaNote +
           '</div>' +
@@ -788,18 +944,21 @@
       '<section class="l-section"><h2 class="l-callout">What you get</h2><p class="l-callsub">Everything in one place</p>' +
         '<div class="perks">' + C.perks.map(function (p) { return '<div class="card perk"><span class="p-icon">' + icon(p.icon) + '</span><span><b>' + esc(p.title) + '</b><span>' + esc(p.text) + '</span></span></div>'; }).join('') + '</div>' +
       '</section>' +
-      '<footer class="l-foot"><span>Koda CrossFit Iron View · 740 S Pierce Ave #5, Louisville, CO</span><span>Questions? <a href="mailto:' + esc(c.contactEmail) + '">' + esc(c.contactEmail) + '</a></span></footer>' +
+      '<footer class="l-foot"><span>' + esc(g.label + ' · ' + gymPlace(g)) + '</span><span>Questions? <a href="mailto:' + esc(g.contactEmail) + '">' + esc(g.contactEmail) + '</a></span></footer>' +
     '</div>' + toastHtml();
   }
 
   /* ============================================================ sign-up flow */
 
   function joinSteps(d) {
-    var steps = [];
+    // The gym comes first (11/23/2026): it decides the ways to pay and the coaches to rank.
+    var steps = ['gym'];
     if (d.memberType === 'remote') steps.push('payment');
     steps.push('about', 'goal', 'track');
     if (needsDetails(d)) steps.push('details');
-    steps.push('coaches', 'review');
+    // A gym that lists no coaches yet skips ranking them (the server leaves Coach Ranking blank).
+    if (!gymIdOf(d.gym) || gymInfo(d.gym).coaches.length) steps.push('coaches');
+    steps.push('review');
     return steps;
   }
   function needsDetails(d) { var t = d.track; return !!(t.nutrition || t.sleep || t.protein || t.hydration || t.finishers || t.skill || t.mobility); }
@@ -824,9 +983,20 @@
     if (!d.memberType) { setTimeout(function () { go('#/'); }, 0); return ''; }
     var steps = joinSteps(d);
     if (steps.indexOf(step) < 0) step = steps[0];
+    // Every later step needs the gym. A sign-up saved on this phone before 11/23/2026 has none: the
+    // gym step first, then back to the step they were on. It starts on the link's gym, or the one
+    // this phone remembers, as a new sign-up does (they can still pick another).
+    if (step !== 'gym' && !gymIdOf(d.gym)) {
+      S.resumeStep = step;
+      var known = linkGym() || rememberedGym();
+      if (known) { d.gym = known; fitDraftToGym(d); saveDraft(); }
+      setTimeout(function () { location.replace('#/join/gym'); }, 0);
+      return '';
+    }
     var body = '';
     var nextLabel = 'Continue';
-    if (step === 'payment') body = stepPayment(d);
+    if (step === 'gym') body = stepGym(d);
+    else if (step === 'payment') body = stepPayment(d);
     else if (step === 'about') body = stepAbout(d);
     else if (step === 'goal') body = stepGoal(d, 'What’s your main focus?', 'We’ll tailor your coaching tips to it.');
     else if (step === 'track') body = stepTrack(d);
@@ -852,34 +1022,75 @@
     // Beta test: the same choices, but nothing that sends money.
     var beta = !!betaInfo();
     if (beta) d.sawBeta = true;
+    // The gym's own ways to pay (the Gyms tab), never another gym's: a blank Venmo or Zelle isn't
+    // offered. A card is, at every gym (Kevin, 11/23/2026: "put a placeholder for the card link,
+    // we'll add one later"): with the gym's Card URL, its checkout button; without one yet, we email
+    // them a secure link, as Iron View did before it had one.
+    var g = gymInfo(d.gym), price = g.remotePrice, offered = payMethods(g);
     var methods = [
-      { id: 'venmo', title: 'Venmo', sub: c.venmo || 'Venmo', icon: 'phone' },
-      { id: 'zelle', title: 'Zelle', sub: c.zelle || 'Zelle', icon: 'bank' },
-      { id: 'card', title: 'Credit card', sub: c.cardUrl ? 'Secure online checkout' : 'We’ll email you a secure link', icon: 'card' },
-    ];
+      { id: 'venmo', title: 'Venmo', sub: g.venmo, icon: 'phone' },
+      { id: 'zelle', title: 'Zelle', sub: g.zelle, icon: 'bank' },
+      { id: 'card', title: 'Credit card', sub: g.cardUrl ? 'Secure online checkout' : 'We’ll email you a secure link', icon: 'card' },
+    ].filter(function (m) { return offered.indexOf(m.id) >= 0; });
+    var picked = offered.indexOf(d.payment) >= 0 ? d.payment : '';
     var detail = '';
-    if (d.payment === 'venmo') {
-      detail = '<div class="pay-detail"><div class="kicker">Send $' + esc(c.remotePrice) + ' on Venmo to</div><div class="big">' + esc(c.venmo) + '</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Put your name and “Resolutions” in the note.</p>' +
-        (!beta && venmoPayUrl('Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : '')) ? '<a class="btn btn-primary btn-sm" href="' + esc(venmoPayUrl('Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : ''))) + '" target="_blank" rel="noopener">' + icon('phone', 'ico-sm') + 'Pay $' + esc(c.remotePrice) + ' on Venmo</a>' : '') + '</div>';
-    } else if (d.payment === 'zelle') {
-      detail = '<div class="pay-detail"><div class="kicker">Send $' + esc(c.remotePrice) + ' with Zelle to</div><div class="big">' + esc(c.zelle) + '</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Use your bank’s app and put your name in the memo.</p>' +
-        '<button class="btn btn-secondary btn-sm" data-act="copy" data-text="' + esc(c.zelle) + '">' + icon('copy', 'ico-sm') + 'Copy</button></div>';
-    } else if (d.payment === 'card') {
-      detail = '<div class="pay-detail">' + (c.cardUrl && !beta
-        ? '<div class="kicker">Pay $' + esc(c.remotePrice) + ' by card</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Checkout opens in a new tab. Come back here to finish signing up.</p><a class="btn btn-secondary btn-sm" href="' + esc(c.cardUrl) + '" target="_blank" rel="noopener">' + icon('external', 'ico-sm') + 'Pay securely</a>'
-        : '<div class="kicker">Pay $' + esc(c.remotePrice) + ' by card</div><p class="muted" style="margin:6px 0 0;font-size:14px">Finish signing up and we’ll email you a secure card link within a day.</p>') + '</div>';
+    var venmoNote = 'Koda Resolutions 2027' + (d.first || d.last ? ' - ' + (d.first + ' ' + d.last).trim() : '');
+    // A card picked with no checkout link yet: its note says the link comes by email and the spot is
+    // confirmed once the payment comes in, so the same line under the options is left off.
+    var cardLater = picked === 'card' && !g.cardUrl && !beta;
+    if (picked === 'venmo') {
+      detail = '<div class="pay-detail"><div class="kicker">Send $' + esc(price) + ' on Venmo to</div><div class="big">' + esc(g.venmo) + '</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Put your name and “Resolutions” in the note.</p>' +
+        (!beta && venmoPayUrl(venmoNote, g) ? '<a class="btn btn-primary btn-sm" href="' + esc(venmoPayUrl(venmoNote, g)) + '" target="_blank" rel="noopener">' + icon('phone', 'ico-sm') + 'Pay $' + esc(price) + ' on Venmo</a>' : '') + '</div>';
+    } else if (picked === 'zelle') {
+      detail = '<div class="pay-detail"><div class="kicker">Send $' + esc(price) + ' with Zelle to</div><div class="big">' + esc(g.zelle) + '</div><p class="muted" style="margin:6px 0 12px;font-size:14px">Use your bank’s app and put your name in the memo.</p>' +
+        '<button class="btn btn-secondary btn-sm" data-act="copy" data-text="' + esc(g.zelle) + '">' + icon('copy', 'ico-sm') + 'Copy</button></div>';
+    } else if (cardLater) {
+      detail = '<div class="pay-detail card-later"><p style="margin:0;font-size:14px"><b>We’ll email you a secure link to pay $' + esc(price) + ' by card.</b> You can finish signing up now; your spot is confirmed once your payment comes in.</p></div>';
+    } else if (picked === 'card') {
+      detail = '<div class="pay-detail"><div class="kicker">Pay $' + esc(price) + ' by card</div>' + (beta ? ''
+        : '<p class="muted" style="margin:6px 0 12px;font-size:14px">Checkout opens in a new tab. Come back here to finish signing up.</p><a class="btn btn-secondary btn-sm" href="' + esc(g.cardUrl) + '" target="_blank" rel="noopener">' + icon('external', 'ico-sm') + 'Pay securely</a>') + '</div>';
     }
-    if (beta && d.payment) {
-      detail = '<div class="pay-detail"><div class="kicker">Beta test: nothing to pay</div><p class="muted" style="margin:6px 0 0;font-size:14px">In the real challenge, this is where you’d send $' + esc(c.remotePrice) + ' ' +
-        esc(d.payment === 'venmo' ? 'on Venmo to ' + c.venmo : d.payment === 'zelle' ? 'with Zelle to ' + c.zelle : 'by card') + '.</p></div>';
+    if (beta && picked) {
+      detail = '<div class="pay-detail"><div class="kicker">Beta test: nothing to pay</div><p class="muted" style="margin:6px 0 0;font-size:14px">In the real challenge, this is where you’d send $' + esc(price) + ' ' +
+        esc(picked === 'venmo' ? 'on Venmo to ' + g.venmo : picked === 'zelle' ? 'with Zelle to ' + g.zelle : 'by card') + '.</p></div>';
     }
-    return '<h1>Remote Participant</h1><p class="lead">The full program from anywhere: daily coaching videos, your own checklist, nutrition guides, a Koda coach and a team. <b style="color:var(--text)">$' + esc(c.remotePrice) + '</b> for all ' + Math.round(c.lengthDays / 7) + ' weeks.</p>' +
-      (beta ? '<div class="callout callout-warn beta-pay" style="margin-bottom:16px">' + icon('info') + '<span><b style="color:inherit">Beta test: don’t send any money.</b> Pick any option to see how it works. Beta sign-ups never pay.</span></div>' : '') +
-      '<div class="kicker" style="margin-bottom:10px">How would you like to pay?</div>' +
+    // (Every gym has at least the card, so there's always a way to pick.)
+    var choose = '<div class="kicker" style="margin-bottom:10px">How would you like to pay?</div>' +
       '<div class="option-list">' + methods.map(function (m) {
-        return '<button class="option' + (d.payment === m.id ? ' is-on' : '') + '" data-act="pay" data-method="' + m.id + '" aria-pressed="' + (d.payment === m.id) + '"><span class="o-icon">' + icon(m.icon) + '</span><span class="o-text"><span class="o-title">' + esc(m.title) + '</span><span class="o-sub">' + esc(m.sub) + '</span></span><span class="radio"></span></button>';
-      }).join('') + '</div>' + fieldErr('payment') + detail +
-      (beta ? '' : '<p class="muted" style="font-size:13.5px;margin-top:16px">Your spot is confirmed once we see your payment. You can keep signing up now.</p>');
+        return '<button class="option' + (picked === m.id ? ' is-on' : '') + '" data-act="pay" data-method="' + m.id + '" aria-pressed="' + (picked === m.id) + '"><span class="o-icon">' + icon(m.icon) + '</span><span class="o-text"><span class="o-title">' + esc(m.title) + '</span><span class="o-sub">' + esc(m.sub) + '</span></span><span class="radio"></span></button>';
+      }).join('') + '</div>' + fieldErr('payment') + detail;
+    return '<h1>Remote Participant</h1><p class="lead">The full program from anywhere: daily coaching videos, your own checklist, nutrition guides, a Koda coach and a team. <b style="color:var(--text)">$' + esc(price) + '</b> for all ' + Math.round(c.lengthDays / 7) + ' weeks.</p>' +
+      (beta ? '<div class="callout callout-warn beta-pay" style="margin-bottom:16px">' + icon('info') + '<span><b style="color:inherit">Beta test: don’t send any money.</b> Pick any option to see how it works. Beta sign-ups never pay.</span></div>' : '') +
+      choose +
+      (beta || cardLater ? '' : '<p class="muted" style="font-size:13.5px;margin-top:16px">Your spot is confirmed once we see your payment. You can keep signing up now.</p>');
+  }
+
+  /**
+   * The sign-up's first step (11/23/2026), and the Profile's gym picker: six tiles with each gym's
+   * colors, name and city. Picking one switches the page to that gym's colors.
+   */
+  function stepGym(d, editing) {
+    var lead = editing ? 'Your gym sets your coaches, your team and your leaderboard. You can change it until Day 1.'
+      : d.memberType === 'remote' ? 'Which Koda gym’s challenge are you joining? Your coach, your team and your leaderboard come from that gym.'
+      : 'Which Koda gym do you train at? Your coaches, your team and your leaderboard are your gym’s.';
+    var mine = gymIdOf(d.gym);
+    // A remote participant who moves is then asked to pay the new gym: one who already paid the old
+    // one (before Kevin marked it) shouldn't pay twice (review, 11/23/2026).
+    var person = editing && S.me && S.me.person;
+    var paidNote = person && person.type === 'Remote' && !person.paid
+      ? '<div class="note gym-paid-note" style="margin-bottom:14px">' + icon('info', 'ico-sm') + ' <b>Already paid?</b> You’re all set: we’ll move your payment over.</div>' : '';
+    return '<h1>Your gym</h1><p class="lead">' + esc(lead) + '</p>' + paidNote +
+      '<div class="gym-grid" role="radiogroup" aria-label="Your gym">' + C.gyms.map(function (def) {
+        var g = gymInfo(def.id), on = mine === def.id;
+        return '<button class="gym-tile' + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + on + '" data-act="pick-gym" data-id="' + def.id + '">' + swatchHtml(def.id) +
+          '<span class="g-title">' + esc(g.name) + '</span><span class="g-sub">' + esc(g.city) + '</span>' + (on ? '<span class="g-check">' + icon('check', 'ico-sm') + '</span>' : '') + '</button>';
+      }).join('') + '</div>' + fieldErr('gym');
+  }
+  /** After a different gym is picked: a way to pay or coach picks from the gym before don't carry over. */
+  function fitDraftToGym(d) {
+    var g = gymInfo(d.gym);
+    if (d.payment && payMethods(g).indexOf(d.payment) < 0) d.payment = '';
+    d.coaches = (d.coaches || []).filter(function (name) { return g.coaches.indexOf(name) >= 0; });
   }
 
   function shirtFields(d) {
@@ -1001,7 +1212,9 @@
   function finisherValue(d) { return finisherChoices().indexOf(Number(d.finishersPerWeek)) >= 0 ? Number(d.finishersPerWeek) : 2; }
 
   function stepCoaches(d, editing) {
-    var coaches = S.config.coaches;
+    // The person's gym's own coaches (Gyms tab, 11/23/2026).
+    var g = gymInfo(d.gym), coaches = g.coaches;
+    if (!coaches.length) return '<h1>' + (editing ? 'Your coaches' : 'Who would you like to work with?') + '</h1><p class="lead">' + esc(g.name) + ' hasn’t listed its coaches here yet. You’ll be matched with one before Day 1.</p>';
     return '<h1>' + (editing ? 'Your coaches' : 'Who would you like to work with?') + '</h1><p class="lead">Tap the coaches in order of preference — your first tap is your #1. Tap again to undo. We’ll do our best to match you.</p>' +
       '<div class="coach-grid">' + coaches.map(function (name) {
         var rank = d.coaches.indexOf(name);
@@ -1051,15 +1264,21 @@
   }
 
   function stepReview(d) {
-    var c = S.config;
+    var g = gymInfo(d.gym), offered = payMethods(g), beta = !!betaInfo() || !!d.sawBeta;
+    // The way picked; a card at a gym with no checkout link yet says we'll email the link (not in a
+    // beta, which never pays). Nothing picked yet: "Create my account" sends them back to choose.
+    var paying = offered.indexOf(d.payment) < 0 ? ''
+      : ' by ' + { venmo: 'Venmo', zelle: 'Zelle', card: 'credit card' }[d.payment] + (d.payment === 'card' && !g.cardUrl && !beta ? ' · we’ll email you a secure link' : '');
     var rows = [
       ['You', esc(d.first + ' ' + d.last) + '<span class="sub">' + esc(d.email) + '</span>', 'about'],
-      ['Joining as', d.memberType === 'remote' ? 'Remote participant<span class="sub">$' + esc(c.remotePrice) + ' by ' + esc({ venmo: 'Venmo', zelle: 'Zelle', card: 'credit card' }[d.payment] || '') + '</span>' : 'Current Koda member', d.memberType === 'remote' ? 'payment' : ''],
+      ['Gym', esc(g.name) + '<span class="sub">' + esc(g.city) + '</span>', 'gym'],
+      ['Joining as', d.memberType === 'remote' ? 'Remote participant<span class="sub">$' + esc(g.remotePrice) + esc(paying) + '</span>' : 'Current Koda member', d.memberType === 'remote' ? 'payment' : ''],
       ['Shirt', esc((d.shirt === 'tank' ? 'Ladies Tank' : 'T-Shirt') + ' · ' + d.size), 'about'],
       ['Main focus', esc(goalLabel(d.goal)), 'goal'],
       ['Checklist', checklistPreviewText(d).map(esc).join('<br>'), 'track'],
-      ['Coaches', d.coaches.length ? d.coaches.map(function (x, i) { return (i + 1) + '. ' + esc(x); }).join('<br>') : 'No preference', 'coaches'],
     ];
+    // (A gym with no coaches listed skips ranking them.)
+    if (g.coaches.length) rows.push(['Coaches', d.coaches.length ? d.coaches.map(function (x, i) { return (i + 1) + '. ' + esc(x); }).join('<br>') : 'No preference', 'coaches']);
     return '<h1>Look good?</h1><p class="lead">You can change your checklist, coaches and shirt any time after you join.</p>' +
       '<div class="card review-sec">' + rows.map(function (r) {
         return '<div class="review-row"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span>' + (r[2] ? '<button class="btn-link" style="font-size:14px" data-act="jump" data-step="' + r[2] + '">Edit</button>' : '') + '</div>';
@@ -1070,7 +1289,9 @@
 
   function validateStep(step, d, editing) {
     var e = {};
-    if (step === 'payment' && !d.payment) e.payment = 'Choose how you’d like to pay.';
+    if (step === 'gym' && !gymIdOf(d.gym)) e.gym = 'Pick your gym.';
+    // One of the ways to pay the gym offers (a card at every gym, so there's always one to pick).
+    if (step === 'payment' && payMethods(gymInfo(d.gym)).indexOf(d.payment) < 0) e.payment = 'Choose how you’d like to pay.';
     if (step === 'about') {
       if (!String(d.first).trim()) e.first = 'Enter your first name.';
       if (!String(d.last).trim()) e.last = 'Enter your last name.';
@@ -1106,7 +1327,10 @@
     var d = S.draft;
     S.errors = validateStep(step, d);
     S.formError = '';
-    if (step === 'about' && S.emailTaken) S.errors.email = S.errors.email || ' ';
+    // An address that's already signed up: "Sign in instead" says it all (even for an older address
+    // a new sign-up couldn't use, which would otherwise also say "Enter a valid email"). If the
+    // answer saying it's taken comes after this, the focusout handler clears that message then.
+    if (step === 'about' && S.emailTaken) S.errors.email = ' ';
     if (Object.keys(S.errors).length) {
       render();
       var first = app.querySelector('.track.is-missing, .is-invalid, .error');
@@ -1114,15 +1338,33 @@
       return;
     }
     if (step === 'review') return submitRegistration();
+    // A sign-up from before the gym step: back to where it was (by way of choosing how to pay, if this
+    // gym doesn't take the way picked before).
+    if (step === 'gym' && S.resumeStep) {
+      var resume = S.resumeStep;
+      S.resumeStep = '';
+      if (d.memberType === 'remote' && Object.keys(validateStep('payment', d)).length) {
+        // One saved on Review comes back to Review once they've chosen how to pay.
+        if (resume === 'review') S.returnToReview = true;
+        resume = 'payment';
+      }
+      if (joinSteps(d).indexOf(resume) > 0) { go('#/join/' + resume); return; }
+    }
+    // A new gym from Review that takes money a different way: choose how first, then back to Review.
+    if (S.returnToReview && step === 'gym' && d.memberType === 'remote' && Object.keys(validateStep('payment', d)).length) {
+      go('#/join/payment');
+      return;
+    }
     if (S.returnToReview && !(step === 'track' && needsDetails(d) && Object.keys(validateStep('details', d)).length)) {
       S.returnToReview = false;
       go('#/join/review');
       return;
     }
+    // The next step in this sign-up's own list, which leaves out Details when no habit needs any and
+    // Coaches at a gym that lists none (forcing Coaches there sent people back to the first step,
+    // round and round: review, 11/23/2026).
     var steps = joinSteps(d);
-    var next = steps[steps.indexOf(step) + 1];
-    if (step === 'track' && !needsDetails(d)) next = 'coaches';
-    go('#/join/' + next);
+    go('#/join/' + steps[steps.indexOf(step) + 1]);
   }
 
   function submitRegistration() {
@@ -1130,8 +1372,9 @@
     if (String(S.password).length < 6) { S.formError = 'Please re-enter your password.'; go('#/join/about'); return; }
     S.busy = true;
     render();
+    var offered = payMethods(gymInfo(d.gym));
     api('register', {
-      token: '', memberType: d.memberType, payment: d.memberType === 'remote' ? d.payment : '', first: d.first.trim(), last: d.last.trim(),
+      token: '', gym: gymIdOf(d.gym), memberType: d.memberType, payment: d.memberType === 'remote' && offered.indexOf(d.payment) >= 0 ? d.payment : '', first: d.first.trim(), last: d.last.trim(),
       // The beta link's flag goes as is (or the beta this page showed everyone): the server knows
       // whether a beta is open, and stops a beta sign-up that comes after it ended instead of making
       // it a real one.
@@ -1152,15 +1395,19 @@
       S.busy = false;
       S.formError = e.message;
       if (e.code === 'exists') { S.emailTaken = true; go('#/join/about'); return; }
+      if (e.code === 'gym') { go('#/join/gym'); return; }
+      // The gym's ways to pay changed since this page loaded: fresh details, and choose again.
+      if (d.memberType === 'remote' && /how you’d like to pay/.test(e.message)) { loadConfig(); go('#/join/payment'); return; }
       if (e.code === 'beta_over') {
-        // The beta ended while this page was open: drop the beta, and go back over the real steps (payment included).
+        // The beta ended while this page was open: drop the beta, and go back over the real steps
+        // (payment included; the gym stays picked).
         store.del('res27.beta');
         d.sawBeta = false;
         saveDraft();
         S.config = Object.assign({}, S.config, { beta: null });
         store.set('res27.config', S.config);
         loadConfig();
-        go('#/join/' + joinSteps(d)[0]);
+        go('#/join/' + joinSteps(d).filter(function (s) { return s !== 'gym'; })[0]);
         return;
       }
       render();
@@ -1169,7 +1416,7 @@
   }
 
   function welcomeSheet(me, emailed) {
-    var p = me.person, c = me.config, prog = me.program;
+    var p = me.person, prog = me.program;
     S.me = S.me || me;
     // Earlier days that can still be filled in (the edit window), counted so the promise is exact.
     var open = prog.phase === 'during' ? Math.max(0, diffDays(prog.editFrom, prog.today)) : 0;
@@ -1181,9 +1428,14 @@
       : prog.beta ? 'You joined on the beta test’s last day, so you can still fill in its days until midnight tonight.'
       : 'The challenge ended ' + fmtLong(prog.end) + '.';
     if (prog.beta) when += ' It’s all practice: beta accounts are deleted when the beta ends.';
+    // The person's gym's way to pay. A card at a gym with no checkout link yet: the secure link comes
+    // by email (Kevin, 11/23/2026: "put a placeholder for the card link, we'll add one later").
+    var g = gymInfo(p.gym), how = payHow(p, g);
     var btn = p.type === 'Remote' && !p.paid ? payButtons(p, false) : '';
-    var how = p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle + ', with your name in the memo' : 'by card \u2014 ' + (c.cardUrl ? 'use the button below' : 'we\u2019ll email you a secure link');
-    var pay = p.type === 'Remote' && !p.paid ? '<div class="callout callout-warn" style="margin-bottom:14px">' + icon('info') + '<span><b style="color:inherit">One more step:</b> send your $' + esc(c.remotePrice) + ' ' + esc(how) + '.' +
+    var tail = p.payment === 'Zelle' ? ', with your name in the memo'
+      : p.payment === 'Credit Card' ? (g.cardUrl ? ' \u2014 use the button below' : ' \u2014 we\u2019ll email you a secure link') : '';
+    var pay = p.type === 'Remote' && !p.paid ? '<div class="callout callout-warn" style="margin-bottom:14px">' + icon('info') + '<span><b style="color:inherit">One more step:</b> ' +
+      esc(how ? 'send your $' + g.remotePrice + ' ' + how + tail + '.' : 'we\u2019ll email you how to pay the $' + g.remotePrice + '.') +
       (btn ? '<span style="display:block;margin-top:10px">' + btn + '</span>' : '') + '</span></div>' : '';
     return '<div class="grab"></div><div class="center" style="margin-bottom:8px"><span class="avatar avatar-lg" style="margin:0 auto 12px">' + icon('check', 'ico-lg') + '</span></div>' +
       '<h2 class="center">You\u2019re in, ' + esc(p.first) + '!</h2><p class="muted center" style="margin:0 0 18px">' + esc(when) + ' ' + (emailed ? 'We sent a welcome email to ' + esc(p.email) + '.' : 'Bookmark this page so you can find it again.') + '</p>' + pay +
@@ -1195,7 +1447,7 @@
 
   function viewSignIn() {
     return '<div class="auth"><form class="card auth-card" data-form="signin" novalidate>' +
-      '<a class="brand" href="#/"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a>' +
+      brandHtml('#/', chosenGym()) +
       '<h1>Welcome back</h1><p class="lead">Sign in with the email you signed up with. We’ll keep you signed in on this device.</p>' +
       (S.formError ? '<div class="form-error" role="alert">' + esc(S.formError) + '</div>' : '') +
       '<label class="field"><span class="label">Email</span><input class="input" type="email" inputmode="email" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(S.resetEmail || '') + '" required data-autofocus></label>' +
@@ -1221,14 +1473,14 @@
         '<label class="field"><span class="label">Email</span><input class="input" type="email" inputmode="email" name="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="' + esc(S.resetEmail || '') + '" required data-autofocus></label>' +
         '<button class="btn btn-primary btn-block" type="submit"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spinner"></span>' : 'Send me a code') + '</button>';
     }
-    return '<div class="auth"><form class="card auth-card" data-form="forgot" novalidate><a class="brand" href="#/"><span class="mark">' + kx() + '</span><span class="name">Resolutions<small>2027</small></span></a>' + body +
+    return '<div class="auth"><form class="card auth-card" data-form="forgot" novalidate>' + brandHtml('#/', chosenGym()) + body +
       '<p class="auth-alt"><a href="#/signin">Back to sign in</a></p></form></div>' + toastHtml();
   }
 
   function submitSignIn(form) {
     var email = form.email.value.trim(), password = form.password.value;
     S.resetEmail = email;
-    if (!validEmail(email) || !password) { S.formError = 'Enter your email and password.'; render(); return; }
+    if (!emailLike(email) || !password) { S.formError = 'Enter your email and password.'; render(); return; }
     S.busy = true; S.formError = ''; render();
     api('login', { token: '', email: email, password: password }).then(function (r) {
       S.busy = false;
@@ -1248,7 +1500,7 @@
     S.formError = '';
     if (S.resetStage !== 'code') {
       var email = form.email.value.trim();
-      if (!validEmail(email)) { S.formError = 'Enter a valid email.'; render(); return; }
+      if (!emailLike(email)) { S.formError = 'Enter a valid email.'; render(); return; }
       S.resetEmail = email; S.busy = true; render();
       api('resetStart', { token: '', email: email }).then(function () {
         S.busy = false; S.resetStage = 'code'; render();
@@ -1319,9 +1571,10 @@
     return list[idx] || list[0];
   }
 
+  /** The Today ring: white into the gym's own ring color (--ring-b; Iron View's silver is the fallback). */
   function ringSvg(pct) {
     var r = 44, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(100, pct)) / 100);
-    return '<svg viewBox="0 0 104 104" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b9c2cc"/></linearGradient></defs>' +
+    return '<svg viewBox="0 0 104 104" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b9c2cc" style="stop-color:var(--ring-b)"/></linearGradient></defs>' +
       '<circle class="track" cx="52" cy="52" r="' + r + '" fill="none" stroke-width="9"/><circle class="fill" cx="52" cy="52" r="' + r + '" fill="none" stroke-width="9" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>';
   }
 
@@ -1516,28 +1769,49 @@
     if (fc && S.me.finishers && S.me.finishers.length) { var t2 = document.createElement('div'); t2.innerHTML = finishersCard(); fc.replaceWith(t2.firstChild); }
   }
 
-  /** Kevin's Venmo link with the amount and a note filled in, as on the Hyrox pages. */
-  function venmoPayUrl(note) {
-    var c = S.config, handle = String(c.venmo || '').trim().replace(/^@/, '');
+  /** The gym's Venmo link with the amount and a note filled in, as on the Hyrox pages. */
+  function venmoPayUrl(note, g) {
+    var handle = String(g.venmo || '').trim().replace(/^@/, '');
     if (!handle) return '';
-    return 'https://venmo.com/?txn=pay&audience=private&recipients=' + encodeURIComponent(handle) + '&amount=' + encodeURIComponent(c.remotePrice) + '&note=' + encodeURIComponent(note || 'Koda Resolutions 2027');
+    return 'https://venmo.com/?txn=pay&audience=private&recipients=' + encodeURIComponent(handle) + '&amount=' + encodeURIComponent(g.remotePrice) + '&note=' + encodeURIComponent(note || 'Koda Resolutions 2027');
+  }
+  /**
+   * How a remote participant pays their gym, in words. A card works at every gym (Kevin, 11/23/2026:
+   * "put a placeholder for the card link, we'll add one later"): by the gym's checkout button, or
+   * until the gym has a Card URL by a secure link we email them. '' when we'll email them how to pay:
+   * a Venmo or Zelle their gym doesn't have (say, after a gym change), or a Payment the app doesn't
+   * know (like "Email them how to pay", from before every gym offered a card).
+   */
+  function payHow(p, g) {
+    if (p.payment === 'Venmo' && g.venmo) return 'on Venmo to ' + g.venmo;
+    if (p.payment === 'Zelle' && g.zelle) return 'with Zelle to ' + g.zelle;
+    if (p.payment === 'Credit Card') return 'by card';
+    return '';
   }
   function payButtons(person, small) {
-    var c = S.config, cls = 'btn ' + (small ? 'btn-secondary btn-sm' : 'btn-primary btn-block');
-    var name = person ? ' - ' + person.first + ' ' + person.last : '';
-    if (person && person.payment === 'Zelle') return '<button class="' + cls + '" data-act="copy" data-text="' + esc(c.zelle) + '">' + icon('copy', 'ico-sm') + 'Copy Zelle: ' + esc(c.zelle) + '</button>';
-    if (person && person.payment === 'Credit Card') return c.cardUrl ? '<a class="' + cls + '" href="' + esc(c.cardUrl) + '" target="_blank" rel="noopener">' + icon('card', 'ico-sm') + 'Pay $' + esc(c.remotePrice) + ' by card</a>' : '';
-    var url = (S.me && S.me.payUrl) || venmoPayUrl('Koda Resolutions 2027' + name);
-    return url ? '<a class="' + cls + '" href="' + esc(url) + '" target="_blank" rel="noopener">' + icon('phone', 'ico-sm') + 'Pay $' + esc(c.remotePrice) + ' on Venmo</a>' : '';
+    var g = gymInfo(person && person.gym), cls = 'btn ' + (small ? 'btn-secondary btn-sm' : 'btn-primary btn-block');
+    if (!person || !payHow(person, g)) return '';
+    if (person.payment === 'Zelle') return '<button class="' + cls + '" data-act="copy" data-text="' + esc(g.zelle) + '">' + icon('copy', 'ico-sm') + 'Copy Zelle: ' + esc(g.zelle) + '</button>';
+    // (No checkout link at their gym yet: no button, the secure link comes by email.)
+    if (person.payment === 'Credit Card') return g.cardUrl ? '<a class="' + cls + '" href="' + esc(g.cardUrl) + '" target="_blank" rel="noopener">' + icon('card', 'ico-sm') + 'Pay $' + esc(g.remotePrice) + ' by card</a>' : '';
+    var url = (S.me && S.me.payUrl) || venmoPayUrl('Koda Resolutions 2027 - ' + person.first + ' ' + person.last, g);
+    return url ? '<a class="' + cls + '" href="' + esc(url) + '" target="_blank" rel="noopener">' + icon('phone', 'ico-sm') + 'Pay $' + esc(g.remotePrice) + ' on Venmo</a>' : '';
+  }
+  /** The payment-pending sentence for a remote participant (Today before Day 1, the Profile). */
+  function payPendingText(p) {
+    var g = gymInfo(p.gym), how = payHow(p, g);
+    if (!how) return 'We’ll email you how to pay the $' + g.remotePrice + '. We’ll mark it here when it comes in.';
+    if (p.payment === 'Credit Card') return 'Send $' + g.remotePrice + ' by card' + (g.cardUrl ? '' : ' — watch your email for a secure link') + '. We’ll mark it here when it comes in.';
+    return 'Send $' + g.remotePrice + ' ' + how + ' with your name in the note. We’ll mark it here when it comes in.';
   }
 
   function viewBefore() {
-    var p = S.me.program, person = S.me.person, c = S.config;
+    var p = S.me.program, person = S.me.person;
     var days = diffDays(p.today, p.start);
     var ready = store.get('res27.ready', {}) || {};
     var payBtn = payButtons(person, true);
     var pay = person.type === 'Remote' && !person.paid
-      ? '<div class="callout callout-warn" style="margin-top:16px">' + icon('info') + '<span><b style="color:inherit">Payment pending.</b> Send $' + esc(c.remotePrice) + ' ' + esc(person.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : person.payment === 'Zelle' ? 'with Zelle to ' + c.zelle : 'by card' + (c.cardUrl ? '' : ' — watch your email for a secure link')) + (person.payment === 'Credit Card' ? '' : ' with your name in the note') + '. We’ll mark it here when it comes in.' +
+      ? '<div class="callout callout-warn" style="margin-top:16px">' + icon('info') + '<span><b style="color:inherit">Payment pending.</b> ' + esc(payPendingText(person)) +
         (payBtn ? '<span style="display:block;margin-top:10px">' + payBtn + '</span>' : '') + '</span></div>'
       : (person.type === 'Remote' ? '<div class="callout callout-good" style="margin-top:16px">' + icon('check') + '<span><b style="color:inherit">Payment received.</b> You’re all set.</span></div>' : '');
     // A beta tester (or other test account) after the beta: it looks like a real sign-up, but it isn't one.
@@ -1759,6 +2033,17 @@
   function teamLabel(name) { name = String(name || '').trim(); return /^team\b/i.test(name) ? name : 'Team ' + name; }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
+  /**
+   * After a gym change (applyMe sees it): what this page still holds from the old gym (its standings
+   * and the team marked as theirs, a video picked from its list, a question sent to its coach) is
+   * dropped, so the Leaderboard loads the new gym's at once and nothing shows the old team or coach.
+   */
+  function forgetGymViews() {
+    S.board = null; S.boardAt = 0; S.boardTriedAt = 0; S.boardError = ''; S.myTeam = ''; S.myGym = '';
+    S.boardLoading = false; S.boardGen += 1; // (an answer still on its way is the old gym's)
+    S.variant = {}; S.renderedDay = null; S.askSent = null;
+  }
+
   /** Team standings from the server (team averages only), refreshed when the page opens if older than a minute. */
   function loadBoard(force) {
     if (!S.token || !S.me || S.boardLoading) return;
@@ -1766,17 +2051,18 @@
     if (!force && Date.now() - S.boardTriedAt < 60000) return;
     S.boardTriedAt = Date.now();
     S.boardLoading = true;
-    var session = S.session;
+    var session = S.session, gen = S.boardGen;
     api('leaderboard').then(function (r) {
-      if (session !== S.session) return;
+      if (session !== S.session || gen !== S.boardGen) return;
       S.boardLoading = false;
       S.board = r.board;
       S.myTeam = r.myTeam || '';
+      S.myGym = r.myGym || '';
       S.boardAt = Date.now();
       S.boardError = '';
       if (route().name === 'leaderboard' || route().name === 'progress') render();
     }, function (e) {
-      if (session !== S.session) return;
+      if (session !== S.session || gen !== S.boardGen) return;
       S.boardLoading = false;
       S.boardError = e.message;
       if (route().name === 'leaderboard' || route().name === 'progress') render();
@@ -1798,6 +2084,25 @@
     return { scored: scored, small: small };
   }
 
+  /**
+   * Gym standings (Kevin, 11/23/2026: "overall leaderboards between gyms"): every gym ranked by its
+   * average points per person, like the teams, so a gym's size doesn't matter. Ties keep the usual
+   * gym order. The server sends no numbers for a gym of fewer than 3 people, or one where 1 or 2
+   * people aren't on a team with numbers (taking the team averages away from the gym's would give
+   * their own score): those are listed without a rank.
+   */
+  function rankGyms(gyms, view) {
+    var order = C.gyms.map(function (g) { return g.id; });
+    var pos = function (x) { var i = order.indexOf(x.id); return i < 0 ? 99 : i; };
+    var scored = gyms.filter(function (x) { return x[view] !== null && x[view] !== undefined; });
+    scored.sort(function (x, y) { return (y[view] - x[view]) || pos(x) - pos(y); });
+    var rank = 0, prev = null;
+    scored.forEach(function (x, i) { if (x[view] !== prev) { rank = i + 1; prev = x[view]; } x.rank = rank; });
+    var small = gyms.filter(function (x) { return scored.indexOf(x) < 0; }).sort(function (x, y) { return pos(x) - pos(y); });
+    small.forEach(function (x) { x.rank = 0; });
+    return { scored: scored, small: small };
+  }
+
   function viewLeaderboard() {
     var p = S.me.program, person = S.me.person, t = totals(), b = S.board;
     var weeks = Math.ceil(p.length / 7);
@@ -1805,19 +2110,67 @@
     var sub = !started ? 'Starts ' + fmtLong(p.start) : p.phase === 'after' ? 'Final standings' : 'Week ' + Math.min(Math.ceil(p.dayNumber / 7), weeks) + ' of ' + weeks;
     var canWeek = !!(b && b.week);
     var view = canWeek && S.boardView === 'week' ? 'week' : 'overall';
-    var copy = function () { return b ? b.teams.map(function (x) { return Object.assign({}, x); }) : []; };
+    var scope = S.boardScope === 'all' ? 'all' : 'gym';
+    var myGym = gymIdOf(S.myGym || person.gym) || GYM_DEFAULT;
+    var copy = function () { return b ? (b.teams || []).map(function (x) { return Object.assign({}, x); }) : []; };
     var shownRows = rankTeams(copy(), view);
     // Your place is always the overall one, whichever view the list is on.
     var overall = rankTeams(copy(), 'overall');
-    var myKey = S.myTeam || String(person.team || '').trim().replace(/^team\s+/i, '').toLowerCase();
+    // Teams belong to a gym (11/23/2026): the key is "<gym>:<team>", so Iron at OKC isn't Iron at Tulsa.
+    var myKey = S.myTeam || (person.team ? myGym + ':' + String(person.team).trim().replace(/^team\s+/i, '').toLowerCase() : '');
     var mineOverall = overall.scored.concat(overall.small).filter(function (x) { return x.key === myKey; })[0] || null;
     // Before Day 1, or before anyone has a point, there's nothing to rank yet.
     var ranked = started && overall.scored.some(function (x) { return x.overall > 0; });
     var place = ranked && mineOverall && mineOverall.rank ? mineOverall.rank : 0;
+    // The gyms, the same way.
+    var gymsCopy = function () { return b && b.gyms ? b.gyms.map(function (x) { return Object.assign({}, x); }) : []; };
+    var gymsOverall = rankGyms(gymsCopy(), 'overall');
+    var gymsRanked = started && gymsOverall.scored.some(function (x) { return x.overall > 0; });
+    var myGymRow = gymsOverall.scored.filter(function (x) { return x.id === myGym; })[0] || null;
+    var gymPlaceN = gymsRanked && myGymRow && myGymRow.rank ? myGymRow.rank : 0;
+    var min = (b && b.minPeople) || 3;
+    var weekName = p.phase === 'after' ? 'Last week' : 'This week';
+    var viewSeg = function (on) {
+      return on ? '<div class="seg seg-sm" role="group" aria-label="Which standings">' +
+        '<button data-act="board-view" data-view="overall" class="' + (view === 'overall' ? 'is-on' : '') + '" aria-pressed="' + (view === 'overall') + '">Overall</button>' +
+        '<button data-act="board-view" data-view="week" class="' + (view === 'week' ? 'is-on' : '') + '" aria-pressed="' + (view === 'week') + '">' + weekName + '</button></div>' : '';
+    };
+    var range = function (on) { return view === 'week' && b && on ? '<p class="lb-range">Week ' + b.week + ' · ' + esc(fmt(b.weekFrom, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(b.weekTo, { month: 'short', day: 'numeric' })) + '</p>' : ''; };
+    var loading = function () {
+      return !b && S.boardError
+        ? '<div class="lb-empty"><p>' + esc(S.boardError) + '</p><button class="btn btn-secondary btn-sm" data-act="board-retry">Try again</button></div>'
+        : '<ol class="lb-list" aria-busy="true">' + [1, 2, 3].map(function () { return '<li class="lb-row"><span class="lb-rank"></span><span class="skeleton" style="height:20px"></span><span></span></li>'; }).join('') + '</ol>';
+    };
+    // Kevin, 11/23/2026: "leaderboards within the gyms" and "overall leaderboards between gyms".
+    var scopeSeg = '<div class="seg seg-block lb-scope" role="group" aria-label="Which leaderboard">' +
+      '<button data-act="board-scope" data-scope="gym" class="' + (scope === 'gym' ? 'is-on' : '') + '" aria-pressed="' + (scope === 'gym') + '">My gym</button>' +
+      '<button data-act="board-scope" data-scope="all" class="' + (scope === 'all' ? 'is-on' : '') + '" aria-pressed="' + (scope === 'all') + '">All gyms</button></div>';
+    var head = '<h1 class="page-title">Leaderboard</h1><p class="page-sub">' + esc(sub) + '</p>' + scopeSeg;
 
-    // You: your team and overall place, then four plain numbers.
+    if (scope === 'all') {
+      var gRows = rankGyms(gymsCopy(), view), allGyms = gRows.scored.concat(gRows.small), gBody;
+      if (!b) gBody = loading();
+      else {
+        var gRow = function (x) {
+          var isMine = x.id === myGym, has = x.rank > 0;
+          // (Withheld: 1 or 2 of its people have no team, or are on a team too small to show. The words
+          // cover both, so a gym where everyone has a team isn't told they don't.)
+          var score = !has ? '<span class="lb-score is-none"><span>' + esc(x.withheld ? 'Shows once everyone’s on a team of ' + min + ' or more' : 'Fewer than ' + min + ' people') + '</span></span>'
+            : gymsRanked ? '<span class="lb-score"><b>' + esc(fmtPts(x[view])) + '</b><span>pts per person</span></span>' : '<span class="lb-score"></span>';
+          return '<li class="lb-row lb-gym' + (isMine ? ' is-mine' : '') + (has && gymsRanked ? '' : ' is-unranked') + '" data-gym-row="' + esc(x.id) + '"><span class="lb-rank' + (gymsRanked && x.rank && x.rank <= 3 ? ' r' + x.rank : '') + '">' + (gymsRanked && x.rank ? x.rank : '') + '</span>' +
+            '<span class="lb-team"><b class="lb-gym-name">' + swatchHtml(x.id, 'gym-dot') + esc(x.name || gymInfo(x.id).name) + '</b><span>' + esc(plural(x.people, 'person', 'people')) + (isMine ? ' · your gym' : '') + '</span></span>' + score + '</li>';
+        };
+        gBody = (gymsRanked ? '' : '<p class="lb-range">' + esc(started ? 'Standings show up once gyms start scoring.' : 'Standings start ' + fmtLong(p.start) + '.') + '</p>') +
+          '<ol class="lb-list">' + allGyms.map(gRow).join('') + '</ol>';
+      }
+      return head + '<section class="card lb-board lb-gyms"><div class="card-head"><h3>Gym standings</h3>' + viewSeg(canWeek && gymsRanked) + '</div>' + range(gymsRanked) + gBody +
+        (b ? '<p class="lb-foot">A gym’s score is its average points per person, so every gym has the same shot, whatever its size.</p>' : '') + '</section>';
+    }
+
+    // You: your team and overall place, your gym's place among the gyms, then four plain numbers.
     var teamName = mineOverall ? mineOverall.name : person.team;
     var teamLine = person.team ? teamLabel(teamName) + (place ? ' · ' + ordinal(place) + ' of ' + plural(overall.scored.length, 'team') : '') : (started ? 'Not on a team yet' : 'Teams are announced before Day 1');
+    var gymLine = '<span class="lb-you-gym">' + swatchHtml(myGym, 'gym-dot') + '<span>' + esc(gymInfo(myGym).name + (gymPlaceN ? ' · ' + ordinal(gymPlaceN) + ' of ' + plural(gymsOverall.scored.length, 'gym') : '')) + '</span></span>';
     var soFar = Math.min(p.length, p.phase === 'after' ? p.length : Math.max(1, p.dayNumber));
     var stats = started
       ? '<div class="lb-stats">' +
@@ -1828,18 +2181,15 @@
         '</div>'
       : '<p class="lb-later">Your points, daily average and streak start counting on Day 1, ' + esc(fmtLong(p.start)) + '.</p>';
     var you = '<section class="card lb-you">' +
-      '<div class="lb-you-top"><span class="avatar">' + esc(initials(person)) + '</span><span class="lb-you-name"><b>' + esc(person.first + ' ' + person.last) + '</b><span>' + esc(teamLine) + '</span></span>' +
+      '<div class="lb-you-top"><span class="avatar">' + esc(initials(person)) + '</span><span class="lb-you-name"><b>' + esc(person.first + ' ' + person.last) + '</b><span>' + esc(teamLine) + '</span>' + gymLine + '</span>' +
         (place ? '<span class="lb-place' + (place === 1 ? ' is-first' : '') + '" aria-hidden="true">' + ordinal(place) + '</span>' : '') + '</div>' + stats + '</section>';
 
-    // Team standings.
+    // Team standings: your gym's teams only (the server sends no other gym's).
     var all = shownRows.scored.concat(shownRows.small);
     var mineKey = mineOverall ? mineOverall.key : '';
-    var min = (b && b.minPeople) || 3;
     var body;
-    if (!b && S.boardError) {
-      body = '<div class="lb-empty"><p>' + esc(S.boardError) + '</p><button class="btn btn-secondary btn-sm" data-act="board-retry">Try again</button></div>';
-    } else if (!b) {
-      body = '<ol class="lb-list" aria-busy="true">' + [1, 2, 3].map(function () { return '<li class="lb-row"><span class="lb-rank"></span><span class="skeleton" style="height:20px"></span><span></span></li>'; }).join('') + '</ol>';
+    if (!b) {
+      body = loading();
     } else if (!all.length) {
       body = '<div class="lb-empty">' + icon('users', 'ico-lg') + '<p>' + esc(started ? 'Teams aren’t set yet. The standings show up here as soon as they are.' : 'Teams are announced before Day 1. The team standings show up right here.') + '</p></div>';
     } else {
@@ -1854,15 +2204,10 @@
       body = (ranked ? '' : '<p class="lb-range">' + esc(started ? 'Standings show up once teams start scoring.' : 'Standings start ' + fmtLong(p.start) + '.') + '</p>') +
         '<ol class="lb-list">' + all.map(row).join('') + '</ol>';
     }
-    var weekName = p.phase === 'after' ? 'Last week' : 'This week';
-    var seg = canWeek && ranked ? '<div class="seg seg-sm" role="group" aria-label="Which standings">' +
-      '<button data-act="board-view" data-view="overall" class="' + (view === 'overall' ? 'is-on' : '') + '" aria-pressed="' + (view === 'overall') + '">Overall</button>' +
-      '<button data-act="board-view" data-view="week" class="' + (view === 'week' ? 'is-on' : '') + '" aria-pressed="' + (view === 'week') + '">' + weekName + '</button></div>' : '';
-    var range = view === 'week' && b && ranked ? '<p class="lb-range">Week ' + b.week + ' · ' + esc(fmt(b.weekFrom, { month: 'short', day: 'numeric' })) + ' – ' + esc(fmt(b.weekTo, { month: 'short', day: 'numeric' })) + '</p>' : '';
-    var board = '<section class="card lb-board"><div class="card-head"><h3>Team standings</h3>' + seg + '</div>' + range + body +
+    var board = '<section class="card lb-board"><div class="card-head"><h3>Team standings</h3>' + viewSeg(canWeek && ranked) + '</div>' + range(ranked) + body +
       (all.length ? '<p class="lb-foot">A team’s score is its average points per person, so every team has the same shot, whatever its size.</p>' : '') + '</section>';
 
-    return '<h1 class="page-title">Leaderboard</h1><p class="page-sub">' + esc(sub) + '</p>' + you + board;
+    return head + you + board;
   }
 
   /* ============================================================ nutrition */
@@ -1943,7 +2288,7 @@
   }
 
   function resourcesHtml() {
-    var c = S.config;
+    var c = { contactEmail: gymInfo(S.me.person.gym).contactEmail }; // the person's gym's
     return '<a class="card list-row" style="border-radius:var(--radius-lg)" href="#/cookbook"><span class="avatar silver">' + icon('book') + '</span><span class="grow"><span class="title">Koda Cookbook</span><span class="meta" style="display:block">Recipes from the Koda community, right here in the app.</span></span>' + icon('chevR') + '</a>' +
       '<section class="card card-pad prose" style="margin-top:16px"><div class="plan-hero" style="margin-bottom:12px"><span class="icon-tile">' + icon('scale', 'ico-lg') + '</span><span><span style="display:block;font-size:19px;font-weight:800">InBody scan</span><span class="muted" style="font-size:14px">Optional, at the start and end of the challenge</span></span></div>' +
         '<p><b>Before your scan:</b></p><ul><li>No eating or exercise for 3 hours before.</li><li>Be hydrated (water alongside any coffee).</li><li>No alcohol or flying the night before.</li><li>Light clothes, with arms and thighs not touching.</li><li>Not for anyone with a pacemaker or who is pregnant.</li></ul>' +
@@ -2091,32 +2436,59 @@
 
   /* ============================================================ profile & edits */
 
+  /**
+   * The gym is set for good from Day 1 of the real challenge (start_date), as on the server: after
+   * that a move changes the gym and team standings, so it's Kevin's call. The server's clock decides,
+   * read in the person's own gym's time zone (review, 11/23/2026): at 12:30 AM in Oklahoma it's Day 1
+   * there, and its days can be logged, while it's still the day before in Denver. So does this
+   * phone's own date, the one the server took for today (program.today), which their days are
+   * logged by: a phone east of the gym has Day 1 first (review, 11/24/2026).
+   */
+  function gymLocked() {
+    var start = S.config.startDate || '2027-01-18';
+    var tz = gymInfo(S.me && S.me.person ? S.me.person.gym : GYM_DEFAULT).tz || 'America/Denver';
+    var phoneDay = S.me && S.me.program ? S.me.program.today : '';
+    return zoneToday(tz, S.me && S.me.serverTime ? S.me.serverTime : 0) >= start || (!!phoneDay && phoneDay >= start);
+  }
+
   function viewProfile() {
-    var p = S.me.person, s = p.setup, c = S.config;
+    var p = S.me.person, s = p.setup, c = S.config, g = gymInfo(p.gym);
     var checklist = checklistPreviewText(draftFromPerson()).slice(1).map(function (x) { return x.replace(/^Nutrition: .*/, 'Nutrition').replace(/^Skill: /, '').replace(/^Mobility: /, ''); });
     var plan = s.track && s.track.nutrition ? (s.plan === 'other' ? 'Other: ' + s.planOther : (planInfo(s.plan) || {}).label) : 'Not tracking nutrition';
     var row = function (ic, label, value, href) {
       return '<a class="list-row" href="' + href + '"><span class="ci-icon">' + icon(ic) + '</span><span class="grow"><span class="meta">' + esc(label) + '</span><span class="title" style="display:block">' + value + '</span></span>' + icon('chevR') + '</a>';
     };
+    // The gym (11/23/2026): changeable until Day 1, then only by Kevin.
+    var gymRow = gymLocked()
+      ? '<div class="list-row" id="gymRow"><span class="ci-icon">' + swatchHtml(g.id) + '</span><span class="grow"><span class="meta">Gym</span><span class="title" style="display:block">' + esc(g.name) + '</span><span class="meta" style="display:block">Ask Kevin to change it.</span></span></div>'
+      : '<a class="list-row" id="gymRow" href="#/edit/gym"><span class="ci-icon">' + swatchHtml(g.id) + '</span><span class="grow"><span class="meta">Gym</span><span class="title" style="display:block">' + esc(g.name) + '</span><span class="meta" style="display:block">' + esc(g.city) + ' · you can change it until Day 1</span></span>' + icon('chevR') + '</a>';
+    // Kevin's daily email (3 AM): on unless they turned it off, here or from the email's own link.
+    // While it saves, the switch says it's busy but stays focusable (a disabled button would drop
+    // keyboard focus); toggleDailyEmail ignores taps until the save is back.
+    var daily = p.dailyEmail !== false;
+    var dailyCard = '<section class="card" style="margin-top:16px"><div class="list-row"><span class="ci-icon">' + icon('mail') + '</span><span class="grow"><span class="title">Daily email</span><span class="meta" style="display:block">Each morning: that day’s details and a link to log yesterday, plus a heads-up if a day is overdue.</span></span>' +
+      '<button class="switch" role="switch" aria-checked="' + daily + '" aria-label="Daily email" data-act="daily-email"' + (S.dailyBusy ? ' aria-disabled="true"' : '') + '><span class="switch-word" aria-hidden="true">' + (daily ? 'On' : 'Off') + '</span><span class="switch-track"></span></button></div></section>';
     var payment = p.type === 'Remote' ? '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Payment</h3><span class="badge ' + (p.paid ? 'badge-good' : 'badge-warn') + '">' + (p.paid ? 'Received' : 'Pending') + '</span></div><div class="card-body"><p class="muted" style="margin:0;font-size:14px">' +
-      esc(p.paid ? 'Thanks! Your $' + c.remotePrice + ' remote spot is paid.' : 'Send $' + c.remotePrice + ' ' + (p.payment === 'Venmo' ? 'on Venmo to ' + c.venmo : p.payment === 'Zelle' ? 'with Zelle to ' + c.zelle : 'by card') + (p.payment === 'Credit Card' ? '' : ' with your name in the note') + '. We’ll mark it here when it comes in.') + '</p>' +
+      esc(p.paid ? 'Thanks! Your $' + g.remotePrice + ' remote spot is paid.' : payPendingText(p)) + '</p>' +
       (p.paid ? '' : (function () { var b = payButtons(p, true); return b ? '<div style="margin-top:12px">' + b + '</div>' : ''; })()) + '</div></section>' : '';
     var shirtLocked = !!(c.shirtChangesUntil && localToday() > c.shirtChangesUntil);
     return '<h1 class="page-title">Profile</h1><p class="page-sub">Your challenge setup. Change anything, any time.</p>' +
       '<section class="card card-pad" style="display:flex;gap:16px;align-items:center"><span class="avatar avatar-lg">' + esc(initials(p)) + '</span><span style="min-width:0"><b style="font-size:19px;display:block">' + esc(p.first + ' ' + p.last) + '</b><span class="muted" style="font-size:14px;overflow-wrap:anywhere">' + esc(p.email) + '</span>' +
         '<span class="chips" style="margin-top:8px"><span class="badge">' + (p.type === 'Remote' ? 'Remote participant' : p.type === 'Test' ? (S.me.program.beta ? 'Beta tester' : 'Test account') : 'Koda member') + '</span>' + (p.team ? '<span class="badge badge-brand">' + esc(teamLabel(p.team)) + '</span>' : '') + (p.coach ? '<span class="badge badge-silver">Coach ' + esc(p.coach) + '</span>' : '') + '</span></span></section>' +
       '<section class="card" style="margin-top:16px"><div class="card-head"><h3>My challenge</h3></div><div style="padding-top:8px">' +
+        gymRow +
         row('target', 'Main focus', esc(goalLabel(s.goal)), '#/edit/goal') +
         row('plate', 'Nutrition plan', esc(plan), '#/edit/track') +
         row('check', 'Daily checklist', esc(checklist.join(' · ') || 'Video only'), '#/edit/track') +
-        row('users', 'Coach preference', esc((s.coaches || []).join(', ') || 'No preference'), '#/edit/coaches') +
+        // (A gym with no coaches listed has no ranking to change.)
+        (g.coaches.length ? row('users', 'Coach preference', esc((s.coaches || []).join(', ') || 'No preference'), '#/edit/coaches') : '') +
         (shirtLocked
           ? '<div class="list-row"><span class="ci-icon">' + icon('shirt') + '</span><span class="grow"><span class="meta">Shirt · ordered</span><span class="title" style="display:block">' + esc((p.shirt === 'tank' ? 'Ladies Tank' : 'T-Shirt') + ' · ' + p.size) + '</span><span class="meta" style="display:block">Need a swap? Email us.</span></span></div>'
           : row('shirt', 'Shirt', esc((p.shirt === 'tank' ? 'Ladies Tank' : 'T-Shirt') + ' · ' + p.size), '#/edit/shirt')) +
-      '</div></section>' + payment +
+      '</div></section>' + dailyCard + payment +
       '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Help</h3></div><div style="padding-top:8px">' +
         '<a class="list-row" href="#/faqs"><span class="ci-icon">' + icon('help') + '</span><span class="grow"><span class="title">FAQs</span><span class="meta" style="display:block">Answers to common questions</span></span>' + icon('chevR') + '</a>' +
-        '<a class="list-row" href="mailto:' + esc(c.contactEmail) + '"><span class="ci-icon">' + icon('mail') + '</span><span class="grow"><span class="title">Email us</span><span class="meta" style="display:block">' + esc(c.contactEmail) + '</span></span>' + icon('external') + '</a></div></section>' +
+        '<a class="list-row" href="mailto:' + esc(g.contactEmail) + '"><span class="ci-icon">' + icon('mail') + '</span><span class="grow"><span class="title">Email us</span><span class="meta" style="display:block">' + esc(g.contactEmail) + '</span></span>' + icon('external') + '</a></div></section>' +
       '<section class="card" style="margin-top:16px"><div class="card-head"><h3>Account</h3></div><div style="padding-top:8px">' +
         '<a class="list-row" href="#/edit/password"><span class="ci-icon">' + icon('key') + '</span><span class="grow"><span class="title">Change password</span></span>' + icon('chevR') + '</a>' +
         '<button class="list-row" data-act="signout"><span class="ci-icon">' + icon('logout') + '</span><span class="grow"><span class="title">Sign out</span><span class="meta" style="display:block">On this device</span></span></button>' +
@@ -2132,8 +2504,11 @@
   function viewFaqs() {
     var p = S.me.program;
     var tally = fmt(addDays(p.start, 1), { weekday: 'long' });
+    // The week locks at midnight where the gym is (Mountain for Iron View; the Oklahoma and Texas gyms
+    // are on Central time, where midnight comes first).
+    var tz = gymInfo(S.me.person.gym).tz === 'America/Chicago' ? ' (Central time)' : ' (Mountain time)';
     var items = C.faq.map(function (f, i) {
-      var a = f.a.replace(/\{openDay\}/g, openDayName()).replace(/\{tallyDay\}/g, tally);
+      var a = f.a.replace(/\{openDay\}/g, openDayName()).replace(/\{tallyDay\}/g, tally).replace(/\{timeZone\}/g, tz);
       return '<details class="acc-item faq-item" id="faq-' + i + '"><summary><span>' + esc(f.q) + '</span>' + icon('chevR', 'ico-sm acc-chev') + '</summary><p>' + esc(a) + '</p></details>';
     }).join('');
     return '<a class="btn btn-ghost btn-sm phone-only" href="#/profile" style="margin:-4px 0 10px -8px">' + icon('chevL', 'ico-sm') + 'Profile</a>' +
@@ -2207,13 +2582,20 @@
     d.coaches = (s.coaches || []).slice();
     d.shirt = p.shirt;
     d.size = p.size;
+    d.gym = gymIdOf(p.gym) || GYM_DEFAULT;
     return d;
   }
 
   function viewEdit(section) {
     if (!S.edit || S.edit.section !== section) { S.edit = { section: section, d: draftFromPerson() }; S.errors = {}; S.formError = ''; }
     var d = S.edit.d, body;
-    if (section === 'goal') body = stepGoal(d, 'Your main focus', 'Your coaching tips follow it.');
+    if (section === 'gym' && gymLocked()) {
+      // From Day 1 the gym is Kevin's call (the server refuses a change too).
+      body = '<h1>Your gym</h1><p class="lead">' + esc(gymInfo(S.me.person.gym).name) + '. Your gym can’t change once the challenge has started. Ask Kevin.</p>';
+      return flowFrame({ steps: [], step: '', body: body, foot: '<button class="btn btn-secondary" data-act="cancel-edit">Back</button>', backAct: 'cancel-edit' });
+    }
+    if (section === 'gym') body = stepGym(d, true);
+    else if (section === 'goal') body = stepGoal(d, 'Your main focus', 'Your coaching tips follow it.');
     else if (section === 'coaches') body = stepCoaches(d, true);
     else if (section === 'shirt') body = '<h1>Your shirt</h1><p class="lead">Change your style or size.</p>' + shirtFields(d);
     else if (section === 'password') {
@@ -2232,6 +2614,30 @@
   function saveEdit(section) {
     var d = S.edit.d;
     S.formError = '';
+    if (section === 'gym') {
+      var gid = gymIdOf(d.gym), was = S.me.person;
+      if (!gid) { S.errors = { gym: 'Pick your gym.' }; render(); return; }
+      if (gid === gymIdOf(was.gym)) { S.edit = null; go('#/profile'); return; }
+      var hadPicks = (was.setup.coaches || []).length > 0, oldTeam = String(was.team || '').trim(), oldCoach = String(was.coach || '').trim();
+      S.busy = true; render();
+      // Only the gym goes. The server keeps everything else, and clears what was the old gym's: coach
+      // picks it doesn't list, and the team and coach Kevin gave them there (11/23/2026 review).
+      api('setup', { gym: gid }).then(function (r) {
+        S.busy = false; S.edit = null;
+        applyMe(r.me); // (which drops what the page held from the old gym: forgetGymViews)
+        var g = gymInfo(gid), old = gymInfo(was.gym), picks = hadPicks && !(r.me.person.setup.coaches || []).length;
+        var c = r.cleared || { team: oldTeam && !r.me.person.team ? oldTeam : '', coach: oldCoach && !r.me.person.coach ? oldCoach : '' };
+        // "a team at OKC", not "a OKC team" (review, 11/24/2026: OKC and Iron View need "an").
+        var gone = c.team && c.coach ? 'Your team and coach were ' + old.short + '’s, so they’re cleared: you’ll get ' + g.short + '’s before Day 1.'
+          : c.team ? 'Your team was ' + old.short + '’s, so it’s cleared: you’ll get a team at ' + g.short + ' before Day 1.'
+          : c.coach ? 'Your coach was ' + old.short + '’s, so that’s cleared: you’ll get a coach at ' + g.short + ' before Day 1.' : '';
+        var msg = 'Saved. Your gym is ' + g.name + '.' + (gone ? ' ' + gone : '') +
+          (!picks ? '' : g.coaches.length ? ' Your coach picks were from your old gym, so pick again from ' + g.short + '’s coaches.' : ' Your coach picks were from your old gym, so they’re cleared.');
+        toast(msg, false, gone ? 6000 : 0);
+        go('#/profile');
+      }, function (e) { S.busy = false; S.formError = e.message; render(); window.scrollTo(0, 0); });
+      return;
+    }
     if (section === 'password') {
       var cur = S.edit.pwCurrent || '', next = S.edit.pwNew || '';
       if (!cur) { S.formError = 'Enter your current password. Forgot it? Sign out and use Forgot password.'; render(); return; }
@@ -2261,6 +2667,108 @@
     }, function (e) { S.busy = false; S.formError = e.message; render(); window.scrollTo(0, 0); });
   }
 
+  /**
+   * The Profile's Daily email switch: flips at once, saves on its own (the server takes it any time),
+   * and flips back if it can't. Each repaint replaces the switch, so keyboard and screen-reader focus
+   * goes back onto it (review, 11/23/2026), unless the person has moved on to something else.
+   */
+  function toggleDailyEmail() {
+    if (!S.me || S.dailyBusy) return;
+    var person = S.me.person, was = person.dailyEmail !== false, session = S.session;
+    S.dailyBusy = true;
+    person.dailyEmail = !was;
+    keepSwitchFocus(render);
+    api('setup', { dailyEmail: !was }).then(function (r) {
+      if (session !== S.session) return;
+      S.dailyBusy = false;
+      keepSwitchFocus(function () { applyMe(r.me); });
+      toast(was ? 'Daily emails off. You can turn them back on here.' : dailyOnText(r.me.program));
+    }, function (e) {
+      if (session !== S.session) return;
+      S.dailyBusy = false;
+      if (S.me) person.dailyEmail = was;
+      keepSwitchFocus(render);
+      toast(e.message, true);
+    });
+  }
+  /** Repaints, then puts focus back on the Daily email switch if it had it (or nothing had it: a repaint drops it). */
+  function keepSwitchFocus(repaint) {
+    var a = document.activeElement;
+    var had = !a || a === document.body || (a.dataset && a.dataset.act === 'daily-email');
+    repaint();
+    var sw = had && document.querySelector('[data-act="daily-email"]');
+    if (sw) sw.focus({ preventScroll: true });
+  }
+  /** "Daily emails on", and when the next one comes: they go out from Day 1 to the Monday after the last day. */
+  function dailyOnText(p) {
+    if (p && p.phase === 'before') return 'Daily emails on. They start on Day 1, ' + fmtLong(p.start) + '.';
+    if (p && p.phase === 'after') return 'Daily emails on.';
+    return 'Daily emails on. The next one comes tomorrow morning.';
+  }
+
+  /**
+   * "Stop these daily emails" (the link in each daily email: #/email-off?u=<id>&s=<signature>). A page
+   * with a button rather than a link that acts, so an email scanner opening links can't turn them
+   * off. Works signed out; the server checks the signature and answers the same for any bad link.
+   */
+  function emailOffState(r) {
+    var key = (r.params.u || '') + '|' + (r.params.s || '');
+    if (!S.emailOff || S.emailOff.key !== key) S.emailOff = { key: key, busy: false, done: false, error: '' };
+    return S.emailOff;
+  }
+  function viewEmailOff(r) {
+    var st = emailOffState(r), u = r.params.u || '', s = r.params.s || '';
+    var gym = S.me && S.me.person ? S.me.person.gym : chosenGym();
+    var body;
+    // Someone else's link opened on a phone signed in as another person (a shared iPad): their own
+    // Profile would still show the emails on, so it isn't offered.
+    var other = !!(S.token && S.me && S.me.person && S.me.person.id !== u);
+    if (st.done) {
+      // The heading takes focus once it's there (sendEmailOff), so a screen reader says it worked.
+      body = other
+        ? '<h1 tabindex="-1">Done.</h1><p class="lead">Those daily emails are off.</p><p class="auth-alt"><a href="#/today">Back to the app</a></p>'
+        : '<h1 tabindex="-1">Done.</h1><p class="lead">You can turn them back on in your Profile.</p>' +
+          '<a class="btn btn-primary btn-block" href="' + (S.token ? '#/profile' : '#/signin') + '">' + (S.token ? 'Open my Profile' : 'Sign in') + '</a>';
+    } else if (!u || !s) {
+      body = '<h1>That link didn’t work</h1><p class="lead">You can turn the daily emails off in your Profile instead.</p>' +
+        '<a class="btn btn-primary btn-block" href="' + (S.token ? '#/profile' : '#/signin') + '">' + (S.token ? 'Open my Profile' : 'Sign in') + '</a>';
+    } else {
+      // (While it's sent, the button says it's busy but keeps keyboard focus; a second tap does nothing.)
+      body = '<h1>Stop the daily emails?</h1><p class="lead">You won’t get the morning email with the day’s details anymore. Your challenge and this app stay just as they are.</p>' +
+        (st.error ? '<div class="form-error" role="alert">' + esc(st.error) + '</div>' : '') +
+        '<button class="btn btn-primary btn-block" data-act="email-off"' + (st.busy ? ' aria-disabled="true"' : '') + '>' + (st.busy ? '<span class="spinner"></span><span class="sr-only">Stopping the daily emails</span>' : 'Stop the daily emails') + '</button>' +
+        '<p class="auth-alt"><a href="' + (S.token ? '#/today' : '#/') + '">Keep getting them</a></p>';
+    }
+    return '<div class="auth"><div class="card auth-card" id="emailOff">' + brandHtml(S.token ? '#/today' : '#/', gym) + body + '</div></div>' + toastHtml();
+  }
+  /**
+   * The "Stop the daily emails" button. Every repaint replaces the card, so focus is put back where a
+   * keyboard or screen-reader user is: on the button while it's sent (and after an error, which is
+   * read out as an alert), then on the "Done." heading, and the toast says it worked (review, 11/23/2026).
+   */
+  function sendEmailOff() {
+    var r = route(), st = emailOffState(r);
+    if (st.busy || st.done) return;
+    st.busy = true; st.error = '';
+    render();
+    focusIn('#emailOff [data-act="email-off"]');
+    api('emailOff', { token: '', u: r.params.u || '', s: r.params.s || '' }).then(function (res) {
+      st.busy = false; st.done = true; st.first = res.first || '';
+      // Signed in as that person on this phone: the Profile's switch shows it at once.
+      if (S.me && S.me.person && S.me.person.id === r.params.u) { S.me.person.dailyEmail = false; cacheMe(); }
+      if (route().name !== 'email-off') return;
+      render();
+      focusIn('#emailOff h1');
+      toast('Done. The daily emails are off.');
+    }, function (e) {
+      st.busy = false; st.error = e.message;
+      if (route().name !== 'email-off') return;
+      render();
+      focusIn('#emailOff [data-act="email-off"]');
+    });
+  }
+  function focusIn(sel) { var el = document.querySelector(sel); if (el) el.focus({ preventScroll: true }); }
+
   /* ============================================================ toast & sheet */
 
   var toastTimer = null;
@@ -2277,11 +2785,12 @@
     }
     return wrap;
   }
-  function toast(msg, isError) {
+  /** A short message at the bottom (a polite live region, so screen readers read it). ms: how long a longer one stays. */
+  function toast(msg, isError, ms) {
     var wrap = toastWrap();
     wrap.innerHTML = '<div class="toast' + (isError ? ' is-error' : '') + '">' + icon(isError ? 'info' : 'check', 'ico-sm') + '<span>' + esc(msg) + '</span></div>';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { wrap.innerHTML = ''; }, isError ? 5200 : 2800);
+    toastTimer = setTimeout(function () { wrap.innerHTML = ''; }, ms || (isError ? 5200 : 2800));
   }
   function openSheet(html) {
     closeSheet(true);
@@ -2373,9 +2882,19 @@
     var el = e.target;
     if (!el.dataset || el.dataset.field !== 'email' || route().name !== 'join') return;
     var email = el.value.trim();
-    if (!validEmail(email)) return;
+    // The looser check: someone already signed up with an address from before the stricter rule
+    // is still told to sign in instead.
+    if (!emailLike(email)) return;
     api('emailStatus', { token: '', email: email }).then(function (r) {
-      if (r.exists && S.draft.email.trim() === email) { S.emailTaken = true; render(); }
+      // Only the first time it's found taken (review, 11/24/2026): each render replaces the focused
+      // field, whose focusout asked again, round and round while the cursor stayed in it. And
+      // "Sign in instead" says it all, so an "Enter a valid email." shown meanwhile (Continue was
+      // tapped before this answer came back) goes; the field stays marked.
+      if (r.exists && !S.emailTaken && S.draft.email.trim() === email) {
+        S.emailTaken = true;
+        if (S.errors.email) S.errors.email = ' ';
+        render();
+      }
     }).catch(function () {});
   });
 
@@ -2420,9 +2939,38 @@
         // What the screen showed, even if the beta ended since it was painted.
         S.draft.sawBeta = !!betaInfo() || !!document.querySelector('#app .l-beta-tag');
         if (el.dataset.type === 'member') S.draft.payment = '';
+        // The gym step comes first, picked already from the link's gym (else the one this phone
+        // remembers); the plain link with neither leaves it for them to pick.
+        S.draft.gym = linkGym() || gymIdOf(S.draft.gym) || rememberedGym() || '';
+        fitDraftToGym(S.draft);
+        S.resumeStep = '';
         S.errors = {}; S.formError = ''; saveDraft();
-        go(el.dataset.type === 'remote' ? '#/join/payment' : '#/join/about');
+        go('#/join/gym');
         break;
+      case 'pick-gym':
+        var gid = gymIdOf(el.dataset.id);
+        if (!gid) break;
+        d.gym = gid;
+        delete S.errors.gym;
+        S.formError = '';
+        if (!editing) {
+          // The sign-up's colors switch to the gym picked; this phone (and a ?gym= link) remember it.
+          store.set('res27.gym', gid);
+          setLinkGym(gid);
+          fitDraftToGym(d);
+        }
+        rerender();
+        var pickedTile = document.querySelector('[data-act="pick-gym"][data-id="' + gid + '"]');
+        if (pickedTile) pickedTile.focus({ preventScroll: true });
+        break;
+      case 'daily-email': toggleDailyEmail(); break;
+      case 'board-scope':
+        S.boardScope = el.dataset.scope === 'all' ? 'all' : 'gym';
+        render();
+        var scopeBtn = document.querySelector('[data-act="board-scope"][data-scope="' + S.boardScope + '"]');
+        if (scopeBtn) scopeBtn.focus({ preventScroll: true });
+        break;
+      case 'email-off': sendEmailOff(); break;
       case 'pay': d.payment = el.dataset.method; delete S.errors.payment; rerender(); break;
       case 'shirt': if (d.shirt !== el.dataset.shirt) { d.shirt = el.dataset.shirt; if ((S.config.sizes[d.shirt] || []).indexOf(d.size) < 0) d.size = ''; } delete S.errors.shirt; rerender(); break;
       case 'size': d.size = el.dataset.size; delete S.errors.size; rerender(); break;

@@ -26,7 +26,7 @@ function world(at) {
 
 function join(post, setup) {
   const r = post({
-    action: 'register', memberType: 'member', first: 'Win', last: 'Dow', email: 'win@example.com', password: 'secret1', shirt: 'tee', size: 'M',
+    action: 'register', gym: 'ironview', memberType: 'member', first: 'Win', last: 'Dow', email: 'win@example.com', password: 'secret1', shirt: 'tee', size: 'M',
     setup: Object.assign({ goal: 'health', track: { workout: true }, plan: 'recommended', sleepHours: 7, coaches: [] }, setup || {}),
   });
   assert.equal(r.ok, true, r.error);

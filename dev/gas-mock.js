@@ -29,6 +29,29 @@
  * `state.counters` (batchGet, flush, sheetReads, readCalls) and `state.batchRanges`. Only a
  * running script counts: a test looking at a sheet or typing in one, the way a person would,
  * doesn't count and is never held back.
+ *
+ * UrlFetchApp never reaches the network. Every request is kept in `state.fetches` ({ url, method,
+ * headers, contentType, payload, muteHttpExceptions, all: true when it came through fetchAll }),
+ * and `state.fetchAllSizes` has the length of each fetchAll. `state.fetchResponder(request, index)`
+ * answers ({ code, body, headers }, or throws, like a request that never reached anyone); without
+ * one, Resend and Brevo answer the way they do, and anything else answers 404. Resend checks every
+ * email's to, from and reply_to: a batch without the `x-batch-validation: permissive` header is
+ * turned down whole (422) for one bad one, as Resend's default ("strict") does; with it, the rest
+ * go and the bad ones come back in `errors` by their index. A responder can also answer
+ * { lost: true } (Resend takes the request as usual, but its answer never comes back: the fetch
+ * throws), { lost: 502 } or { lost: 504 } (a gateway answers that instead), or { refuse: [indexes] }
+ * (Resend turns those emails of a permissive batch down, the rest go). Resend's Idempotency-Key is
+ * kept for 24 hours (by the fake clock) once a request with it was taken: the same key with the
+ * same payload gets the first answer back and nothing is sent again (request.replayed), another
+ * payload gets a 409. What Resend actually sent is in `state.delivered` ({ at, url, key, from, to,
+ * subject, html, text, reply_to }). As in Apps Script, a 4xx/5xx throws
+ * unless muteHttpExceptions, and an option it doesn't have (a timeout, say) is refused. ScriptApp
+ * triggers are kept in `state.triggers` with what their builder was told (everyHours, everyDays,
+ * atHour, nearMinute, timeZone).
+ *
+ * `createGas({ textKeepsApostrophe: true })`: a plain-text ('@') cell keeps a leading apostrophe as
+ * part of the text, which real Sheets may do (the default drops it whatever the format). Data
+ * validation isn't kept; `state.validationsCleared` lists the ranges clearDataValidations was called on.
  */
 
 process.env.TZ = 'America/Denver'; // before any date use, so local Date matches a script running in Denver
@@ -178,13 +201,16 @@ function dayThisYear(year, month, day) {
   return date.getMonth() === month - 1 && date.getDate() === day ? date : null;
 }
 
-/** What a cell holds after a write: {value, formula}. `year` is this year by the fake clock. */
-function coerce(value, format, year) {
+/**
+ * What a cell holds after a write: {value, formula}. `year` is this year by the fake clock.
+ * keepApostrophe: a plain-text cell keeps a leading apostrophe (see textKeepsApostrophe at the top).
+ */
+function coerce(value, format, year, keepApostrophe) {
   if (value === undefined) throw new TypeError('A cell was written with undefined.');
   if (value === null) return { value: '', formula: '' };
   if (isDate(value)) return { value: new Date(value.getTime()), formula: '' };
   if (typeof value !== 'string') return { value: format === '@' ? String(value).toUpperCase() : value, formula: '' };
-  if (value.startsWith("'")) return { value: value.slice(1), formula: '' };
+  if (value.startsWith("'")) return { value: keepApostrophe && format === '@' ? value : value.slice(1), formula: '' };
   if (value.startsWith('=')) return { value: '', formula: value };
   if (format === '@') return { value, formula: '' };
 
@@ -308,17 +334,23 @@ class FakeRange {
         throw new Error(`The number of columns in the data does not match the range. The data has ${line && line.length} but the range has ${this.numColumns}.`);
       }
     });
+    const world = this.sheet.book.world;
     this.eachCell((r, c, i, j) => {
       const cell = this.sheet.cell(r, c);
-      Object.assign(cell, coerce(values[i][j], cell.format, this.sheet.book.world.year()));
+      Object.assign(cell, coerce(values[i][j], cell.format, world.year(), world.textKeepsApostrophe));
     });
     return this;
   }
   setValue(value) {
+    const world = this.sheet.book.world;
     this.eachCell((r, c) => {
       const cell = this.sheet.cell(r, c);
-      Object.assign(cell, coerce(value, cell.format, this.sheet.book.world.year()));
+      Object.assign(cell, coerce(value, cell.format, world.year(), world.textKeepsApostrophe));
     });
+    return this;
+  }
+  clearDataValidations() {
+    this.sheet.book.world.validationsCleared.push({ tab: this.sheet.name, range: this.getA1Notation() });
     return this;
   }
   setFormulas(formulas) {
@@ -646,6 +678,24 @@ function valueRange(book, text) {
   return entry;
 }
 
+/* ------------------------------------------------------------------ Resend's checks ---- */
+
+// An address as Resend takes it: letters, digits and . ! # $ % & ' * + / = ? ^ _ ` { | } ~ - before
+// the @ (no dot at either end or two in a row), then a domain that ends in letters.
+const ADDRESS = /^(?!\.)(?!.*\.\.)[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+(?<!\.)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
+
+/** Why Resend would turn down one email (its to, from or reply_to), or '' when it wouldn't. An unquoted name with a comma or the like reads as more than one address. */
+function resendRefuses(item) {
+  const to = item && item.to;
+  if (!Array.isArray(to) || !to.length || to.some((t) => !ADDRESS.test(String(t)))) return 'Invalid `to` field. The email address needs to follow the `email@example.com` format.';
+  const from = String((item && item.from) || '');
+  const m = /^(?:"([^"\\]*)"|([^"<>]*?))\s*<([^<>]+)>$/.exec(from);
+  const badFrom = m ? (m[2] !== undefined && /[,;:@[\]()<>]/.test(m[2])) || !ADDRESS.test(m[3]) : !ADDRESS.test(from);
+  if (badFrom) return 'Invalid `from` field. The email address needs to follow the `email@example.com` or `Name <email@example.com>` format.';
+  if (item.reply_to !== undefined && [].concat(item.reply_to).some((r) => !ADDRESS.test(String(r)))) return 'Invalid `reply_to` field. The email address needs to follow the `email@example.com` format.';
+  return '';
+}
+
 /* --------------------------------------------------------------------- the world ---- */
 
 function plainFilesInOrder() {
@@ -667,13 +717,20 @@ function createGas(options) {
     triggers: [],
     mail: [],
     logs: [],
-    counters: { openById: 0, mail: 0, batchGet: 0, flush: 0, sheetReads: 0, readCalls: {} },
+    fetches: [], // every UrlFetchApp request, in order
+    fetchAllSizes: [], // how many requests each fetchAll had
+    fetchResponder: null, // (request, index) => { code, body, headers }, { lost }, { refuse }, or throw; null: the default answers
+    delivered: [], // every email the fake Resend sent (not the ones it refused, and not a replayed key's)
+    idempotency: new Map(), // Resend's Idempotency-Keys: key → { payload, got, until }
+    counters: { openById: 0, mail: 0, batchGet: 0, flush: 0, sheetReads: 0, readCalls: {}, fetch: 0, fetchAll: 0 },
     batchRanges: [], // the ranges asked for by each batchGet
     runDepth: 0, // above zero while a script is running
     reading: false,
     lockBusy: false,
     beforeMail: null, // set to a function to make a send throw, for crash tests
     beforeBatch: null, // set to a function to make batchGet throw, or return something for it to answer with instead
+    textKeepsApostrophe: !!settings.textKeepsApostrophe, // see the note at the top
+    validationsCleared: [], // { tab, range } for each clearDataValidations
     year: () => new Date(clock()).getFullYear(),
   };
 
@@ -782,8 +839,20 @@ function createGas(options) {
     },
   };
 
+  let triggerIds = 0;
   const triggerBuilder = (handler) => {
-    const trigger = { handler, kind: '', minutes: 0, getHandlerFunction: () => handler };
+    triggerIds += 1;
+    const trigger = { handler, kind: '', minutes: 0, everyHours: 0, everyDays: 0, atHour: null, nearMinute: null, timeZone: '', id: 'trigger-' + triggerIds };
+    // Methods that JSON leaves out, so a test can compare the records as plain data.
+    Object.defineProperties(trigger, {
+      getHandlerFunction: { value: () => handler },
+      getUniqueId: { value: () => trigger.id },
+      getEventType: { value: () => 'CLOCK' },
+    });
+    const whole = (value, low, high, what) => {
+      if (!Number.isInteger(value) || value < low || value > high) throw new Error(`Invalid argument: ${what} (${value})`);
+      return value;
+    };
     const builder = {
       timeBased() {
         trigger.kind = 'time';
@@ -793,12 +862,140 @@ function createGas(options) {
         trigger.minutes = minutes;
         return builder;
       },
+      everyHours(hours) {
+        // Apps Script takes only these.
+        if ([1, 2, 4, 6, 8, 12].indexOf(hours) < 0) throw new Error(`Invalid argument: everyHours (${hours})`);
+        trigger.everyHours = hours;
+        return builder;
+      },
+      everyDays(days) {
+        trigger.everyDays = whole(days, 1, 1000, 'everyDays');
+        return builder;
+      },
+      atHour(hour) {
+        trigger.atHour = whole(hour, 0, 23, 'atHour');
+        return builder;
+      },
+      nearMinute(minute) {
+        trigger.nearMinute = whole(minute, 0, 59, 'nearMinute');
+        return builder;
+      },
+      inTimezone(timeZone) {
+        new Intl.DateTimeFormat('en-US', { timeZone }); // throws for a zone that doesn't exist
+        trigger.timeZone = timeZone;
+        return builder;
+      },
       create() {
+        if (trigger.kind !== 'time') throw new Error('The mock only builds time-based triggers.');
+        if (trigger.nearMinute !== null && trigger.atHour === null) throw new Error('nearMinute needs atHour.');
+        if (trigger.everyHours && (trigger.everyDays || trigger.atHour !== null)) throw new Error('everyHours can’t go with everyDays or atHour.');
         state.triggers.push(trigger);
         return trigger;
       },
     };
     return builder;
+  };
+
+  /* UrlFetchApp: see the note at the top. */
+  const FETCH_OPTIONS = ['url', 'method', 'headers', 'payload', 'contentType', 'muteHttpExceptions', 'followRedirects', 'validateHttpsCertificates', 'escaping'];
+  const header = (request, name) => {
+    const key = Object.keys(request.headers).find((h) => h.toLowerCase() === name);
+    return key === undefined ? '' : String(request.headers[key]);
+  };
+  const deliver = (request, item) => {
+    state.delivered.push({ at: new Date(clock()).toISOString(), url: request.url, key: header(request, 'idempotency-key'), from: item.from, to: [].concat(item.to)[0], subject: item.subject, html: item.html, text: item.text, reply_to: item.reply_to });
+  };
+  // refuse: indexes of a permissive batch to turn down as well (a responder's { refuse: [...] }).
+  const defaultAnswer = (request, refuse) => {
+    if (request.url === 'https://api.resend.com/emails/batch') {
+      const items = JSON.parse(request.payload || '[]');
+      const errors = [];
+      items.forEach((item, index) => {
+        const why = resendRefuses(item) || ((refuse || []).indexOf(index) >= 0 ? 'Too many requests for this address.' : '');
+        if (why) errors.push({ index, message: why });
+      });
+      const permissive = header(request, 'x-batch-validation').toLowerCase() === 'permissive';
+      if (errors.length && !permissive) return { code: 422, body: { statusCode: 422, name: 'validation_error', message: errors[0].message } };
+      const bad = new Set(errors.map((e) => e.index));
+      items.forEach((item, i) => {
+        if (!bad.has(i)) deliver(request, item);
+      });
+      const body = { data: items.filter((item, i) => !bad.has(i)).map(() => ({ id: crypto.randomUUID() })) };
+      if (permissive) body.errors = errors;
+      return { code: 200, body: JSON.stringify(body) };
+    }
+    if (request.url === 'https://api.resend.com/emails') {
+      const item = JSON.parse(request.payload || '{}');
+      const why = resendRefuses(item);
+      if (why) return { code: 422, body: { statusCode: 422, name: 'validation_error', message: why } };
+      deliver(request, item);
+      return { code: 200, body: JSON.stringify({ id: crypto.randomUUID() }) };
+    }
+    if (request.url === 'https://api.brevo.com/v3/smtp/email') return { code: 201, body: JSON.stringify({ messageId: '<' + crypto.randomUUID() + '@smtp-relay.mailin.fr>' }) };
+    return { code: 404, body: 'Not Found' };
+  };
+  const toRequest = (url, options, viaAll) => {
+    const o = options || {};
+    Object.keys(o).forEach((key) => {
+      if (FETCH_OPTIONS.indexOf(key) < 0) throw new Error(`UrlFetchApp has no "${key}" option (the mock refuses what Apps Script doesn't have).`);
+    });
+    if (!/^https?:\/\//.test(String(url))) throw new Error('Invalid argument: url (' + url + ')');
+    return {
+      url: String(url),
+      method: String(o.method || 'get').toLowerCase(),
+      headers: Object.assign({}, o.headers || {}),
+      contentType: o.contentType || '',
+      payload: o.payload === undefined ? '' : String(o.payload),
+      muteHttpExceptions: o.muteHttpExceptions === true,
+      all: !!viaAll,
+    };
+  };
+  const answer = (request) => {
+    state.fetches.push(request);
+    const index = state.fetches.length - 1;
+    // Resend: a key it has seen (in the last 24 hours) gets the first answer back, sending nothing.
+    const key = /^https:\/\/api\.resend\.com\/emails(\/batch)?$/.test(request.url) ? header(request, 'idempotency-key') : '';
+    const seen = key ? state.idempotency.get(key) : null;
+    let got;
+    if (seen && seen.until > clock()) {
+      request.replayed = true;
+      got = seen.payload === request.payload ? seen.got
+        : { code: 409, body: { statusCode: 409, name: 'invalid_idempotent_request', message: 'Same idempotency key used with a different request payload. Change your idempotency key or payload.' } };
+    } else {
+      const custom = state.fetchResponder ? state.fetchResponder(request, index) : null;
+      const handled = !custom || custom.lost !== undefined || custom.refuse !== undefined;
+      got = handled ? defaultAnswer(request, custom && custom.refuse) : custom;
+      // Resend keeps the key once it has taken the request (even if its answer is then lost).
+      if (key && handled && got.code >= 200 && got.code < 300) state.idempotency.set(key, { payload: request.payload, got, until: clock() + 24 * 3600000 });
+      if (custom && custom.lost === true) throw new Error('Timeout: ' + request.url);
+      if (custom && custom.lost) got = { code: custom.lost, body: custom.lost + ' Gateway error' };
+    }
+    const body = got.body === undefined ? '' : typeof got.body === 'string' ? got.body : JSON.stringify(got.body);
+    if (got.code >= 400 && !request.muteHttpExceptions) {
+      throw new Error(`Request failed for ${request.url} returned code ${got.code}. Truncated server response: ${body.slice(0, 100)} (use muteHttpExceptions option to examine full response)`);
+    }
+    return {
+      getResponseCode: () => got.code,
+      getContentText: () => body,
+      getHeaders: () => Object.assign({}, got.headers || {}),
+      getAllHeaders: () => Object.assign({}, got.headers || {}),
+    };
+  };
+  const UrlFetchApp = {
+    fetch(url, options) {
+      state.counters.fetch += 1;
+      return answer(toRequest(url, options, false));
+    },
+    fetchAll(requests) {
+      state.counters.fetchAll += 1;
+      state.fetchAllSizes.push(requests.length);
+      // Built first, then sent: a bad request fails the whole call, as in Apps Script.
+      return requests.map((r) => toRequest(r.url, r, true)).map(answer);
+    },
+    getRequest(url, options) {
+      const r = toRequest(url, options, false);
+      return { url: r.url, method: r.method, headers: r.headers, payload: r.payload, contentType: r.contentType };
+    },
   };
 
   const MailApp = {
@@ -844,6 +1041,7 @@ function createGas(options) {
     CacheService: { getScriptCache: () => scriptCache },
     LockService: { getScriptLock: () => scriptLock },
     MailApp,
+    UrlFetchApp,
     ScriptApp: {
       getProjectTriggers: () => state.triggers.slice(),
       deleteTrigger(trigger) {
