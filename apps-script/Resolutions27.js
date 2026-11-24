@@ -32,7 +32,7 @@
  * everywhere") bumps Token Version, which ends every older token.
  */
 
-var RES27_VERSION = '1.8.0 (2026-11-23)';
+var RES27_VERSION = '1.8.1 (2026-11-24)';
 var RES27_TZ = 'America/Denver';
 var RES27_SHEET_PROP = 'RES27_SHEET_ID';
 var RES27_SECRET_PROP = 'RES27_SECRET';
@@ -45,6 +45,16 @@ var RES27_RESET_MINUTES = 20;
 var RES27_RESET_MAX_TRIES = 6;
 var RES27_RESET_BAD_BUDGET = 12; // wrong codes per account per 6 hours, across all codes
 var RES27_RESET_STARTS_PER_HOUR = 30; // reset emails per hour, whole app
+// Answers from sign-in and the password reset, per hour, whole app (review, 11/24/2026): every one
+// but a sign-in or a new password says whether the email has an account (res27LookupAllowed_).
+var RES27_LOOKUPS_PER_HOUR = 120;
+// The sign-up's "already signed up?" hint, per hour, whole app: its own allowance, so a rush of
+// sign-ups can't use up sign-in's and the reset's.
+var RES27_EMAIL_HINTS_PER_HOUR = 120;
+// A failed sign-in or reset code takes at least this long, writes included (second review,
+// 11/24/2026): an account's wrong password does a row read and a write that an email with no
+// account doesn't, so without it the time an answer took told them apart. (Both do the hashing.)
+var RES27_EVEN_ANSWER_MS = 2000;
 var RES27_MAIL_RESERVE = 25; // welcome/notify emails leave this many sends for the other Koda pages
 
 var RES27_GOALS = { performance: 'Performance', muscle: 'Muscle Gain', fatloss: 'Fat Loss', health: 'General Health' };
@@ -564,6 +574,57 @@ function res27Count_(key) {
   return parseInt(CacheService.getScriptCache().get(key), 10) || 0;
 }
 
+/**
+ * Uses one of the hour's sign-in and reset answers, and says whether one was left (review,
+ * 11/24/2026). Sign-in and the password reset told anyone whether an email has an account, with no
+ * limit, so a list of addresses (a gym's members) could be run through them to see who joined. Now
+ * every answer they give after the checks that are the same for everyone (blank or malformed input,
+ * resets busy, can't send) uses one of RES27_LOOKUPS_PER_HOUR, an email with an account or not,
+ * except a sign-in or a new password; past them, an email with none gets the answer one with an
+ * account would, and failed answers all take RES27_EVEN_ANSWER_MS (res27EvenOut_). With the
+ * sign-up hint's own allowance, that slows a list down to about 240 addresses an hour; it doesn't
+ * stop one outright. An account still shows itself to someone who locks it out, has its owner sent a
+ * code, or signs up with its email while sign-ups are open (a new email makes a real sign-up). The
+ * Log gets one row the hour they run out, so a "my code never came" can be explained.
+ */
+function res27LookupAllowed_() {
+  var n = res27Bump_('res27:lk:' + res27HourKey_(), 3700);
+  if (n === RES27_LOOKUPS_PER_HOUR + 1) {
+    try {
+      res27Log_('(sign-in)', 'Lookup limit reached', 'Sign-in and password-reset answers used up this hour (' + RES27_LOOKUPS_PER_HOUR + '): until the hour ends, an email with no account is answered as if it had one. A mistyped email then hears "That password doesn’t match" or waits for a code that never comes.');
+    } catch (ignore) {}
+  }
+  return n <= RES27_LOOKUPS_PER_HOUR;
+}
+
+/** This hour in Mountain time (the rate-limit counters' key). */
+function res27HourKey_() {
+  return Utilities.formatDate(new Date(res27Now_()), RES27_TZ, 'yyyy-MM-dd-HH');
+}
+
+// The answers sign-in and the reset code give after looking the email up (res27EvenOut_).
+var RES27_EVENED_CODES = ['no_account', 'bad_password', 'locked', 'too_many', 'expired', 'bad_code'];
+
+/**
+ * Runs a sign-in or a reset code (`work`) and holds any answer it gives after looking the email up
+ * until RES27_EVEN_ANSWER_MS after `t0`, writes included, so how long it took says nothing about
+ * whether the email has an account (second review, 11/24/2026). Successes aren't held.
+ */
+function res27EvenOut_(t0, work) {
+  try {
+    return work();
+  } catch (err) {
+    if (err && err.res27 && RES27_EVENED_CODES.indexOf(err.code) >= 0) {
+      try { SpreadsheetApp.flush(); } catch (ignore) {}
+      var wait = t0 + RES27_EVEN_ANSWER_MS - Date.now();
+      if (wait > 0) Utilities.sleep(Math.min(wait, RES27_EVEN_ANSWER_MS));
+      // Shows in the Apps Script project's Executions: if it ever does, raise RES27_EVEN_ANSWER_MS.
+      else console.warn('res27 even-out overran by ' + (-wait) + ' ms (' + err.code + ')');
+    }
+    throw err;
+  }
+}
+
 /* ================================================================ the sheet ==== */
 
 function res27Book_() {
@@ -987,7 +1048,7 @@ function res27BetaOpen_(cfg) {
 
 /**
  * The 2026 video a day's plan reuses, from "2026 Video (not shown)": a YouTube link, or the video
- * id at the start of the cell ("nbg1s1gdjJk 'Day 1- 2026…' - re-record…"). Only the beta shows it.
+ * id at the start of the cell ("AbCdEfGhIjK 'Day 1- 2026…' - re-record…"). Only the beta shows it.
  */
 function res27StandInId_(cell) {
   var text = String(cell || '').trim();
@@ -1925,8 +1986,13 @@ function res27ConfigAction_(d) {
 function res27EmailStatus_(d) {
   var email = res27LookupEmail_(d.email);
   if (!email) return { ok: true, valid: false, exists: false };
-  // valid: whether a sign-up would take it; exists: an account has it (even one from before the stricter check).
-  return { ok: true, valid: !!res27CleanEmail_(email), exists: !!res27FindRow_('accounts', 'Email', email) };
+  // valid: whether a sign-up would take it; exists: an account has it (even one from before the
+  // stricter check). Each answer uses one of the hour's RES27_EMAIL_HINTS_PER_HOUR (review,
+  // 11/24/2026); past them, exists is null (not known): the sign-up still says so when it's sent,
+  // so all that's lost is the early hint.
+  var valid = !!res27CleanEmail_(email);
+  if (res27Bump_('res27:eh:' + res27HourKey_(), 3700) > RES27_EMAIL_HINTS_PER_HOUR) return { ok: true, valid: valid, exists: null };
+  return { ok: true, valid: valid, exists: !!res27FindRow_('accounts', 'Email', email) };
 }
 
 function res27Register_(d) {
@@ -2066,20 +2132,40 @@ function res27Register_(d) {
   return { ok: true, token: res27IssueToken_(id, Number(account && account['Token Version']) || 1), emailed: emailed, me: res27Bootstrap_(person, d.today) };
 }
 
+var RES27_BAD_PASSWORD_MSG = 'That password doesn’t match. Try again, or reset it.';
+var RES27_DUMMY_SALT = '0123456789abcdef0123456789abcdef'; // hashing for an email with no account (res27LoginWork_)
+
 function res27Login_(d) {
+  var t0 = Date.now();
+  return res27EvenOut_(t0, function () { return res27LoginWork_(d); });
+}
+
+function res27LoginWork_(d) {
   var cfg = res27Settings_();
   var email = res27LookupEmail_(d.email);
   var password = String(d.password || '');
   if (!email || !password) res27Fail_('Enter your email and password.');
+  // No password is longer (sign-up, the reset and Change password all refuse one), and a huge one
+  // would make an account's hashing outlast RES27_EVEN_ANSWER_MS (third check, 11/24/2026).
+  if (password.length > 128) res27Fail_('That password is too long.');
   var acct = res27FindRow_('accounts', 'Email', email);
-  if (!acct) res27Fail_('We couldn’t find an account with that email. Check the spelling, or sign up first.', 'no_account');
+  // Every answer but a sign-in uses one of the hour's lookups, an email with an account or not;
+  // past them, an email with none gets a wrong password's answer (res27LookupAllowed_). It does an
+  // account's hashing too, so the floor in res27EvenOut_ has less to even out.
+  if (!acct) {
+    res27HashPassword_(password, RES27_DUMMY_SALT, RES27_HASH_ROUNDS);
+    if (!res27LookupAllowed_()) res27Fail_(RES27_BAD_PASSWORD_MSG, 'bad_password');
+    res27Fail_('We couldn’t find an account with that email. Check the spelling, or sign up first.', 'no_account');
+  }
   var now = res27Now_();
   var lockedUntil = res27Time_(acct['Locked Until']);
   if (lockedUntil > now) {
+    res27LookupAllowed_();
     res27Fail_('Too many tries. Wait ' + Math.max(1, Math.ceil((lockedUntil - now) / 60000)) + ' minutes, or reset your password.', 'locked');
   }
   var hash = res27HashPassword_(password, String(acct['Salt']), Number(acct['Rounds']) || RES27_HASH_ROUNDS);
   if (hash !== String(acct['Password Hash'])) {
+    res27LookupAllowed_();
     var fails = (Number(acct['Failed Logins']) || 0) + 1;
     var update = { 'Failed Logins': fails };
     if (fails >= RES27_MAX_FAILED_LOGINS) {
@@ -2088,7 +2174,7 @@ function res27Login_(d) {
     }
     res27AssertRow_('accounts', acct._row, 'Email', email);
     res27UpdateRow_('accounts', acct._row, update);
-    res27Fail_('That password doesn’t match. Try again, or reset it.', 'bad_password');
+    res27Fail_(RES27_BAD_PASSWORD_MSG, 'bad_password');
   }
   res27AssertRow_('accounts', acct._row, 'Email', email);
   res27UpdateRow_('accounts', acct._row, { 'Failed Logins': 0, 'Locked Until': '', 'Last Login': new Date(now) });
@@ -2106,20 +2192,39 @@ function res27ResetStart_(d) {
   var cfg = res27Settings_();
   var email = res27LookupEmail_(d.email);
   if (!email) res27Fail_('Enter the email you signed up with.');
+  var now = res27Now_();
+  var hour = res27HourKey_();
+  var busy = 'Lots of password resets right now. Try again in an hour, or email ' + cfg.contact_email + '.';
+  var noMail = 'We couldn’t send the email right now. Email ' + cfg.contact_email + ' and we’ll reset it for you.';
+  // Answers that don't depend on the email come before the account is looked up (review,
+  // 11/24/2026), so they're the same for every email: the hour's resets used up, or no way to send
+  // a code at all right now.
+  if (res27Count_('res27:rs:' + hour) >= RES27_RESET_STARTS_PER_HOUR) res27Fail_(busy, 'busy');
+  if (!res27CanMail_(cfg, 3)) {
+    try {
+      if (res27Bump_('res27:nm:' + hour, 3700) === 1) {
+        var problem = res27ProviderProblem_(cfg);
+        res27Log_('(password reset)', 'Email not sent', 'Reset codes can’t go out right now (' + (problem ? problem + '; ' : '') + 'Gmail has fewer than 3 sends left today). Logged once an hour.');
+      }
+    } catch (ignore) {}
+    res27Fail_(noMail, 'mail');
+  }
+  // Each request uses one of the hour's lookups, an email with an account or not; past them, an
+  // email with none gets what one with an account gets, "we sent a code", and nothing is sent.
+  var allowed = res27LookupAllowed_();
   var acct = res27FindRow_('accounts', 'Email', email);
-  if (!acct) res27Fail_('We couldn’t find an account with that email. Check the spelling.', 'no_account');
+  if (!acct) {
+    if (!allowed) return { ok: true };
+    res27Fail_('We couldn’t find an account with that email. Check the spelling.', 'no_account');
+  }
   if (res27Count_('res27:rf:' + acct['ID']) >= RES27_RESET_BAD_BUDGET) {
     res27Fail_('Too many wrong codes. Email ' + cfg.contact_email + ' and we’ll reset it for you.', 'too_many');
   }
-  var now = res27Now_();
   var expires = res27Time_(acct['Reset Expires']);
   if (expires && expires - RES27_RESET_MINUTES * 60000 + 60000 > now) {
     res27Fail_('We just sent you a code. Check your inbox (and spam), or try again in a minute.', 'wait');
   }
-  var hour = Utilities.formatDate(new Date(now), RES27_TZ, 'yyyy-MM-dd-HH');
-  if (res27Bump_('res27:rs:' + hour, 3700) > RES27_RESET_STARTS_PER_HOUR) {
-    res27Fail_('Lots of password resets right now. Try again in an hour, or email ' + cfg.contact_email + '.', 'busy');
-  }
+  if (res27Bump_('res27:rs:' + hour, 3700) > RES27_RESET_STARTS_PER_HOUR) res27Fail_(busy, 'busy');
   var code = res27RandomCode_();
   var name = String(cfg.program_name || 'Koda Resolutions 2027');
   // In the colors of the person's gym (their Participants row says which).
@@ -2130,7 +2235,12 @@ function res27ResetStart_(d) {
     '<p style="margin:0 0 20px;font-size:34px;letter-spacing:8px;font-weight:700;color:' + gym.mail.ink + '">' + code + '</p>' +
     '<p style="margin:0;color:#5F6B7A">It works for ' + RES27_RESET_MINUTES + ' minutes. If you didn’t ask for it, you can ignore this email.</p>', gym);
   var sent = res27Mail_(cfg, email, 'Your ' + name + ' code: ' + code, html, 'Your code is ' + code + '. It works for ' + RES27_RESET_MINUTES + ' minutes.', 3, gym.contactEmail, res27FromName_(gym));
-  if (!sent) res27Fail_('We couldn’t send the email right now. Email ' + cfg.contact_email + ' and we’ll reset it for you.', 'mail');
+  if (!sent) {
+    // Past the hour's lookups, the answer a sent code gets, so a send that fails says nothing about
+    // whether the email has an account (third check, 11/24/2026). res27Mail_ put it on the Log.
+    if (!allowed) return { ok: true };
+    res27Fail_(noMail, 'mail');
+  }
   res27AssertRow_('accounts', acct._row, 'Email', email);
   res27UpdateRow_('accounts', acct._row, {
     'Reset Code': res27ResetCodeHash_(code, acct['ID']),
@@ -2140,7 +2250,15 @@ function res27ResetStart_(d) {
   return { ok: true };
 }
 
+var RES27_CODE_EXPIRED_MSG = 'That code has expired. Ask for a new one.';
+
 function res27ResetFinish_(d) {
+  var t0 = Date.now();
+  // The wait comes after the script lock below is let go, so it holds up nobody else.
+  return res27EvenOut_(t0, function () { return res27ResetFinishWork_(d); });
+}
+
+function res27ResetFinishWork_(d) {
   var cfg = res27Settings_();
   var email = res27LookupEmail_(d.email);
   var code = String(d.code || '').replace(/\D/g, '');
@@ -2154,17 +2272,26 @@ function res27ResetFinish_(d) {
   var acct;
   try {
     acct = res27FindRow_('accounts', 'Email', email);
-    if (!acct) res27Fail_('We couldn’t find an account with that email.', 'no_account');
+    // Every answer but a new password uses one of the hour's lookups, an email with an account or
+    // not; past them, an email with none gets what an account with no code waiting gets
+    // (res27LookupAllowed_).
+    if (!acct) {
+      if (!res27LookupAllowed_()) res27Fail_(RES27_CODE_EXPIRED_MSG, 'expired');
+      res27Fail_('We couldn’t find an account with that email.', 'no_account');
+    }
     var budgetKey = 'res27:rf:' + acct['ID'];
     if (res27Count_(budgetKey) >= RES27_RESET_BAD_BUDGET) {
+      res27LookupAllowed_();
       res27Fail_('Too many wrong codes. Email ' + cfg.contact_email + ' and we’ll reset it for you.', 'too_many');
     }
     var now = res27Now_();
     var tries = Number(acct['Reset Tries']) || 0;
     if (!acct['Reset Code'] || res27Time_(acct['Reset Expires']) < now || tries >= RES27_RESET_MAX_TRIES) {
-      res27Fail_('That code has expired. Ask for a new one.', 'expired');
+      res27LookupAllowed_();
+      res27Fail_(RES27_CODE_EXPIRED_MSG, 'expired');
     }
     if (res27ResetCodeHash_(code, acct['ID']) !== String(acct['Reset Code'])) {
+      res27LookupAllowed_();
       res27Bump_(budgetKey, 21600);
       res27AssertRow_('accounts', acct._row, 'Email', email);
       res27UpdateRow_('accounts', acct._row, { 'Reset Tries': tries + 1 });
@@ -2497,6 +2624,8 @@ function res27ChangePassword_(d, auth) {
   var current = String(d.current || '');
   var next = String(d.password || '');
   if (!current) res27Fail_('Enter your current password. Forgot it? Sign out and use Forgot password.', 'bad_password');
+  // No password is longer, and hashing a huge one would tie the script up (final check, 11/24/2026).
+  if (current.length > 128) res27Fail_('Your current password doesn’t match.', 'bad_password');
   if (next.length < 6) res27Fail_('Your new password needs at least 6 characters.');
   if (next.length > 128) res27Fail_('That password is too long.');
   var acct = auth.acct;
@@ -2807,6 +2936,23 @@ function res27MailButton_(gym, href, label, small) {
   var m = gym.mail;
   return '<a href="' + res27Html_(href) + '" style="display:inline-block;background:' + m.button + ';color:' + m.buttonText + ';text-decoration:none;padding:' + (small ? '10px 16px' : '12px 20px') +
     ';border-radius:10px;font-weight:600' + (small ? ';margin-top:10px' : '') + '">' + label + '</a>';
+}
+
+/**
+ * Whether res27Mail_ could send at all right now, in its own order: an email provider that's set
+ * up, else Gmail with at least `reserve` sends left today. (The reset asks first, so "can't send"
+ * is the same answer for every email: review, 11/24/2026.) A provider that's set up counts even
+ * right after a failure, as res27Mail_ tries it first anyway: a send that still fails is handled
+ * where it happens (res27ResetStart_), not by turning resets away for a while.
+ */
+function res27CanMail_(cfg, reserve) {
+  var provider = res27Provider_(cfg);
+  if ((provider === 'resend' || provider === 'brevo') && !res27ProviderProblem_(cfg)) return true;
+  try {
+    return MailApp.getRemainingDailyQuota() >= (reserve || 3);
+  } catch (e) {
+    return false;
+  }
 }
 
 /**

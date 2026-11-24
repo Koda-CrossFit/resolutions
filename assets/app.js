@@ -6,7 +6,7 @@
   var C = window.RES27_CONTENT;
   var PROD_API_URL = 'https://script.google.com/macros/s/AKfycbwWjHrhE6k3vVPDXD4qi3VLxZVAXMykAFIKocoUiq0BtXdv2XLy7Oo0GRfrP48fHytnyw/exec';
   var API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : PROD_API_URL;
-  var APP_VERSION = '1.5.0';
+  var APP_VERSION = '1.5.1';
 
   /* ============================================================ small helpers */
 
@@ -386,7 +386,8 @@
         if ((err.code === 'auth' || err.code === 'inactive') && session === S.session) {
           var was = !!S.token;
           signOutLocal();
-          if (was) { toast(err.message, true); go('#/signin'); }
+          // Signed out by the server (a password change elsewhere): back to this page after signing in.
+          if (was) { if (MEMBER_PAGE.test(route().name)) S.after = location.hash; toast(err.message, true); go('#/signin'); }
         }
         throw err;
       }
@@ -402,9 +403,15 @@
       S.configLoaded = true;
       S.configOk = true;
       if (!S.config.beta) store.del('res27.beta'); // the beta test is over: back to the real sign-up
-      if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); // the landing shows on any other route
-    }).catch(function () { S.configLoaded = true; if (!S.token && ['signin', 'forgot'].indexOf(route().name) < 0) render(); });
+      if (!S.token && !formShown()) render(); // the landing (or the sign-up) shows the fresh dates
+    }).catch(function () { S.configLoaded = true; if (!S.token && !formShown()) render(); });
   }
+  /**
+   * Signed out, whether this route shows Sign in or the reset, which needs nothing from config and
+   * which a repaint would wipe as someone types: no data-field keeps their values (review,
+   * 11/24/2026: an email's day link showed Sign in, then cleared it when config arrived).
+   */
+  function formShown() { var n = route().name; return n === 'signin' || n === 'forgot' || MEMBER_PAGE.test(n); }
 
   function loadMe(quiet) {
     if (!S.token || S.loadingMe) return Promise.resolve();
@@ -464,6 +471,7 @@
     S.me = null;
     S.loadedDay = '';
     S.sheet = null;
+    S.after = '';
     store.del('res27.token');
     store.del('res27.me');
     store.del('res27.pending');
@@ -500,6 +508,14 @@
   }
   function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
 
+  // The pages only a signed-in person sees. A link to one where nobody is signed in (the 3 AM email's
+  // "Log yesterday's points" opens in the mail app's browser, which a home-screen copy doesn't share
+  // its sign-in with) shows Sign in, then that page (review, 11/24/2026: it showed the landing page
+  // and, after signing in, Today).
+  var MEMBER_PAGE = /^(today|day|leaderboard|progress|faqs|cookbook|nutrition|videos|profile|edit)$/;
+  /** Where signing in goes: the member page a link asked for, else Today. */
+  function takeAfter() { var to = S.after || '#/today'; S.after = ''; return to; }
+
   var app = document.getElementById('app');
 
   function render() {
@@ -522,6 +538,7 @@
       if (r.name === 'join') html = viewJoin(r.args[0] || 'about');
       else if (r.name === 'signin') html = viewSignIn();
       else if (r.name === 'forgot') html = viewForgot();
+      else if (MEMBER_PAGE.test(r.name)) { S.after = location.hash; html = viewSignIn(); }
       else html = viewLanding();
       S.renderedDay = null;
       paint(html);
@@ -1390,6 +1407,7 @@
       S.sheet = { html: welcomeSheet(r.me, r.emailed) };
       S.me = r.me; S.loadedDay = localToday();
       cacheMe();
+      S.after = ''; // a new sign-up starts on Today, with its welcome
       go('#/today');
     }, function (e) {
       S.busy = false;
@@ -1461,7 +1479,11 @@
   function viewForgot() {
     var body;
     if (S.resetStage === 'code') {
-      body = '<h1>Check your email</h1><p class="lead">We sent a 6-digit code to <b>' + esc(S.resetEmail) + '</b>. It works for 20 minutes.</p>' +
+      // The same words for everyone (the server's answer doesn't say whether the email has an
+      // account), so the way out is here too: the gym's email (final check, 11/24/2026).
+      var help = gymInfo(chosenGym()).contactEmail;
+      body = '<h1>Check your email</h1><p class="lead">We sent a 6-digit code to <b>' + esc(S.resetEmail) + '</b>. It works for 20 minutes. Nothing after a few minutes? Check your spam folder, and that the email is spelled the way you signed up.' +
+        (help ? ' Still nothing? Email <a href="mailto:' + esc(help) + '">' + esc(help) + '</a> and we’ll help.' : '') + '</p>' +
         (S.formError ? '<div class="form-error" role="alert">' + esc(S.formError) + '</div>' : '') +
         '<label class="field"><span class="label">Code</span><input class="input" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required data-autofocus style="letter-spacing:.3em;font-weight:700"></label>' +
         '<label class="field"><span class="label">New password</span><span class="input-wrap"><input class="input" type="password" name="password" autocomplete="new-password" minlength="6" required><button class="icon-btn reveal" type="button" data-act="reveal" aria-label="Show password">' + icon('eye') + '</button></span><span class="hint">At least 6 characters.</span></label>' +
@@ -1488,7 +1510,9 @@
       store.set('res27.token', r.token);
       S.me = r.me; S.loadedDay = localToday();
       cacheMe();
-      go('#/today');
+      // Signed in on the page the link asked for, the hash doesn't change: start it at the top anyway.
+      S.lastRouteKey = '';
+      go(takeAfter());
     }, function (e) {
       S.busy = false;
       S.formError = e.message;
@@ -1516,7 +1540,8 @@
       S.token = r.token; store.set('res27.token', r.token);
       S.me = r.me; S.loadedDay = localToday(); cacheMe();
       toast('Password updated. You’re signed in.');
-      go('#/today');
+      S.lastRouteKey = '';
+      go(takeAfter());
     }, function (e) { S.busy = false; S.formError = e.message; render(); });
   }
 

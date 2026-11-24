@@ -386,7 +386,7 @@ const stayLocal = (route) => {
   await get('/dev/time?clear=1');
   const ADMINKEY = 'test-admin-key-123';
   const PLAN = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', 'days-2027.json'), 'utf8'))
-    .map((d, i) => Object.assign({}, d, { ref: ['nbg1s1gdjJk', 'As3Zpd7XEY8', 'KBOW32PKgfI', 'tscdhnnCIV4', '9C14vwKA9Cs', '_NLEqrDAl4Q', '_szhT8Sieq8'][i] || '' }));
+    .map((d, i) => Object.assign({}, d, { ref: ['fakeVid0001', 'fakeVid0002', 'fakeVid0003', 'fakeVid0004', 'fakeVid0005', 'fakeVid0006', 'fakeVid0007'][i] || '' }));
   check('dev world: Days with their 2026 references', (await api({ action: 'adminSeedDays', key: ADMINKEY, days: PLAN, overwrite: true })).ok);
   check('dev world: a beta test that started yesterday', (await api({ action: 'adminSetup', key: ADMINKEY, settings: { beta_start: yesterday, beta_days: 7 } })).ok);
   const c7 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/Denver' });
@@ -462,7 +462,7 @@ const stayLocal = (route) => {
     /Yesterday · Day 1/.test(bt.card) && /Not filled in yet/.test(bt.card) && bt.card.indexOf('You can fill it in until ' + longDay(yesterday) + ' at midnight') >= 0 && bt.href === '#/day/' + yesterday, bt.card);
   check('beta Today: the week strip marks Day 1 overdue and today, the rest coming up', bt.strip[0] === 'is-overdue' && /is-today/.test(bt.strip[1]) && /is-sel/.test(bt.strip[1]) && bt.strip.slice(2).every((c) => c === 'is-upcoming'), bt.strip.join(' | '));
   check('beta Today: the Today tab shows 1 overdue', bt.badge === '1', bt.badge);
-  check('beta Today: Day 2 plays its 2026 stand-in video, marked as one', /As3Zpd7XEY8/.test(bt.poster) && bt.standIn, bt.poster);
+  check('beta Today: Day 2 plays its 2026 stand-in video, marked as one', /fakeVid0002/.test(bt.poster) && bt.standIn, bt.poster);
   check('beta Today: fits the phone', bt.overflow <= 0, 'overflow ' + bt.overflow);
   await b7.screenshot({ path: path.join(OUT, 'beta-01-today-overdue.png'), fullPage: true });
   // Today's own page (the Videos tab and the calendar link there) is the same Today screen, card included.
@@ -1251,6 +1251,54 @@ const stayLocal = (route) => {
   await p17.waitForSelector('.form-error');
   const signinErr = await p17.textContent('.form-error');
   check('sign-in still sends an older-style address on to the server (it answers "couldn’t find an account", not the app’s "Enter your email")', /couldn’t find an account/.test(signinErr), signinErr);
+  // (8a1) A member's link where nobody is signed in (11/24 review): the 3 AM email's "Log yesterday's
+  // points" opens in the mail app's browser, signed out. Sign in comes first, then that day (it showed
+  // the landing page, then Today). Signing out still goes to the landing page, and from there to Today.
+  const cdl = await phone();
+  const pdl = watch(await cdl.newPage());
+  await pdl.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/day/2027-01-26'));
+  await pdl.waitForSelector('form[data-form="signin"]');
+  const dlBefore = await pdl.evaluate(() => ({ hash: location.hash, landing: !!document.querySelector('[data-type="member"]') }));
+  await pdl.fill('input[name="email"]', 'nia.native@example.com');
+  await pdl.fill('input[name="password"]', 'koda2027');
+  await pdl.click('form[data-form="signin"] button[type="submit"]');
+  await pdl.waitForSelector('#checklistCard', { timeout: 15000 });
+  const dlAfter = await pdl.evaluate(() => ({ hash: location.hash, date: document.querySelector('#checklistCard').getAttribute('data-date') }));
+  check('an email’s day link opened signed out shows Sign in (not the landing page), then that day', dlBefore.hash === '#/day/2027-01-26' && !dlBefore.landing && dlAfter.hash === '#/day/2027-01-26' && dlAfter.date === '2027-01-26', JSON.stringify({ dlBefore, dlAfter }));
+  await pdl.evaluate(() => { location.hash = '#/profile'; });
+  await pdl.waitForSelector('button[data-act="signout"]');
+  await pdl.click('button[data-act="signout"]');
+  await pdl.waitForSelector('[data-type="member"]');
+  const dlOut = await pdl.evaluate(() => location.hash);
+  await pdl.evaluate(() => { location.hash = '#/signin'; });
+  await pdl.waitForSelector('form[data-form="signin"]');
+  await pdl.fill('input[name="email"]', 'nia.native@example.com');
+  await pdl.fill('input[name="password"]', 'koda2027');
+  await pdl.click('form[data-form="signin"] button[type="submit"]');
+  await pdl.waitForSelector('#checklistCard', { timeout: 15000 });
+  const dlAgain = await pdl.evaluate(() => location.hash);
+  check('…signing out from there goes to the landing page, and signing in again goes to Today', (dlOut === '#/' || dlOut === '') && dlAgain === '#/today', JSON.stringify({ dlOut, dlAgain }));
+  await cdl.close();
+  // …and the app's settings arriving while someone types there don't wipe the form (11/24 review:
+  // the late config answer repainted it empty; on the live backend it takes a second or two).
+  const cdl2 = await phone();
+  const pdl2 = watch(await cdl2.newPage());
+  await pdl2.route('**/api', async (rt) => {
+    let action = '';
+    try { action = JSON.parse(rt.request().postData() || '{}').action; } catch (e) { /* not JSON */ }
+    if (action === 'config') await wait(1500);
+    try { await rt.continue(); } catch (e) { /* page closed */ }
+  });
+  await pdl2.goto(BASE + '/dev/blank?to=' + encodeURIComponent('#/day/2027-01-26'));
+  await pdl2.waitForSelector('form[data-form="signin"]');
+  await pdl2.fill('input[name="email"]', 'nia.native@example.com');
+  await pdl2.fill('input[name="password"]', 'koda2027');
+  await wait(2500); // the config answer lands meanwhile
+  const kept = await pdl2.evaluate(() => ({ email: document.querySelector('input[name="email"]').value, pw: document.querySelector('input[name="password"]').value.length }));
+  await pdl2.click('form[data-form="signin"] button[type="submit"]');
+  await pdl2.waitForSelector('#checklistCard', { timeout: 15000 });
+  check('…and what was typed there stays when the app’s settings arrive late (they used to repaint it empty)', kept.email === 'nia.native@example.com' && kept.pw === 8 && pdl2.url().endsWith('#/day/2027-01-26'), JSON.stringify(Object.assign({ url: pdl2.url() }, kept)));
+  await cdl2.close();
   // (8a2) An older-style address that is signed up (11/24 review): the About step says only "Sign in
   // instead", even when the answer that it's taken comes after Continue or Enter (the server takes
   // 0.7 s here), and the page stops asking (it asked again and again while the cursor stayed there).

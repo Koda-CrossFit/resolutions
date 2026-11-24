@@ -16,7 +16,7 @@ const { createGas } = require('../dev/gas-mock.js');
 const ADMIN = 'test-admin-key-123';
 const DAYS = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', 'days-2027.json'), 'utf8'));
 // The public plan file has no 2026 references (they live in the private plan); the stand-ins need them.
-const REFS = ['nbg1s1gdjJk', 'As3Zpd7XEY8', 'KBOW32PKgfI', 'tscdhnnCIV4', '9C14vwKA9Cs', '_NLEqrDAl4Q', '_szhT8Sieq8'];
+const REFS = ['fakeVid0001', 'fakeVid0002', 'fakeVid0003', 'fakeVid0004', 'fakeVid0005', 'fakeVid0006', 'fakeVid0007'];
 const PLAN = DAYS.map((d, i) => Object.assign({}, d, { ref: REFS[i] ? REFS[i] + " 'Day " + (i + 1) + "- 2026' - re-record at about 3 minutes" : '' }));
 const BETA = { beta_start: '2026-11-09', beta_days: 7 };
 const TUESDAY = '2026-11-10T09:00:00-07:00';
@@ -168,8 +168,8 @@ test('a missed beta day can be filled in all week and on the Monday after, then 
 test('beta days play the 2026 stand-in video; members never see it, and a pasted link wins', () => {
   const { gas, post } = world(TUESDAY, BETA);
   const r = signUp(post);
-  assert.deepEqual(r.me.days[0].videos, [{ label: '', url: 'https://www.youtube.com/watch?v=nbg1s1gdjJk', youtube: 'nbg1s1gdjJk', standIn: true }]);
-  assert.equal(r.me.days[1].videos[0].youtube, 'As3Zpd7XEY8');
+  assert.deepEqual(r.me.days[0].videos, [{ label: '', url: 'https://www.youtube.com/watch?v=fakeVid0001', youtube: 'fakeVid0001', standIn: true }]);
+  assert.equal(r.me.days[1].videos[0].youtube, 'fakeVid0002');
   assert.equal(r.me.days[2].videos, undefined, 'nothing about a day before it unlocks');
 
   signUp(post, { email: 'member@example.com', beta: false });

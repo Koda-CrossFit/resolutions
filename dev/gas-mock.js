@@ -717,6 +717,7 @@ function createGas(options) {
     triggers: [],
     mail: [],
     logs: [],
+    sleeps: [], // every Utilities.sleep(ms), in order (the mock doesn't wait)
     fetches: [], // every UrlFetchApp request, in order
     fetchAllSizes: [], // how many requests each fetchAll had
     fetchResponder: null, // (request, index) => { code, body, headers }, { lost }, { refuse }, or throw; null: the default answers
@@ -1052,7 +1053,7 @@ function createGas(options) {
     Utilities: {
       formatDate,
       getUuid: () => crypto.randomUUID(),
-      sleep() {},
+      sleep(ms) { state.sleeps.push(ms); }, // no real wait; tests read state.sleeps
       DigestAlgorithm: { SHA_256: 'sha256', MD5: 'md5', SHA_1: 'sha1' },
       Charset: { UTF_8: 'utf8' },
       newBlob: (text) => ({ getBytes: () => toSigned(Buffer.from(String(text), 'utf8')), getDataAsString: () => String(text) }),

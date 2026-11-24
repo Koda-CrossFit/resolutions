@@ -41,14 +41,25 @@ const CATEGORY = {
 };
 
 // Who's on camera, short enough for the video card. The full presenter plan stays in Notes.
+// Only coaches are named here, because this file is public (review, 11/24/2026). A guest's name
+// comes from content/private/presenters-2027.json (git-ignored), e.g. { "8": "First Last" }: the
+// private Days file gets it, and the public one leaves it blank (COACH_ONLY below).
 const PRESENTER = {
-  1: 'Kevin', 2: 'Kevin', 3: 'Kevin', 4: '', 5: 'Kevin', 6: 'Maggie & Riley', 7: 'Maggie', 8: 'Molly Moore', 9: 'Kevin',
+  1: 'Kevin', 2: 'Kevin', 3: 'Kevin', 4: '', 5: 'Kevin', 6: 'Maggie & Riley', 7: 'Maggie', 9: 'Kevin',
   10: 'The Wig Wednesday crew', 11: 'Maggie', 12: 'Jamie', 13: 'Jamie', 14: 'The coaches', 15: 'Kevin', 16: 'Riley',
   17: 'The Wig Wednesday crew', 18: '', 19: 'Maggie', 20: 'Riley', 21: 'Kevin', 22: 'Jamie', 23: 'Kevin',
   24: 'The Wig Wednesday crew', 25: 'Kevin', 26: 'Jamie', 27: 'Kevin', 28: 'The coaches', 29: 'Riley & Maggie', 30: 'Riley',
-  31: 'The Wig Wednesday crew', 32: 'Brice', 33: 'Brice', 34: 'Brice', 35: 'Maggie', 36: 'Kevin', 37: 'Kevin',
+  31: 'The Wig Wednesday crew', 35: 'Maggie', 36: 'Kevin', 37: 'Kevin',
   38: 'All four coaches', 39: 'Jamie', 40: 'Kevin', 41: 'Riley', 42: 'Kevin',
 };
+const GUESTS_FILE = path.join(__dirname, '..', 'content', 'private', 'presenters-2027.json');
+const GUESTS = fs.existsSync(GUESTS_FILE) ? JSON.parse(fs.readFileSync(GUESTS_FILE, 'utf8')) : {};
+if (!fs.existsSync(GUESTS_FILE)) console.warn('No ' + GUESTS_FILE + ': guest presenters are left blank.');
+/** The day's presenter: a coach from PRESENTER, a guest from the private file, else nobody named. */
+function presenterFor(day) {
+  if (Object.prototype.hasOwnProperty.call(PRESENTER, day)) return PRESENTER[day];
+  return Object.prototype.hasOwnProperty.call(GUESTS, String(day)) ? String(GUESTS[String(day)]) : '';
+}
 
 const ACTION = {
   1: 'Do your baseline tester and take private before photos (front, side and back).',
@@ -132,7 +143,7 @@ const days = plan.days
       action: ACTION[d.day] || d.actionItem,
       bonus,
       bonusPoints: bonus ? 1 : '', // +1 on top of the day's 10 (Kevin, 11/10)
-      presenter: Object.prototype.hasOwnProperty.call(PRESENTER, d.day) ? PRESENTER[d.day] : d.presenter,
+      presenter: presenterFor(d.day),
       notes,
       ref: d.reuseFrom2026 || '',
     };

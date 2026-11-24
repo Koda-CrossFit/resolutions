@@ -13,7 +13,7 @@ Answers save as they tap, and a 3 AM email each day gives them the day and a lin
   The daily email (1.8.0) needs two Google permissions the project didn't have before (calling the
   email service, and the hourly timer): Kevin approves them once, in the order under
   [Deploying](#deploying) ("1.8.0 deploy order").
-- **Data:** the Google Sheet **"Koda Resolutions 2027"** in kevschuetz3@gmail.com's Drive
+- **Data:** the Google Sheet **"Koda Resolutions 2027"** in Kevin's Google Drive
   (its id is in the script property `RES27_SHEET_ID`).
 
 ## The sheet
@@ -70,7 +70,37 @@ Changes to Settings and Days show in the app within about a minute.
   Koda sign-up pages) show on the Log tab as "Email not sent", and the person's Welcome Email cell
   says NOT SENT. Welcome emails stop while fewer than 25 sends are left that day.
 - **Forgot password:** people reset it themselves with an emailed 6-digit code. If email fails
-  they're told to email the contact address.
+  they're told to email the contact address (past the hour's lookup limit below, a failed send is
+  answered as sent instead; the code screen always ends "Still nothing? Email <the gym's contact>").
+- **Checking who has an account is slowed down (1.8.1):** Sign in ("We couldn't find an account
+  with that email") and the password reset used to tell anyone, with no limit, whether an email has
+  an account, so a gym's member list could be run through them to see who joined. Answers that are
+  the same for every email come first and use nothing: a blank or malformed entry, a password over
+  128 characters (no account can have one), "Lots of password resets right now", and "We couldn't
+  send the email right now" when no email provider is set up and Gmail is nearly out. Every answer
+  after those, except a sign-in or a new password, uses one of **120 an hour** for the whole app,
+  whether the email has an account or not. Past that, an email with no account gets the answer one
+  with an account would ("That password doesn't match", "We sent a code" with nothing sent, "That
+  code has expired"), and so does a reset whose code fails to send ("We sent a code"). Failed
+  sign-ins and reset codes past those first checks all take at least 2 seconds, and a sign-in with
+  no account does the same password hashing as one with an account, so how long an answer takes
+  doesn't tell them apart either. The sign-up's "already signed up? Sign in instead" hint has its
+  own 120 an hour; past it, the hint just doesn't show (the sign-up still turns a taken email away
+  when it's sent). Together this slows a list down to about 240 addresses an hour; it doesn't stop
+  one outright. And an account still shows itself to someone willing to lock it out with 8 wrong
+  passwords, have its owner emailed a code, or sign up with its email while sign-ups are open (the
+  sign-up says it's taken; an email with no account becomes a real sign-up, with a welcome email).
+  The hourly limit never turns away a real sign-in or reset (past it, a reset whose email fails is
+  answered as sent: see the next point).
+- **"My code never came" / "it says my password is wrong":** the hour the 120 run out, the Log
+  tab gets a "Lookup limit reached" row. Until that hour ends, someone who typed their email wrong
+  hears "That password doesn't match", or is told a code was sent and gets none; a code that failed
+  to send is also answered as sent then, with an "Email not sent" row naming the address. When no
+  code can go out at all, the Log gets one "Email not sent" row from "(password reset)" an hour.
+  Check their address against Participants. The numbers are `RES27_LOOKUPS_PER_HOUR`,
+  `RES27_EMAIL_HINTS_PER_HOUR` and `RES27_EVEN_ANSWER_MS` at the top of `Resolutions27.js`; a
+  "res27 even-out overran" warning in the Apps Script project's Executions means the last one needs
+  raising.
 
 ### Six gyms
 
@@ -165,7 +195,11 @@ overdue if they didn't enter monday's points."
 - **What:** today's day, video, action and bonus; "Log yesterday's points" (from Day 2); on Mondays
   "Last week locks tonight at midnight". The **Overdue** box only for people with nothing logged
   two days ago, and only while that day can still be filled in (so never on Tuesdays: Sunday locked
-  at Monday midnight).
+  at Monday midnight). Its buttons open that day in the app. Where nobody is signed in (an email
+  link opens in the mail app's browser, which a home-screen copy doesn't share its sign-in with),
+  Sign in comes first and then that day (1.5.1); before, it went to the landing page and then Today.
+  The same goes for any member page (Today, Leaderboard, Profile…) opened signed out, including a
+  signed-out home-screen copy, which opens on Today.
 - **From** `resolutions@kodacrossfitironview.com`, named "<Gym> Resolutions" ("Koda OKC
   Resolutions"); **replies** go to the gym's Contact Email on the Gyms tab (blank: Settings
   `contact_email`, which is also used when the gym's has a typo). A gym Name with a comma is fine
@@ -262,8 +296,9 @@ Then send testers **https://koda-crossfit.github.io/resolutions/?beta=1**:
   `Type` = `Test` (Notes says what they picked), pay nothing, and get a beta welcome email that
   says they'll sign up again for the real challenge.
 - Have testers open the link in Safari/Chrome and sign up there first, then add it to the home
-  screen and sign in once. (An iPhone home-screen app keeps its own storage; if someone starts there,
-  the real landing page shows a "Here for the beta test? Join the beta" link while the beta is open.)
+  screen and sign in once. (An iPhone home-screen app keeps its own storage, and since 1.5.1 a
+  signed-out one opens on Sign in; if someone starts there, "New here? Join the challenge" leads to
+  the landing page, which shows a "Here for the beta test? Join the beta" link while the beta is open.)
 - Testers on the plain link instead? Set `beta_everyone` to `TRUE`: while the beta is open, every
   sign-up joins it (the landing page shows the beta to everyone, and even a page loaded earlier signs
   up a Test account). Once the beta is over, sign-ups are real again either way. Someone who already
@@ -370,8 +405,8 @@ page. The last page has no consent checkbox (Kevin, 11/10).
 
 ```
 node dev/server.js            # http://localhost:8790, real backend on an in-memory fake sheet
-node --test "tests/*.test.js" # backend, gyms, daily email + cookbook tests (127)
-node tests/e2e.js             # browser walkthrough (173 checks) + screenshots (needs the dev server;
+node --test "tests/*.test.js" # backend, gyms, daily email, lookups + cookbook tests (137)
+node tests/e2e.js             # browser walkthrough (176 checks) + screenshots (needs the dev server;
                               #   E2E_BASE=http://localhost:<port> for another port)
 node tests/endbeta-cli.js     # live.js end-beta / purge-tests / beta against the dev server (resets it; 45 checks)
 node tests/email-cli.js       # live.js gyms / email-* commands against the dev server (57 checks)
